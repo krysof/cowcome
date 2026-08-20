@@ -193,7 +193,7 @@ for(let i=0;i<46;i++){
   t.position.set((Math.random()>.5?1:-1)*(32+Math.random()*30),0,20-Math.random()*650);scene.add(t);
 }
 
-const keys={}, clock=new THREE.Clock();
+const keys={}, joystick={x:0,y:0}, clock=new THREE.Clock();
 let state='intro', stamina=100, distance=638, hunterSpeed=7.5, elapsed=0, lastLine=-1, shake=0, audio, musicMaster, musicNodes=[], musicTimer;
 const lines=[
   [25,'妈妈说：别回头。'],[80,'云雀：前面没有路。'],[145,'妈妈说：牛来，你跑反了。'],
@@ -244,6 +244,16 @@ document.querySelectorAll('.mobile-controls button').forEach(b=>{
   const k=b.dataset.key;b.addEventListener('pointerdown',e=>{e.preventDefault();keys[k]=true});
   ['pointerup','pointercancel','pointerleave'].forEach(ev=>b.addEventListener(ev,()=>keys[k]=false));
 });
+const joystickEl=document.querySelector('#joystick'),joystickKnob=document.querySelector('#joystickKnob');
+function moveJoystick(e){
+  const r=joystickEl.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,limit=r.width*.31;
+  let dx=e.clientX-cx,dy=e.clientY-cy,len=Math.hypot(dx,dy);if(len>limit){dx*=limit/len;dy*=limit/len;}
+  joystick.x=dx/limit;joystick.y=dy/limit;joystickKnob.style.transform=`translate(${dx}px,${dy}px)`;
+}
+joystickEl.addEventListener('pointerdown',e=>{e.preventDefault();joystickEl.setPointerCapture(e.pointerId);moveJoystick(e);});
+joystickEl.addEventListener('pointermove',e=>{if(joystickEl.hasPointerCapture(e.pointerId))moveJoystick(e);});
+function resetJoystick(){joystick.x=joystick.y=0;joystickKnob.style.transform='translate(0,0)';}
+joystickEl.addEventListener('pointerup',resetJoystick);joystickEl.addEventListener('pointercancel',resetJoystick);
 
 function glitch(){document.body.classList.add('glitch');sound(48,.1,'square',.03);setTimeout(()=>document.body.classList.remove('glitch'),80+Math.random()*160);}
 function animateCow(cow,t,speed){
@@ -254,7 +264,10 @@ function animateCow(cow,t,speed){
 function tick(){
   requestAnimationFrame(tick);const dt=Math.min(clock.getDelta(),.04),t=clock.elapsedTime;
   if(state==='playing'){
-    elapsed+=dt;let x=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0), z=(keys.KeyS||keys.ArrowUp?1:0)-(keys.KeyW||keys.ArrowDown?1:0);
+    elapsed+=dt;
+    // 镜头朝世界 +Z，因此屏幕左右与世界 X 相反；这里按屏幕方向统一映射。
+    let x=(keys.KeyA||keys.ArrowLeft?1:0)-(keys.KeyD||keys.ArrowRight?1:0)-joystick.x;
+    let z=(keys.KeyS||keys.ArrowUp?1:0)-(keys.KeyW||keys.ArrowDown?1:0)-joystick.y;
     const moving=x||z, sprint=(keys.ShiftLeft||keys.ShiftRight)&&stamina>2&&moving;
     let speed=sprint?15:9;if(sprint)stamina-=24*dt;else stamina=Math.min(100,stamina+13*dt);
     if(moving){const len=Math.hypot(x,z);x/=len;z/=len;player.position.x+=x*speed*dt;player.position.z+=z*speed*dt;player.rotation.y=Math.atan2(-x,-z);}

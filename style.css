@@ -70,7 +70,12 @@ body.hit { animation:hit .22s linear 2; }
   h1 span{font-size:clamp(62px,24vw,88px)}h1 em{margin-top:14px;font-size:18px}.intro p{margin:10px 0;font-size:12px}.stamp{display:none}
   .chooser .character b{display:none}.chooser .character{padding:5px}
   .hud{padding:16px}.brand span,.stamina-wrap{display:none}.mission{left:16px;top:85px}.distance strong{font-size:19px}.controls{display:none}
-  .mobile-controls{display:none;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(2,48px);gap:5px;position:fixed;left:18px;bottom:18px;z-index:8;opacity:.55}
-  .playing .mobile-controls{display:grid}
-  .mobile-controls button{background:#151712aa;color:#fff;border:1px solid #fff5;border-radius:5px;font-weight:900}.mobile-controls button:nth-child(1){grid-column:2}.mobile-controls .run{position:fixed;right:22px;bottom:25px;width:68px;height:68px;border-radius:50%;color:var(--acid);border-color:var(--acid)}
+  .mobile-controls{display:none;position:fixed;inset:0;z-index:8;pointer-events:none}
+  .playing .mobile-controls{display:block}
+  .joystick{position:absolute;left:22px;bottom:max(24px,env(safe-area-inset-bottom));width:124px;height:124px;pointer-events:auto;touch-action:none}
+  .joystick-ring{position:absolute;inset:0;border-radius:50%;border:2px solid #eaff8c88;background:#15171255;box-shadow:inset 0 0 25px #0007,0 0 18px #d9ff4322}
+  .joystick-ring:before,.joystick-ring:after{content:"";position:absolute;background:#eaff8c33;left:50%;top:50%;transform:translate(-50%,-50%)}
+  .joystick-ring:before{width:72%;height:1px}.joystick-ring:after{width:1px;height:72%}
+  .joystick i{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px;border-radius:50%;background:#d9ff43bb;border:2px solid #f1ffb5;box-shadow:0 5px 15px #0007;transform:translate(0,0);will-change:transform}
+  .mobile-controls .run{position:absolute;right:22px;bottom:max(34px,env(safe-area-inset-bottom));width:76px;height:76px;border-radius:50%;color:var(--acid);background:#15171288;border:2px solid var(--acid);font-weight:900;font-size:20px;pointer-events:auto;touch-action:none}
 }
