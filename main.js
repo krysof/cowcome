@@ -94,6 +94,18 @@ for(let i=0;i<18;i++){
   mesh(new THREE.CircleGeometry(1,10),i%3?puddleMat:mudMat,scene,x,.035,z,[rx,rz,1],[-Math.PI/2,0,Math.random()*Math.PI]);
 }
 
+// 废弃隔离区：锈蚀铁网、路障和忽明忽暗的红色警示灯，让草原逐渐变成“里世界”。
+const rustMat=flat(0x4b2d24),wireMat=new THREE.MeshBasicMaterial({color:0x31251f,transparent:true,opacity:.78}),industrialLights=[];
+for(let i=0;i<18;i++){
+  const side=i%2?1:-1,z=-42-i*33,x=side*(12+Math.random()*7),fence=new THREE.Group();
+  for(const px of [-3,0,3])mesh(new THREE.CylinderGeometry(.09,.12,4.5,5),rustMat,fence,px,2.2,0);
+  for(let y=.45;y<4.3;y+=.55)mesh(new THREE.BoxGeometry(6.2,.025,.025),wireMat,fence,0,y,0);
+  mesh(new THREE.BoxGeometry(6.2,.11,.11),rustMat,fence,0,4.2,0,[1,1,1],[0,0,.08*side]);
+  fence.position.set(x,0,z);fence.rotation.y=side>0?-.2:.2;scene.add(fence);
+  if(i%3===0){const lamp=new THREE.PointLight(0xb90b05,0,28,2.2);lamp.position.set(x,5,z);scene.add(lamp);industrialLights.push(lamp);mesh(new THREE.SphereGeometry(.19,6,4),new THREE.MeshBasicMaterial({color:0xff1608,fog:false}),fence,0,5,0);}
+}
+for(let i=0;i<7;i++){const z=-78-i*79,barrier=new THREE.Group();mesh(new THREE.BoxGeometry(6,.55,.65),rustMat,barrier,0,.7,0,[1,1,1],[0,0,i%2?.08:-.08]);for(const x of [-2.3,2.3])mesh(new THREE.BoxGeometry(.35,1.7,.5),rustMat,barrier,x,.7,0);barrier.position.set((i%2?1:-1)*(9+Math.random()*5),0,z);barrier.rotation.y=(Math.random()-.5)*.5;scene.add(barrier);}
+
 function makeRoundTree(scale=1){
   const g=new THREE.Group(),wood=flat(0x494331),leafA=flat(0x283f31),leafB=flat(0x3d5039),h=4+Math.random()*3;
   mesh(new THREE.CylinderGeometry(.22,.45,h,5),wood,g,0,h/2,0);
@@ -251,9 +263,9 @@ function makeMonsterCar(scale=1){
 function createCharacter(kind){return kind==='yellow'?makeYellowBull(.68):kind==='leopard'?makeLeopard(.78):makeNiuLai(.72,false);}
 let selectedCharacter='orange';
 const difficulties={
-  orange:{name:'简单',length:430,pack:3,stalkers:4,ambushers:2,wave2At:185,wave2Time:34,carAt:335,carTime:58,player:1.06,enemy:.86,drain:.78,recovery:1.25,hazard:.72,fog:.014,rain:.75,flashMin:13,flashRange:20},
-  yellow:{name:'普通',length:535,pack:5,stalkers:7,ambushers:4,wave2At:250,wave2Time:27,carAt:405,carTime:52,player:1,enemy:1,drain:1,recovery:1,hazard:1,fog:.021,rain:1,flashMin:9,flashRange:17},
-  leopard:{name:'困难',length:638,pack:6,stalkers:10,ambushers:7,wave2At:285,wave2Time:22,carAt:465,carTime:42,player:.97,enemy:1.14,drain:1.24,recovery:.82,hazard:1.3,fog:.03,rain:1.35,flashMin:5,flashRange:11}
+  orange:{name:'简单',length:430,pack:3,stalkers:4,ambushers:2,wave2At:185,wave2Time:34,carAt:335,carTime:58,player:1.06,enemy:.86,drain:.78,recovery:1.25,hazard:.72,fog:.014,rain:.75,flashMin:9,flashRange:13},
+  yellow:{name:'普通',length:535,pack:5,stalkers:7,ambushers:4,wave2At:250,wave2Time:27,carAt:405,carTime:52,player:1,enemy:1,drain:1,recovery:1,hazard:1,fog:.021,rain:1,flashMin:6,flashRange:10},
+  leopard:{name:'困难',length:638,pack:6,stalkers:10,ambushers:7,wave2At:285,wave2Time:22,carAt:465,carTime:42,player:.97,enemy:1.14,drain:1.24,recovery:.82,hazard:1.3,fog:.03,rain:1.35,flashMin:4,flashRange:7}
 };
 let player=createCharacter(selectedCharacter); player.position.set(0,.05,18); player.rotation.y=0; scene.add(player);
 const hunter=makeDarkBeast(.78); hunter.position.set(0,.05,51); scene.add(hunter);
@@ -321,8 +333,12 @@ const rainGeo=new THREE.BufferGeometry();rainGeo.setAttribute('position',new THR
 const rainMat=new THREE.LineBasicMaterial({color:0xc9d1cd,transparent:true,opacity:.29,depthWrite:false});
 const rain=new THREE.LineSegments(rainGeo,rainMat);rain.frustumCulled=false;scene.add(rain);
 
+// 雾中观察者：只会短暂出现在路边，玩家再看时已经不在了。
+function makeWatcher(){const g=new THREE.Group(),voidMat=new THREE.MeshBasicMaterial({color:0x030403,fog:true}),eyeMat=new THREE.MeshBasicMaterial({color:0xff1808,fog:false});mesh(new THREE.CapsuleGeometry(.7,4.8,2,5),voidMat,g,0,2.6,0,[1,.95,.58]);mesh(new THREE.SphereGeometry(1.05,6,5),voidMat,g,0,5.6,0,[1,.86,.62]);for(const x of [-.34,.34])mesh(new THREE.SphereGeometry(.075,5,4),eyeMat,g,x,5.75,-.61);g.visible=false;scene.add(g);return g;}
+const watchers=Array.from({length:4},makeWatcher);
+
 const keys={}, joystick={x:0,y:0}, clock=new THREE.Clock();
-let state='intro', stamina=100, exhausted=false, runLength=430, exitZ=-412, distance=430, hunterSpeed=7.5, elapsed=0, lastLine=-1, shake=0, audio, musicMaster, musicNodes=[], musicTimer, storyStage=0, activeChasers=[], speedLevel=0, nextTerrorFlash=9;
+let state='intro', stamina=100, exhausted=false, runLength=430, exitZ=-412, distance=430, hunterSpeed=7.5, elapsed=0, lastLine=-1, shake=0, audio, musicMaster, radioGain, musicNodes=[], musicTimer, storyStage=0, activeChasers=[], speedLevel=0, nextTerrorFlash=9,nextHaunt=6,hauntTimer;
 const bloodEffects=[];
 const lines=[
   [25,'妈妈说：别招惹草蛇。'],[80,'云雀：狼群正在靠近。'],[145,'豹拉：你们先走，我来引开它们。'],
@@ -336,8 +352,20 @@ function sound(freq=80,dur=.16,type='sawtooth',vol=.05){
   if(!audio) audio=new (window.AudioContext||window.webkitAudioContext)();
   const o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.setValueAtTime(freq,audio.currentTime);o.frequency.exponentialRampToValueAtTime(Math.max(22,freq*.4),audio.currentTime+dur);g.gain.setValueAtTime(vol,audio.currentTime);g.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+dur);o.connect(g).connect(audio.destination);o.start();o.stop(audio.currentTime+dur);
 }
+function horrorSound(kind=0){
+  if(!audio)return;const now=audio.currentTime,o=audio.createOscillator(),g=audio.createGain(),pan=audio.createStereoPanner?audio.createStereoPanner():audio.createGain();o.type=kind===2?'square':'sawtooth';o.frequency.setValueAtTime(kind===0?38:kind===1?690:kind===3?145:54,now);o.frequency.exponentialRampToValueAtTime(kind===1?85:kind===3?39:22,now+(kind===3?2.8:.65));g.gain.setValueAtTime(.0001,now);g.gain.exponentialRampToValueAtTime(kind===1?.12:kind===3?.22:.18,now+.025);g.gain.exponentialRampToValueAtTime(.0001,now+(kind===3?3:.72));if(pan.pan)pan.pan.value=Math.random()*2-1;o.connect(g).connect(pan).connect(audio.destination);o.start(now);o.stop(now+(kind===3?3.05:.75));
+}
+function triggerHaunt(){
+  if(state!=='playing')return;const kind=Math.floor(Math.random()*5);
+  document.body.classList.remove('apparition','blackout','blood-flash','heartbeat');
+  if(kind===0){document.body.classList.add('blackout');horrorSound(0);shake=.45;hauntTimer=setTimeout(()=>document.body.classList.remove('blackout'),110+Math.random()*190);}
+  else if(kind===1){document.body.classList.add('apparition');horrorSound(1);shake=.8;hauntTimer=setTimeout(()=>document.body.classList.remove('apparition'),480);}
+  else if(kind===2){document.body.classList.add('blood-flash');horrorSound(2);hauntTimer=setTimeout(()=>document.body.classList.remove('blood-flash'),520);}
+  else if(kind===3){const w=watchers.find(x=>!x.visible)||watchers[0],side=Math.random()<.5?-1:1;w.position.set(player.position.x+side*(7+Math.random()*9),0,player.position.z-12-Math.random()*20);w.rotation.y=side>0?-.4:.4;w.visible=true;horrorSound(0);hauntTimer=setTimeout(()=>w.visible=false,420+Math.random()*750);}
+  else{document.body.classList.add('otherworld');horrorSound(3);say('警报响了。草原正在变成另一种东西。',3000);shake=.65;hauntTimer=setTimeout(()=>document.body.classList.remove('otherworld'),4200);}
+}
 function stopMusic(){
-  if(!musicMaster||!audio)return;clearInterval(musicTimer);musicMaster.gain.cancelScheduledValues(audio.currentTime);musicMaster.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+.8);
+  if(!musicMaster||!audio)return;clearInterval(musicTimer);radioGain=null;musicMaster.gain.cancelScheduledValues(audio.currentTime);musicMaster.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+.8);
   const nodes=[...musicNodes];setTimeout(()=>nodes.forEach(n=>{try{n.stop()}catch{}}),900);musicNodes=[];musicMaster=null;
 }
 async function startMusic(){
@@ -350,7 +378,8 @@ async function startMusic(){
   // 带通噪声模拟荒原风声。
   const noiseBuffer=audio.createBuffer(1,Math.floor(audio.sampleRate*2),audio.sampleRate),data=noiseBuffer.getChannelData(0);for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*.32;
   const wind=audio.createBufferSource(),windFilter=audio.createBiquadFilter(),windGain=audio.createGain();wind.buffer=noiseBuffer;wind.loop=true;windFilter.type='bandpass';windFilter.frequency.value=480;windFilter.Q.value=.7;windGain.gain.value=.08;wind.connect(windFilter).connect(windGain).connect(musicMaster);wind.start();musicNodes.push(wind);
-  musicTimer=setInterval(()=>{if(state!=='playing'||!musicMaster)return;const o=audio.createOscillator(),g=audio.createGain();o.type='sine';o.frequency.value=[164,185,220,247][Math.floor(Math.random()*4)];g.gain.setValueAtTime(.0001,audio.currentTime);g.gain.exponentialRampToValueAtTime(.16,audio.currentTime+.08);g.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+2.1);o.connect(g).connect(musicMaster);o.start();o.stop(audio.currentTime+2.2);},2200);
+  const radio=audio.createBufferSource(),radioFilter=audio.createBiquadFilter();radioGain=audio.createGain();radio.buffer=noiseBuffer;radio.loop=true;radioFilter.type='bandpass';radioFilter.frequency.value=2100;radioFilter.Q.value=1.8;radioGain.gain.value=.002;radio.connect(radioFilter).connect(radioGain).connect(musicMaster);radio.start();musicNodes.push(radio);
+  musicTimer=setInterval(()=>{if(state!=='playing'||!musicMaster)return;const now=audio.currentTime,base=[41.2,46.25,55,61.74][Math.floor(Math.random()*4)];for(const detune of [0,6.8]){const o=audio.createOscillator(),g=audio.createGain(),pan=audio.createStereoPanner?audio.createStereoPanner():audio.createGain();o.type='sawtooth';o.frequency.setValueAtTime(base*(detune?1.071:1),now);o.frequency.linearRampToValueAtTime(base*.62,now+3.4);if(pan.pan)pan.pan.value=detune?-.65:.65;g.gain.setValueAtTime(.0001,now);g.gain.exponentialRampToValueAtTime(.075,now+.7);g.gain.exponentialRampToValueAtTime(.0001,now+3.4);o.connect(g).connect(pan).connect(musicMaster);o.start(now);o.stop(now+3.5);}},3100);
 }
 function unlockAudio(){
   if(audioUnlocked){document.querySelector('#audioGate').classList.add('hidden');return;}
@@ -367,7 +396,7 @@ document.querySelector('#enterGameBtn').addEventListener('click',unlockAudio);
 document.addEventListener('WeixinJSBridgeReady',()=>{dangerAudio.load();if(audio)audio.resume().catch(()=>{});},{once:true});
 function start(){
   const mode=difficulties[selectedCharacter];runLength=mode.length;exitZ=18-runLength;distance=runLength;gate.position.z=exitZ;beacon.position.z=exitZ+2;gateBeam.position.z=exitZ;gateSign.position.z=exitZ+1;guidePosts.forEach(post=>post.visible=post.position.z>exitZ+18);scene.fog.density=mode.fog;scene.background.set(selectedCharacter==='orange'?0xaeba88:selectedCharacter==='yellow'?0x9daa7c:0x77806a);
-  state='playing'; elapsed=0; stamina=100;exhausted=false; hunterSpeed=7.5; lastLine=-1;speedLevel=0;nextTerrorFlash=mode.flashMin+Math.random()*mode.flashRange;document.body.classList.remove('exhausted','enemy-near','terror-flash','difficulty-easy','difficulty-normal','difficulty-hard');document.body.classList.add(selectedCharacter==='orange'?'difficulty-easy':selectedCharacter==='yellow'?'difficulty-normal':'difficulty-hard');ui.distance.textContent=runLength+'m';
+  state='playing'; elapsed=0; stamina=100;exhausted=false; hunterSpeed=7.5; lastLine=-1;speedLevel=0;nextTerrorFlash=mode.flashMin+Math.random()*mode.flashRange;nextHaunt=5+Math.random()*6;clearTimeout(hauntTimer);watchers.forEach(w=>w.visible=false);document.body.classList.remove('exhausted','enemy-near','terror-flash','flash-negative','apparition','blackout','blood-flash','heartbeat','otherworld','difficulty-easy','difficulty-normal','difficulty-hard');document.body.classList.add(selectedCharacter==='orange'?'difficulty-easy':selectedCharacter==='yellow'?'difficulty-normal':'difficulty-hard');ui.distance.textContent=runLength+'m';
   player.position.set(0,.05,18);player.rotation.set(0,0,0);storyStage=0;activeChasers=[];allEnemies.forEach(e=>e.visible=false);[...snakes,...treeEnemies].forEach(e=>e.visible=true);
   bloodEffects.splice(0).forEach(f=>scene.remove(f.group));
   herdCows.forEach((c,i)=>{c.position.copy(c.userData.start);c.rotation.set(0,0,0);c.visible=c.position.z>exitZ;c.userData.active=false;c.userData.eaten=false;c.userData.escaped=false;c.userData.announced=false;const e=ambushers[i];e.position.copy(e.userData.start);e.rotation.set(0,0,0);e.visible=false;e.userData.disabled=i>=mode.ambushers;e.userData.feeding=0;e.userData.joined=false;});
@@ -376,7 +405,7 @@ function start(){
   dangerAudio.pause();dangerAudio.currentTime=0;dangerAudio.volume=.95;dangerLatched=false;sound(55,.8,'sawtooth',.08);startMusic();setTimeout(()=>say(`${difficulties[selectedCharacter].name}难度。跑，别回头。`),500);
 }
 function end(win){
-  state=win?'win':'caught';recordScore(win);document.body.classList.remove('playing','exhausted','enemy-near');ui.result.classList.add('show');
+  state=win?'win':'caught';recordScore(win);clearTimeout(hauntTimer);watchers.forEach(w=>w.visible=false);document.body.classList.remove('playing','exhausted','enemy-near','terror-flash','flash-negative','apparition','blackout','blood-flash','heartbeat','otherworld');ui.result.classList.add('show');
   ui.eyebrow.textContent=win?'你找到了出口':'逃亡终止';ui.title.textContent=win?'门后还是草原。':'牛来，回家。';
   const runDistance=Math.max(0,Math.min(runLength,Math.round(18-player.position.z))),exactTime=formatTime(Math.round(elapsed*1000));
   ui.resultText.innerHTML=win?`逃出距离 ${runDistance} 米 · 用时 ${exactTime}<br>远处，又传来了妈妈的声音。`:`本次逃出 ${runDistance} 米 · 坚持 ${exactTime}<br>这一次，它们追上你了。`;
@@ -396,7 +425,7 @@ document.querySelector('#closeInstallBtn').onclick=()=>{installHint.classList.re
 addEventListener('appinstalled',()=>{deferredInstallPrompt=null;installBtn.classList.add('installed');installBtn.querySelector('span').textContent='已经安装';});
 document.querySelector('#changeBtn').onclick=()=>{
   stopMusic();state='intro';document.body.classList.remove('playing');ui.result.classList.remove('show');ui.intro.classList.remove('hidden');
-  document.body.classList.remove('exhausted','enemy-near');
+  clearTimeout(hauntTimer);watchers.forEach(w=>w.visible=false);document.body.classList.remove('exhausted','enemy-near','terror-flash','flash-negative','apparition','blackout','blood-flash','heartbeat','otherworld');
   player.position.set(0,.05,18);player.rotation.set(0,0,0);storyStage=0;activeChasers=[];allEnemies.forEach(e=>e.visible=false);hunterGlow.visible=false;
 };
 document.querySelectorAll('.character').forEach(button=>button.addEventListener('click',()=>{
@@ -423,9 +452,10 @@ joystickEl.addEventListener('pointerup',resetJoystick);joystickEl.addEventListen
 
 function glitch(){document.body.classList.add('glitch');sound(48,.1,'square',.03);setTimeout(()=>document.body.classList.remove('glitch'),80+Math.random()*160);}
 function terrorFlash(){
-  document.body.classList.remove('terror-flash');void document.body.offsetWidth;document.body.classList.add('terror-flash');
-  shake=Math.max(shake,.3);sound(Math.random()>.5?34:58,.38,'sawtooth',.06);
-  setTimeout(()=>document.body.classList.remove('terror-flash'),620);
+  const messages=['不要回头','它在你后面','这里没有出口','你已经死过一次','妈妈不在这里'];
+  document.querySelector('.horror-overlay span').textContent=messages[Math.floor(Math.random()*messages.length)];document.body.classList.remove('terror-flash','flash-negative');void document.body.offsetWidth;document.body.classList.add('terror-flash');if(Math.random()>.48)document.body.classList.add('flash-negative');
+  shake=Math.max(shake,.65);horrorSound(Math.random()>.5?1:2);
+  setTimeout(()=>document.body.classList.remove('terror-flash','flash-negative'),840);
 }
 function bloodyAttack(cow,enemy){
   const victim=enemy.userData.herdIndex||0;cow.userData.eaten=true;cow.rotation.z=Math.PI/2;cow.position.y=.42;enemy.userData.feeding=2.8;shake=.8;terrorFlash();say(herdCaughtLines[victim%herdCaughtLines.length],2500);
@@ -481,6 +511,7 @@ function tick(){
   if(state==='playing'){
     elapsed+=dt;
     if(elapsed>=nextTerrorFlash){const mode=difficulties[selectedCharacter];terrorFlash();nextTerrorFlash=elapsed+mode.flashMin+Math.random()*mode.flashRange;}
+    if(elapsed>=nextHaunt){triggerHaunt();const fear=selectedCharacter==='leopard'?4:selectedCharacter==='yellow'?6:8;nextHaunt=elapsed+fear+Math.random()*8;}
     // 镜头面向世界 +Z：世界 +X 投影到屏幕左侧，世界 +Z 投影到屏幕上方。
     // 因此键盘与摇杆都严格按屏幕方向换算，W/A/S/D 分别就是上/左/下/右。
     let x=(keys.KeyA||keys.ArrowLeft?1:0)-(keys.KeyD||keys.ArrowRight?1:0)-joystick.x;
@@ -521,11 +552,13 @@ function tick(){
       if(d<(enemy.userData.type==='car'?6.2:3.3)){shake=1;document.body.classList.add('hit');setTimeout(()=>document.body.classList.remove('hit'),400);end(false);}
     }
     if(monsterCar.visible)hunterGlow.position.set(monsterCar.position.x,4,monsterCar.position.z-3);
+    industrialLights.forEach((lamp,i)=>lamp.intensity=(document.body.classList.contains('otherworld')?42:12)*(Math.sin(t*(3.5+i*.17)+i*2)>0.45?1:0));
     const nextSpeedLevel=Math.floor(elapsed/12);if(nextSpeedLevel>speedLevel){speedLevel=nextSpeedLevel;say(`敌人速度提升 · ${speedLevel+1}级`,1800);sound(96+speedLevel*18,.32,'square',.055);}
     for(const snake of snakes){snake.userData.segments.forEach((s,i)=>s.position.x=Math.sin(t*2+i*.72)*1.4);const d=Math.hypot(player.position.x-snake.position.x,player.position.z-snake.position.z);nearest=Math.min(nearest,d);if(d<4.2){stamina=Math.max(0,stamina-55*difficulty.hazard*dt);player.position.x+=(player.position.x-snake.position.x)*dt*2.5;shake=.28;if(stamina<=0)end(false);}}
     for(const tree of treeEnemies){tree.userData.arms.forEach((a,i)=>a.rotation.z+=(i?1:-1)*dt*.45);const d=Math.hypot(player.position.x-tree.position.x,player.position.z-tree.position.z);nearest=Math.min(nearest,d);if(d<5.2){stamina=Math.max(0,stamina-38*difficulty.hazard*dt);shake=.2;if(stamina<=0)end(false);}}
+    document.body.classList.toggle('heartbeat',nearest<15);if(radioGain&&audio)radioGain.gain.setTargetAtTime(nearest<45?THREE.MathUtils.mapLinear(Math.max(6,nearest),6,45,.22,.012):.002,audio.currentTime,.08);
     if(nearest<26&&!dangerLatched){
-      dangerLatched=true;document.body.classList.add('enemy-near');dangerAudio.currentTime=0;dangerAudio.play().catch(()=>{});
+      dangerLatched=true;document.body.classList.add('enemy-near');dangerAudio.currentTime=0;dangerAudio.play().catch(()=>{});terrorFlash();
       if(musicMaster){musicMaster.gain.cancelScheduledValues(audio.currentTime);musicMaster.gain.setTargetAtTime(.065,audio.currentTime,.12);}
     }else if(nearest>34&&dangerLatched){
       dangerLatched=false;document.body.classList.remove('enemy-near');if(musicMaster){musicMaster.gain.cancelScheduledValues(audio.currentTime);musicMaster.gain.setTargetAtTime(.19,audio.currentTime,.3);}
@@ -544,6 +577,7 @@ function tick(){
     : new THREE.Vector3(player.position.x*(narrow?.86:.74)+(narrow?.8:2.2),narrow?24:19,player.position.z-(narrow?13:18));
   camera.position.lerp(desired,1-Math.pow(.001,dt));
   if(shake>0){camera.position.x+=(Math.random()-.5)*shake;camera.position.y+=(Math.random()-.5)*shake;shake*=.88;}
+  const panic=state==='playing'?(dangerLatched?Math.sin(t*7)*1.25:Math.sin(t*.7)*.22):0;if(Math.abs(camera.fov-(66+panic))>.02){camera.fov=66+panic;camera.updateProjectionMatrix();}
   if(state==='intro')camera.lookAt(player.position.x,2.5,player.position.z);
   else camera.lookAt(player.position.x,narrow?1.2:1.8,player.position.z+(narrow?5:8));
   renderer.render(scene,camera);
