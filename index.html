@@ -31,11 +31,12 @@
         <p><span data-i18n="gate.description">雾里有东西在等你。选好角色以后，不要停下，也不要回头。</span><br><small data-i18n="gate.flashWarning">警告：游戏含强烈但低频率的闪屏与惊吓画面。</small></p>
         <div class="copyright"><span data-i18n="gate.copyright">版权声明</span><br><a href="http://www.ff18.com" target="_blank" rel="noopener">www.ff18.com</a>　/　白河愁</div>
         <button id="enterGameBtn"><span data-i18n="gate.enter">进入</span><small>→</small></button>
-        <div class="gate-version">VERSION <b>20260821.3</b></div>
+        <div class="gate-version">VERSION <b>20260821.4</b></div>
       </div>
     </section>
 
     <div class="noise"></div>
+    <div class="weather-rain" aria-hidden="true"></div><div class="weather-snow" aria-hidden="true"></div>
     <div class="horror-overlay" aria-hidden="true"><i class="left-eye"></i><i class="right-eye"></i><span></span></div>
     <header class="hud" id="hud">
       <div class="brand"><b>牛来</b><span data-i18n="brand.subtitle">草原大逃亡</span></div>
@@ -51,6 +52,8 @@
     </aside>
 
     <div class="subtitle" id="subtitle"></div>
+    <div class="chapter-banner" id="chapterBanner" aria-live="polite"><small id="chapterNumber"></small><strong id="chapterTitle"></strong><span id="chapterDescription"></span></div>
+    <div class="npc-bubbles" id="npcBubbles" aria-live="polite"></div>
     <div class="warning" id="warning" data-i18n="hud.seen">它看见你了</div>
     <div class="state-layer danger-state"><span data-i18n="hud.behind">后面有东西</span></div>
     <div class="state-layer exhausted-state"><span data-i18n="hud.exhausted">腿不听使唤了</span></div>
@@ -83,7 +86,7 @@
         <div class="controls"><strong data-i18n="menu.desktop">电脑操作</strong><span class="key-group"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span><em data-i18n="menu.move">移动</em><span class="key-group"><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></span><em data-i18n="menu.alsoMove">也可移动</em><kbd class="wide-key">SHIFT</kbd><em data-i18n="menu.sprint">按住加速爬行，松开恢复体力</em></div>
       </div>
       <div class="stamp"><span data-i18n="menu.survive">生存</span><br /><span data-i18n="menu.escape">逃亡</span></div>
-      <div class="credits">© <a href="http://www.ff18.com" target="_blank" rel="noopener">ff18.com</a> / 白河愁　<span data-i18n="menu.version">版本</span>：20260821.3</div>
+      <div class="credits">© <a href="http://www.ff18.com" target="_blank" rel="noopener">ff18.com</a> / 白河愁　<span data-i18n="menu.version">版本</span>：20260821.4</div>
     </section>
 
     <section class="scoreboard" id="installHint" aria-hidden="true">
