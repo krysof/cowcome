@@ -98,8 +98,9 @@ button { border:0; font:inherit; cursor:pointer; }
 .intro button,.result button { margin-top:22px; width:250px; padding:16px 18px; display:flex; justify-content:space-between; color:var(--ink); background:var(--acid); font-weight:900; letter-spacing:.18em; box-shadow:7px 7px 0 #000; transition:.15s; }
 .intro button:hover,.result button:hover { transform:translate(3px,3px); box-shadow:4px 4px 0 #000; }
 .intro button small,.result button small { opacity:.5; }
-.controls { margin-top:25px; font-size:10px; letter-spacing:.1em; opacity:.55; }
-.controls b { color:var(--acid); }
+.controls { margin-top:20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:10px;letter-spacing:.08em;opacity:.78; }
+.controls strong{margin-right:3px;color:#76231d;font-size:9px;letter-spacing:.18em}.controls em{font-style:normal;opacity:.7}.key-group{display:inline-flex;gap:3px}
+.controls kbd{min-width:25px;height:25px;padding:0 5px;display:inline-grid;place-items:center;border:1px solid #202925;border-bottom-width:3px;border-radius:3px;color:#eee9dc;background:#202925;font:800 10px/1 monospace;box-shadow:0 2px 0 #842a21}.controls kbd.wide-key{min-width:58px}
 .stamp { position:absolute; right:7vw; bottom:12vh; width:100px; height:100px; border:4px double #ff553c; color:#ff553c; display:grid; place-items:center; text-align:center; font-weight:900; font-size:21px; line-height:1.15; transform:rotate(12deg); border-radius:50%; opacity:.75; }
 .credits { position:absolute; bottom:25px; right:30px; font:9px monospace; opacity:.55; }
 .intro{background:#e8e3d3;color:#161a17;isolation:isolate}
