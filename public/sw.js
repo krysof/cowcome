@@ -1,4 +1,4 @@
-const CACHE='niulai-20260820-20';
+const CACHE='niulai-20260820-21';
 const ROOT=new URL('./',self.location.href);
 const CORE=['./','manifest.webmanifest','game-core.wasm','icons/niulai-v2-192.png','icons/niulai-v2-512.png','icons/niulai-v2-maskable-512.png','icons/apple-touch-icon-v2.png','portraits/orange-niulai.png','portraits/yellow-bull.png','portraits/leopard.png','audio/enemy-near.mp3'].map(path=>new URL(path,ROOT).href);
 

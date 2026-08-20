@@ -95,6 +95,7 @@ for(let i=0;i<18;i++){
   mesh(new THREE.CircleGeometry(1,10),i%3?puddleMat:mudMat,scene,x,.035,z,[rx,rz,1],[-Math.PI/2,0,Math.random()*Math.PI]);
 }
 
+const obstacles=[];
 // 废弃隔离区：锈蚀铁网、路障和忽明忽暗的红色警示灯，让草原逐渐变成“里世界”。
 const rustMat=flat(0x4b2d24),wireMat=new THREE.MeshBasicMaterial({color:0x31251f,transparent:true,opacity:.78}),industrialLights=[];
 for(let i=0;i<18;i++){
@@ -102,10 +103,10 @@ for(let i=0;i<18;i++){
   for(const px of [-3,0,3])mesh(new THREE.CylinderGeometry(.09,.12,4.5,5),rustMat,fence,px,2.2,0);
   for(let y=.45;y<4.3;y+=.55)mesh(new THREE.BoxGeometry(6.2,.025,.025),wireMat,fence,0,y,0);
   mesh(new THREE.BoxGeometry(6.2,.11,.11),rustMat,fence,0,4.2,0,[1,1,1],[0,0,.08*side]);
-  fence.position.set(x,0,z);fence.rotation.y=side>0?-.2:.2;scene.add(fence);
+  fence.position.set(x,0,z);fence.rotation.y=side>0?-.2:.2;fence.userData.collisionRadius=3.2;obstacles.push(fence);scene.add(fence);
   if(i%3===0){const lamp=new THREE.PointLight(0xb90b05,0,28,2.2);lamp.position.set(x,5,z);scene.add(lamp);industrialLights.push(lamp);mesh(new THREE.SphereGeometry(.19,6,4),new THREE.MeshBasicMaterial({color:0xff1608,fog:false}),fence,0,5,0);}
 }
-for(let i=0;i<7;i++){const z=-78-i*79,barrier=new THREE.Group();mesh(new THREE.BoxGeometry(6,.55,.65),rustMat,barrier,0,.7,0,[1,1,1],[0,0,i%2?.08:-.08]);for(const x of [-2.3,2.3])mesh(new THREE.BoxGeometry(.35,1.7,.5),rustMat,barrier,x,.7,0);barrier.position.set((i%2?1:-1)*(9+Math.random()*5),0,z);barrier.rotation.y=(Math.random()-.5)*.5;scene.add(barrier);}
+for(let i=0;i<7;i++){const z=-78-i*79,barrier=new THREE.Group();mesh(new THREE.BoxGeometry(6,.55,.65),rustMat,barrier,0,.7,0,[1,1,1],[0,0,i%2?.08:-.08]);for(const x of [-2.3,2.3])mesh(new THREE.BoxGeometry(.35,1.7,.5),rustMat,barrier,x,.7,0);barrier.position.set((i%2?1:-1)*(9+Math.random()*5),0,z);barrier.rotation.y=(Math.random()-.5)*.5;barrier.userData.collisionRadius=3.3;obstacles.push(barrier);scene.add(barrier);}
 
 function makeRoundTree(scale=1){
   const g=new THREE.Group(),wood=flat(0x494331),leafA=flat(0x283f31),leafB=flat(0x3d5039),h=4+Math.random()*3;
@@ -113,7 +114,7 @@ function makeRoundTree(scale=1){
   const crowns=5+Math.floor(Math.random()*5);for(let i=0;i<crowns;i++){const a=i/crowns*Math.PI*2,r=i?1+Math.random()*1.1:0;mesh(new THREE.DodecahedronGeometry(.85+Math.random()*.55,0),i%2?leafA:leafB,g,Math.cos(a)*r,h+Math.sin(i*1.7)*.65,Math.sin(a)*r,[1,.9+Math.random()*.5,1]);}
   g.scale.setScalar(scale);return g;
 }
-for(let i=0;i<34;i++){const t=makeRoundTree(.75+Math.random()*.8),side=i%2?1:-1;t.position.set(side*(24+Math.random()*38),0,20-Math.random()*660);t.rotation.y=Math.random()*Math.PI;scene.add(t);}
+for(let i=0;i<34;i++){const scale=.75+Math.random()*.8,t=makeRoundTree(scale),side=i%2?1:-1;t.position.set(side*(24+Math.random()*38),0,20-Math.random()*660);t.rotation.y=Math.random()*Math.PI;t.userData.collisionRadius=1.2*scale;obstacles.push(t);scene.add(t);}
 function makeNiuLai(scale=1, dark=false){
   const g=new THREE.Group();
   const fur=flat(dark?0x342019:0xe97837), muzzle=flat(dark?0x84624e:0xf2d3a0);
@@ -275,7 +276,7 @@ const hunterGlow=new THREE.PointLight(0xff2b16,22,24); hunterGlow.position.set(0
 const enemyConfigs=[[-24,-85,'alien'],[27,-125,'beast'],[-29,-175,'beast'],[25,-225,'alien'],[-24,-275,'beast'],[22,-325,'alien'],[-28,-375,'beast'],[26,-425,'alien'],[-25,-485,'beast'],[24,-545,'alien']];
 const stalkers=enemyConfigs.map(([x,z,type],i)=>{const e=type==='alien'?makeAlienCow(.9,i%2):makeDarkBeast(.72);e.position.set(x,.05,z);e.userData.home=new THREE.Vector3(x,.05,z);e.userData.speed=type==='alien'?5.2:6.1;e.userData.type=type;scene.add(e);return e;});
 const snakes=[[-11,-120],[17,-305],[-14,-505]].map(([x,z])=>{const s=makeSnake(.82);s.position.set(x,0,z);s.rotation.y=Math.PI/2;scene.add(s);return s;});
-const treeEnemies=[[-18,-210],[16,-405]].map(([x,z])=>{const t=makeTreeEnemy(1.25);t.position.set(x,0,z);scene.add(t);return t;});
+const treeEnemies=[[-18,-210],[16,-405]].map(([x,z])=>{const t=makeTreeEnemy(1.25);t.position.set(x,0,z);t.userData.collisionRadius=3.15;obstacles.push(t);scene.add(t);return t;});
 const monsterCar=makeMonsterCar(.88);monsterCar.position.set(0,0,80);scene.add(monsterCar);
 const herdSpawns=[[-7,-72],[8,-148],[-5,-224],[9,-306],[-8,-392],[6,-478],[-4,-558]];
 const herdCows=herdSpawns.map(([x,z],i)=>{const c=makeHerdCow(.72+(i%2)*.08);c.position.set(x,.05,z);c.userData.start=new THREE.Vector3(x,.05,z);scene.add(c);return c;});
@@ -285,8 +286,7 @@ const strangeTravellers=[makeNiuLai(.48,false),makeYellowBull(.43),makeLeopard(.
 const strangeBirds=Array.from({length:18},(_,i)=>{const b=makeStrangeBird(.42+Math.random()*.22);b.position.set((Math.random()-.5)*55,9+Math.random()*14,10-Math.random()*100);b.userData.phase=Math.random()*Math.PI*2;b.userData.speed=4+Math.random()*5;scene.add(b);return b;});
 const allEnemies=[...wolfPack,...stalkers,...snakes,...treeEnemies,...ambushers,monsterCar];allEnemies.forEach(e=>e.visible=false);hunterGlow.visible=false;
 
-const obstacles=[];
-function addRock(x,z,s=1){const r=mesh(new THREE.DodecahedronGeometry(1.5,0),flat(Math.random()>.5?0x4a4b3b:0x675e49),scene,x,s*.8,z,[s,s,s]);obstacles.push(r);}
+function addRock(x,z,s=1){const r=mesh(new THREE.DodecahedronGeometry(1.5,0),flat(Math.random()>.5?0x4a4b3b:0x675e49),scene,x,s*.8,z,[s,s,s]);r.userData.collisionRadius=1.35*s;obstacles.push(r);}
 for(let z=4;z>-610;z-=12+Math.random()*10){
   const side=Math.random()>.5?1:-1; addRock(side*(8+Math.random()*41),z,.7+Math.random()*2.2);
   if(Math.random()>.62)addRock(-side*(12+Math.random()*35),z-3,.6+Math.random()*1.5);
@@ -294,7 +294,7 @@ for(let z=4;z>-610;z-=12+Math.random()*10){
 // crooked black monoliths make landmarks and occlusion
 for(let z=-65;z>-570;z-=85){
   const x=(Math.random()-.5)*55;
-  const p=mesh(new THREE.BoxGeometry(4,16+Math.random()*14,3),flat(0x26251f),scene,x,6,z,[1,1,1],[0,0,(Math.random()-.5)*.25]); obstacles.push(p);
+  const p=mesh(new THREE.BoxGeometry(4,16+Math.random()*14,3),flat(0x26251f),scene,x,6,z,[1,1,1],[0,0,(Math.random()-.5)*.25]);p.userData.collisionRadius=2.6;obstacles.push(p);
 }
 
 // destination arch
@@ -321,7 +321,7 @@ for(let i=0;i<92;i++){
     const side=b%2?1:-1,len=.58+Math.random()*.52,y=h*(.48+b*.13+Math.random()*.08);
     mesh(branchGeo,deadTreeMat,t,side*(.45+Math.random()*.3),y,0,[len,len,len],[0,0,side*(-.72-Math.random()*.42)]);
   }
-  const nearRoute=i<24,side=nearRoute?(i%2?1:-1):(Math.random()>.5?1:-1);t.position.set(side*(nearRoute?18+(i%4)*5:15+Math.random()*48),0,nearRoute?18-i*28:24-Math.random()*670);t.rotation.y=Math.random()*Math.PI;scene.add(t);
+  const nearRoute=i<24,side=nearRoute?(i%2?1:-1):(Math.random()>.5?1:-1);t.position.set(side*(nearRoute?18+(i%4)*5:15+Math.random()*48),0,nearRoute?18-i*28:24-Math.random()*670);t.rotation.y=Math.random()*Math.PI;t.userData.collisionRadius=.75+Math.min(h,12)*.045;obstacles.push(t);scene.add(t);
 }
 
 // 雨幕跟随玩家移动，避免跑远后雨点变稀；用线段保持低端手机也能流畅。
@@ -347,7 +347,7 @@ function makeWatcher(){const g=new THREE.Group(),voidMat=new THREE.MeshBasicMate
 const watchers=Array.from({length:4},makeWatcher);
 
 const keys={}, joystick={x:0,y:0}, clock=new THREE.Clock();
-let state='intro', stamina=100, exhausted=false, runLength=430, exitZ=-412, distance=430, hunterSpeed=7.5, elapsed=0, lastLine=-1, shake=0, audio, musicMaster, radioGain, musicNodes=[], musicTimer, storyStage=0, snowStage=0, snowBlend=0, activeChasers=[], speedLevel=0, nextTerrorFlash=9,nextHaunt=6,hauntTimer;
+let state='intro', stamina=100, exhausted=false, runLength=430, exitZ=-412, distance=430, hunterSpeed=7.5, elapsed=0, lastLine=-1, shake=0, audio, musicMaster, radioGain, musicNodes=[], musicTimer, storyStage=0, snowStage=0, snowBlend=0, activeChasers=[], speedLevel=0, nextTerrorFlash=9,nextHaunt=6,hauntTimer,deathElapsed=0,deathAttacker=null,deathReason='',nextDeathBlood=0,lastCollisionSound=-99;
 const bloodEffects=[];
 const lines=[
   [25,'妈妈说：别招惹草蛇。'],[80,'云雀：狼群正在靠近。'],[145,'豹拉：你们先走，我来引开它们。'],
@@ -408,7 +408,7 @@ document.addEventListener('WeixinJSBridgeReady',()=>{dangerAudio.load();titleCry
 function start(){
   titleCryAudio.pause();titleCryAudio.currentTime=0;document.body.classList.remove('title-cry');
   const mode=difficulties[selectedCharacter];runLength=mode.length;exitZ=18-runLength;distance=runLength;gate.position.z=exitZ;beacon.position.z=exitZ+2;gateBeam.position.z=exitZ;gateSign.position.z=exitZ+1;guidePosts.forEach(post=>post.visible=post.position.z>exitZ+18);scene.fog.density=mode.fog;scene.background.set(selectedCharacter==='orange'?0xaeba88:selectedCharacter==='yellow'?0x9daa7c:0x77806a);
-  state='playing'; elapsed=0; stamina=100;exhausted=false; hunterSpeed=7.5; lastLine=-1;speedLevel=0;snowStage=0;snowBlend=0;snow.visible=false;snow.material.opacity=0;snowGhost.visible=false;nextTerrorFlash=mode.flashMin+Math.random()*mode.flashRange;nextHaunt=5+Math.random()*6;clearTimeout(hauntTimer);watchers.forEach(w=>w.visible=false);document.body.classList.remove('exhausted','enemy-near','terror-flash','flash-negative','apparition','blackout','blood-flash','heartbeat','otherworld','snow-haunting','difficulty-easy','difficulty-normal','difficulty-hard');document.body.classList.add(selectedCharacter==='orange'?'difficulty-easy':selectedCharacter==='yellow'?'difficulty-normal':'difficulty-hard');ui.distance.textContent=runLength+'m';
+  state='playing'; elapsed=0; stamina=100;exhausted=false; hunterSpeed=7.5; lastLine=-1;speedLevel=0;deathElapsed=0;deathAttacker=null;deathReason='';nextDeathBlood=0;snowStage=0;snowBlend=0;snow.visible=false;snow.material.opacity=0;snowGhost.visible=false;nextTerrorFlash=mode.flashMin+Math.random()*mode.flashRange;nextHaunt=5+Math.random()*6;clearTimeout(hauntTimer);watchers.forEach(w=>w.visible=false);document.body.classList.remove('death-maul','exhausted','enemy-near','terror-flash','flash-negative','apparition','blackout','blood-flash','heartbeat','otherworld','snow-haunting','difficulty-easy','difficulty-normal','difficulty-hard');document.body.classList.add(selectedCharacter==='orange'?'difficulty-easy':selectedCharacter==='yellow'?'difficulty-normal':'difficulty-hard');ui.distance.textContent=runLength+'m';
   player.position.set(0,.05,18);player.rotation.set(0,0,0);storyStage=0;activeChasers=[];allEnemies.forEach(e=>e.visible=false);[...snakes,...treeEnemies].forEach(e=>e.visible=true);
   bloodEffects.splice(0).forEach(f=>scene.remove(f.group));
   herdCows.forEach((c,i)=>{c.position.copy(c.userData.start);c.rotation.set(0,0,0);c.visible=c.position.z>exitZ;c.userData.active=false;c.userData.eaten=false;c.userData.escaped=false;c.userData.announced=false;const e=ambushers[i];e.position.copy(e.userData.start);e.rotation.set(0,0,0);e.visible=false;e.userData.disabled=i>=mode.ambushers;e.userData.feeding=0;e.userData.joined=false;});
@@ -417,10 +417,10 @@ function start(){
   dangerAudio.pause();dangerAudio.currentTime=0;dangerAudio.volume=.95;dangerLatched=false;sound(55,.8,'sawtooth',.08);startMusic();setTimeout(()=>say(`${difficulties[selectedCharacter].name}难度。跑，别回头。`),500);
 }
 function end(win){
-  state=win?'win':'caught';recordScore(win);clearTimeout(hauntTimer);watchers.forEach(w=>w.visible=false);snowGhost.visible=false;snow.visible=false;document.body.classList.remove('playing','exhausted','enemy-near','terror-flash','flash-negative','apparition','blackout','blood-flash','heartbeat','otherworld','snow-haunting');ui.result.classList.add('show');
-  ui.eyebrow.textContent=win?'你找到了出口':'逃亡终止';ui.title.textContent=win?'门后还是草原。':'牛来，回家。';
+  state=win?'win':'caught';recordScore(win);clearTimeout(hauntTimer);watchers.forEach(w=>w.visible=false);snowGhost.visible=false;snow.visible=false;document.body.classList.remove('playing','death-maul','exhausted','enemy-near','terror-flash','flash-negative','apparition','blackout','blood-flash','heartbeat','otherworld','snow-haunting');ui.result.classList.add('show');
+  ui.eyebrow.textContent=win?'你找到了出口':'死亡确认';ui.title.textContent=win?'门后还是草原。':'你已经死亡';
   const runDistance=Math.max(0,Math.min(runLength,Math.round(18-player.position.z))),exactTime=formatTime(Math.round(elapsed*1000));
-  ui.resultText.innerHTML=win?`逃出距离 ${runDistance} 米 · 用时 ${exactTime}<br>远处，又传来了妈妈的声音。`:`本次逃出 ${runDistance} 米 · 坚持 ${exactTime}<br>这一次，它们追上你了。`;
+  ui.resultText.innerHTML=win?`逃出距离 ${runDistance} 米 · 用时 ${exactTime}<br>远处，又传来了妈妈的声音。`:`本次逃出 ${runDistance} 米 · 坚持 ${exactTime}<br>${deathReason||'它们扑倒牛来，在雨里撕咬了很久。'}`;
   dangerAudio.pause();dangerAudio.currentTime=0;dangerLatched=false;stopMusic();sound(win?220:38,1.5,'sawtooth',.1);
 }
 document.querySelector('#startBtn').onclick=start;document.querySelector('#restartBtn').onclick=start;
@@ -469,6 +469,13 @@ function terrorFlash(){
   document.querySelector('.horror-overlay span').textContent=messages[Math.floor(Math.random()*messages.length)];document.body.classList.remove('terror-flash','flash-negative');void document.body.offsetWidth;document.body.classList.add('terror-flash');if(Math.random()>.48)document.body.classList.add('flash-negative');
   shake=Math.max(shake,.65);horrorSound(Math.random()>.5?1:2);
   setTimeout(()=>document.body.classList.remove('terror-flash','flash-negative'),840);
+}
+function spawnBloodBurst(x,z,amount=22){
+  const group=new THREE.Group(),red=flat(0x9d0805),darkRed=flat(0x300000);const pool=mesh(new THREE.CircleGeometry(1.85,10),darkRed,group,0,.025,0,[1,.72,1],[-Math.PI/2,0,Math.random()*Math.PI]);pool.castShadow=false;const drops=[];
+  for(let i=0;i<amount;i++){const d=mesh(new THREE.DodecahedronGeometry(.08+Math.random()*.16,0),red,group,0,.7,0);d.userData.velocity=new THREE.Vector3((Math.random()-.5)*7,2+Math.random()*6,(Math.random()-.5)*7);drops.push(d);}group.position.set(x,0,z);scene.add(group);bloodEffects.push({group,drops,age:0});
+}
+function beginPlayerDeath(attacker,reason){
+  if(state!=='playing')return;state='dying';deathElapsed=0;nextDeathBlood=.15;deathAttacker=attacker;deathReason=reason;document.body.classList.add('death-maul','enemy-near');ui.warning.classList.remove('show');ui.mission.textContent='它们已经抓住你了。';say('牛来被扑倒了。它们正在撕咬。',2700);terrorFlash();spawnBloodBurst(player.position.x,player.position.z,28);sound(25,1.1,'sawtooth',.16);shake=1.4;
 }
 function bloodyAttack(cow,enemy){
   const victim=enemy.userData.herdIndex||0;cow.userData.eaten=true;cow.rotation.z=Math.PI/2;cow.position.y=.42;enemy.userData.feeding=2.8;shake=.8;terrorFlash();say(herdCaughtLines[victim%herdCaughtLines.length],2500);
@@ -522,6 +529,12 @@ function tick(){
     const flap=.5+Math.abs(Math.sin(t*(7+i%4)+b.userData.phase))*1.05;b.userData.wings[0].rotation.z=flap;b.userData.wings[1].rotation.z=-flap;
   });
   bloodEffects.forEach(f=>{f.age+=dt;f.drops.forEach(d=>{if(d.position.y>.06||d.userData.velocity.y>0){d.position.addScaledVector(d.userData.velocity,dt);d.userData.velocity.y-=12*dt;if(d.position.y<.05){d.position.y=.05;d.userData.velocity.set(0,0,0);}}});});
+  if(state==='dying'){
+    deathElapsed+=dt;player.rotation.z=THREE.MathUtils.lerp(player.rotation.z,Math.PI/2,.16);player.position.y=THREE.MathUtils.lerp(player.position.y,.48,.12);shake=Math.max(shake,.35+Math.abs(Math.sin(t*15))*.45);
+    if(deathAttacker){deathAttacker.position.x=THREE.MathUtils.lerp(deathAttacker.position.x,player.position.x,.08);deathAttacker.position.z=THREE.MathUtils.lerp(deathAttacker.position.z,player.position.z+1.15,.08);deathAttacker.position.y=.05+Math.abs(Math.sin(t*12))*.24;deathAttacker.rotation.y=Math.PI;deathAttacker.userData.arms?.forEach((a,i)=>a.rotation.x=Math.sin(t*14+i*Math.PI)*.7);deathAttacker.userData.legs?.forEach((l,i)=>l.rotation.x=Math.sin(t*14+i*Math.PI)*.55);}
+    if(deathElapsed>=nextDeathBlood){nextDeathBlood+=.48;spawnBloodBurst(player.position.x+(Math.random()-.5)*.7,player.position.z+(Math.random()-.5)*.7,8);sound(28+Math.random()*18,.18,'sawtooth',.07);}
+    if(deathElapsed>2.75)end(false);
+  }
   if(state==='playing'){
     elapsed+=dt;
     if(elapsed>=nextTerrorFlash){const mode=difficulties[selectedCharacter];terrorFlash();nextTerrorFlash=elapsed+mode.flashMin+Math.random()*mode.flashRange;}
@@ -540,8 +553,9 @@ function tick(){
     }
     if(moving){const len=Math.hypot(x,z);x/=len;z/=len;player.position.x+=x*speed*dt;player.position.z+=z*speed*dt;player.rotation.y=Math.atan2(-x,-z);}
     player.position.x=THREE.MathUtils.clamp(player.position.x,-59,59);player.position.z=Math.min(24,player.position.z);
-    // collision response
-    for(const o of obstacles){const dx=player.position.x-o.position.x,dz=player.position.z-o.position.z;if(dx*dx+dz*dz<8){player.position.x+=dx*dt*5;player.position.z+=dz*dt*5;}}
+    // 树、石头、铁网与路障都使用实体圆形碰撞体，不能再直接穿模。
+    let collided=false;for(const o of obstacles){const radius=(o.userData.collisionRadius||2.1)+1.05,dx=player.position.x-o.position.x,dz=player.position.z-o.position.z,d2=dx*dx+dz*dz;if(d2<radius*radius){const d=Math.max(.001,Math.sqrt(d2)),push=radius-d;player.position.x+=dx/d*push;player.position.z+=dz/d*push;collided=true;}}
+    if(collided&&elapsed-lastCollisionSound>.45){lastCollisionSound=elapsed;sound(72,.12,'square',.035);shake=Math.max(shake,.12);}
     animatePlayer(player,t,Boolean(moving),Boolean(sprint));
     const progress=-player.position.z;updateStoryWave(progress);
     const snowStart=runLength*.34,snowEnd=runLength*.68,snowActive=progress>snowStart&&progress<snowEnd;
@@ -562,7 +576,7 @@ function tick(){
     });
     strangeTravellers.forEach((c,i)=>{if(!c.userData.fleeing&&Math.abs(player.position.z-c.position.z)<72)c.userData.fleeing=true;if(c.userData.fleeing){c.position.z-=(5.6+i*.4)*dt;c.position.x+=Math.sin(t*1.2+i)*dt*.35;animateCow(c,t,9+i);}});
     let nearest=999;
-    if(snowGhost.visible){const ghostV=new THREE.Vector3().subVectors(player.position,snowGhost.position);ghostV.y=0;const ghostD=ghostV.length();nearest=Math.min(nearest,ghostD);snowGhost.position.addScaledVector(ghostV.normalize(),(8.4+elapsed*.018)*difficulty.enemy*dt);snowGhost.position.y=.18+Math.sin(t*2.4)*.28;snowGhost.rotation.y=Math.atan2(-ghostV.x,-ghostV.z);snowGhost.rotation.z=Math.sin(t*3.1)*.035;if(ghostD<2.75){terrorFlash();say('她贴在牛来的背上，冰冷的手捂住了眼睛。',2200);end(false);}}
+    if(snowGhost.visible){const ghostV=new THREE.Vector3().subVectors(player.position,snowGhost.position);ghostV.y=0;const ghostD=ghostV.length();nearest=Math.min(nearest,ghostD);snowGhost.position.addScaledVector(ghostV.normalize(),(8.4+elapsed*.018)*difficulty.enemy*dt);snowGhost.position.y=.18+Math.sin(t*2.4)*.28;snowGhost.rotation.y=Math.atan2(-ghostV.x,-ghostV.z);snowGhost.rotation.z=Math.sin(t*3.1)*.035;if(ghostD<2.75)beginPlayerDeath(snowGhost,'雪中女鬼贴上牛来的后背，随后雾里的怪物围上来撕咬。');}
     for(const enemy of activeChasers){
       const v=new THREE.Vector3().subVectors(player.position,enemy.position);v.y=0;const d=v.length();nearest=Math.min(nearest,d);
       const timeBoost=gameCore.enemy_time_boost(elapsed,enemy.userData.type==='car'?1:0);
@@ -570,13 +584,13 @@ function tick(){
       if(enemy.userData.type!=='car')enemy.position.x+=Math.sin(t*1.8+activeChasers.indexOf(enemy)*1.7)*dt*.65;
       enemy.rotation.y=Math.atan2(-v.x,-v.z);
       if(enemy.userData.type==='car')enemy.userData.wheels.forEach(w=>w.rotation.x+=dt*9);else animateCow(enemy,t,enemy.userData.type==='beast'?13:9);
-      if(d<(enemy.userData.type==='car'?6.2:3.3)){shake=1;document.body.classList.add('hit');setTimeout(()=>document.body.classList.remove('hit'),400);end(false);}
+      if(d<(enemy.userData.type==='car'?6.2:3.3)){shake=1;document.body.classList.add('hit');setTimeout(()=>document.body.classList.remove('hit'),400);beginPlayerDeath(enemy,`${enemy.userData.enemyName||'它们'}把牛来扑倒，咬开皮毛，鲜血混进了雨水。`);}
     }
     if(monsterCar.visible)hunterGlow.position.set(monsterCar.position.x,4,monsterCar.position.z-3);
     industrialLights.forEach((lamp,i)=>lamp.intensity=(document.body.classList.contains('otherworld')?42:12)*(Math.sin(t*(3.5+i*.17)+i*2)>0.45?1:0));
     const nextSpeedLevel=Math.floor(elapsed/12);if(nextSpeedLevel>speedLevel){speedLevel=nextSpeedLevel;say(`敌人速度提升 · ${speedLevel+1}级`,1800);sound(96+speedLevel*18,.32,'square',.055);}
-    for(const snake of snakes){snake.userData.segments.forEach((s,i)=>s.position.x=Math.sin(t*2+i*.72)*1.4);const d=Math.hypot(player.position.x-snake.position.x,player.position.z-snake.position.z);nearest=Math.min(nearest,d);if(d<4.2){stamina=Math.max(0,stamina-55*difficulty.hazard*dt);player.position.x+=(player.position.x-snake.position.x)*dt*2.5;shake=.28;if(stamina<=0)end(false);}}
-    for(const tree of treeEnemies){tree.userData.arms.forEach((a,i)=>a.rotation.z+=(i?1:-1)*dt*.45);const d=Math.hypot(player.position.x-tree.position.x,player.position.z-tree.position.z);nearest=Math.min(nearest,d);if(d<5.2){stamina=Math.max(0,stamina-38*difficulty.hazard*dt);shake=.2;if(stamina<=0)end(false);}}
+    for(const snake of snakes){snake.userData.segments.forEach((s,i)=>s.position.x=Math.sin(t*2+i*.72)*1.4);const d=Math.hypot(player.position.x-snake.position.x,player.position.z-snake.position.z);nearest=Math.min(nearest,d);if(d<4.2){stamina=Math.max(0,stamina-55*difficulty.hazard*dt);player.position.x+=(player.position.x-snake.position.x)*dt*2.5;shake=.28;if(stamina<=0)beginPlayerDeath(snake,'草蛇缠住牛来的四肢，随后赶来的怪物将它扑倒撕咬。');}}
+    for(const tree of treeEnemies){tree.userData.arms.forEach((a,i)=>a.rotation.z+=(i?1:-1)*dt*.45);const d=Math.hypot(player.position.x-tree.position.x,player.position.z-tree.position.z);nearest=Math.min(nearest,d);if(d<5.2){stamina=Math.max(0,stamina-38*difficulty.hazard*dt);shake=.2;if(stamina<=0)beginPlayerDeath(tree,'怪树卡住了牛来。追来的它们扑上去，直到雨水完全变红。');}}
     document.body.classList.toggle('heartbeat',nearest<15);if(radioGain&&audio)radioGain.gain.setTargetAtTime(nearest<45?THREE.MathUtils.mapLinear(Math.max(6,nearest),6,45,.22,.012):.002,audio.currentTime,.08);
     if(nearest<26&&!dangerLatched){
       dangerLatched=true;document.body.classList.add('enemy-near');dangerAudio.currentTime=0;dangerAudio.play().catch(()=>{});terrorFlash();
@@ -585,7 +599,7 @@ function tick(){
       dangerLatched=false;document.body.classList.remove('enemy-near');if(musicMaster){musicMaster.gain.cancelScheduledValues(audio.currentTime);musicMaster.gain.setTargetAtTime(.19,audio.currentTime,.3);}
     }
     if(nearest<18&&!ui.warning.classList.contains('show')){ui.warning.classList.add('show');sound(62,.7,'sawtooth',.08);setTimeout(()=>ui.warning.classList.remove('show'),1200);}
-    if(player.position.z<exitZ+6)end(true);
+    if(state==='playing'&&player.position.z<exitZ+6)end(true);
     distance=Math.max(0,(player.position.z-exitZ));ui.distance.textContent=Math.floor(distance)+'m';ui.stamina.style.width=stamina+'%';
     ui.mission.textContent=distance<180?'发光的出口就在前面！':nearest<16?'敌人靠近。换个方向！':'穿过雾，别回头。';
     lines.forEach((line,i)=>{if(progress>line[0]&&lastLine<i){lastLine=i;say(line[1]);if(i===2||i===5)glitch();}});

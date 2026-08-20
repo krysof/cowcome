@@ -29,10 +29,13 @@ body.snow-haunting .horror-overlay{opacity:.68;background:radial-gradient(ellips
 body.snow-haunting .noise{opacity:.46;mix-blend-mode:screen}
 body.snow-haunting .mission{border-color:#d7eff4;background:linear-gradient(90deg,#07151dde,transparent)}body.snow-haunting .mission span{color:#d7eff4}
 body.heartbeat #game{transform:scale(1.018);filter:blur(1.2px) saturate(var(--game-sat,.72)) brightness(calc(var(--game-light,.9) * .74)) contrast(1.42)}
+body.death-maul .danger-state{opacity:1;background:radial-gradient(circle at 50% 52%,transparent 5%,#630000aa 45%,#150000 100%);mix-blend-mode:multiply;animation:maulPulse .34s ease-in-out infinite alternate}
+body.death-maul .danger-state span{font-size:13px;color:#ffb0a0}.death-maul .mobile-controls{display:none!important}
 @keyframes horrorBreath{50%{opacity:.62;transform:scale(1.018)}}@keyframes filmTear{0%,88%,100%{transform:none}89%{transform:translateX(-3%)}91%{transform:translateX(4%)}}
 @keyframes apparitionJolt{0%{transform:scale(1.25);filter:contrast(3)}45%{transform:translateX(-9px) scale(1)}70%{transform:translateX(7px)}100%{opacity:0}}
 @keyframes eyeJitter{50%{transform:translate(2px,-1px)}}@keyframes bloodBlink{0%,100%{opacity:0}12%,55%{opacity:.9}32%{opacity:.18}}
 @keyframes otherworldPulse{50%{opacity:.96;filter:brightness(.66) contrast(1.8)}}
+@keyframes maulPulse{to{opacity:.66;transform:scale(1.035)}}
 .audio-gate{position:fixed;inset:0;z-index:30;display:grid;place-items:center;padding:22px;background:#0b0d09e8;backdrop-filter:blur(12px);transition:opacity .45s,visibility .45s}
 .audio-gate.hidden{opacity:0;visibility:hidden;pointer-events:none}
 .gate-card{position:relative;width:min(440px,100%);padding:42px 38px 34px;background:#151810;border:1px solid #d9ff4355;box-shadow:12px 12px 0 #050604,0 0 80px #d9ff4314;overflow:hidden}
