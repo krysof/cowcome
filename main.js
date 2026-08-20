@@ -24,10 +24,11 @@ const ui = {
 };
 const scoreboard=document.querySelector('#scoreboard'),scoreList=document.querySelector('#scoreList');
 const characterNames={orange:'橙色小牛',yellow:'黄色大牛',leopard:'花豹'};
+const difficultyNames={orange:'简单',yellow:'普通',leopard:'困难'};
 function formatTime(ms){const min=Math.floor(ms/60000),sec=Math.floor((ms%60000)/1000),milli=ms%1000;return `${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')}.${String(milli).padStart(3,'0')}`;}
 function readScores(){try{return JSON.parse(localStorage.getItem('niulai-highscores')||'[]')}catch{return[]}}
 function renderScores(){
-  const scores=readScores();scoreList.innerHTML=scores.length?scores.map(s=>`<li><div><b>${characterNames[s.character]||'牛来'}</b><small>${s.win?'成功逃出':'被它们追上'} · ${s.distance}m</small></div><strong>${formatTime(s.time)}</strong></li>`).join(''):'<li class="empty">还没有逃亡记录</li>';
+  const scores=readScores();scoreList.innerHTML=scores.length?scores.map(s=>`<li><div><b>${characterNames[s.character]||'牛来'}</b><small>${difficultyNames[s.character]||'简单'} · ${s.win?'成功逃出':'被它们追上'} · ${s.distance}m</small></div><strong>${formatTime(s.time)}</strong></li>`).join(''):'<li class="empty">还没有逃亡记录</li>';
 }
 function recordScore(win){
   const entry={win,character:selectedCharacter,distance:Math.max(0,Math.min(638,Math.round(18-player.position.z))),time:Math.max(0,Math.round(elapsed*1000)),date:Date.now()};entry.score=gameCore.rank_score(win?1:0,entry.distance,entry.time);
@@ -247,6 +248,11 @@ function makeMonsterCar(scale=1){
 
 function createCharacter(kind){return kind==='yellow'?makeYellowBull(.68):kind==='leopard'?makeLeopard(.78):makeNiuLai(.72,false);}
 let selectedCharacter='orange';
+const difficulties={
+  orange:{name:'简单',player:1.06,enemy:.86,drain:.78,recovery:1.25,hazard:.72},
+  yellow:{name:'普通',player:1,enemy:1,drain:1,recovery:1,hazard:1},
+  leopard:{name:'困难',player:.97,enemy:1.14,drain:1.24,recovery:.82,hazard:1.3}
+};
 let player=createCharacter(selectedCharacter); player.position.set(0,.05,18); player.rotation.y=0; scene.add(player);
 const hunter=makeDarkBeast(.78); hunter.position.set(0,.05,51); scene.add(hunter);
 const wolfPack=[hunter,...Array.from({length:5},(_,i)=>makeDarkBeast(.7+(i%3)*.05))];wolfPack.slice(1).forEach((w,i)=>{w.position.set((i-2)*4,.05,54+i*2);scene.add(w);});
@@ -361,7 +367,7 @@ function start(){
   herdCows.forEach((c,i)=>{c.position.copy(c.userData.start);c.rotation.set(0,0,0);c.visible=true;c.userData.active=false;c.userData.eaten=false;const e=ambushers[i];e.position.copy(e.userData.start);e.rotation.set(0,0,0);e.visible=false;e.userData.feeding=0;e.userData.joined=false;});
   strangeTravellers.forEach(c=>{c.position.copy(c.userData.start);c.rotation.set(0,0,0);c.visible=true;c.userData.fleeing=false;});
   hunterGlow.visible=false;document.body.classList.add('playing');ui.intro.classList.add('hidden');ui.result.classList.remove('show');
-  dangerAudio.pause();dangerAudio.currentTime=0;dangerAudio.volume=.95;dangerLatched=false;sound(55,.8,'sawtooth',.08);startMusic();setTimeout(()=>say('跑，牛来。'),500);
+  dangerAudio.pause();dangerAudio.currentTime=0;dangerAudio.volume=.95;dangerLatched=false;sound(55,.8,'sawtooth',.08);startMusic();setTimeout(()=>say(`${difficulties[selectedCharacter].name}难度。跑，别回头。`),500);
 }
 function end(win){
   state=win?'win':'caught';recordScore(win);document.body.classList.remove('playing','exhausted','enemy-near');ui.result.classList.add('show');
@@ -464,8 +470,8 @@ function tick(){
     let x=(keys.KeyA||keys.ArrowLeft?1:0)-(keys.KeyD||keys.ArrowRight?1:0)-joystick.x;
     let z=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0)-joystick.y;
     const moving=x||z,wantsSprint=(keys.ShiftLeft||keys.ShiftRight)&&moving,sprint=wantsSprint&&!exhausted&&stamina>0;
-    const speed=gameCore.movement_speed(sprint?1:0,exhausted?1:0);
-    stamina=gameCore.update_stamina(stamina,dt,moving?1:0,wantsSprint?1:0,exhausted?1:0,sprint?1:0);
+    const difficulty=difficulties[selectedCharacter],speed=gameCore.movement_speed(sprint?1:0,exhausted?1:0)*difficulty.player;
+    stamina=gameCore.update_stamina(stamina,dt*(sprint?difficulty.drain:difficulty.recovery),moving?1:0,wantsSprint?1:0,exhausted?1:0,sprint?1:0);
     if(sprint){
       if(stamina<=0){exhausted=true;document.body.classList.add('exhausted');say('没有力气了。松开奔跑，喘口气。',2300);sound(43,.75,'sawtooth',.11);}
     }else{
@@ -490,7 +496,7 @@ function tick(){
     for(const enemy of activeChasers){
       const v=new THREE.Vector3().subVectors(player.position,enemy.position);v.y=0;const d=v.length();nearest=Math.min(nearest,d);
       const timeBoost=gameCore.enemy_time_boost(elapsed,enemy.userData.type==='car'?1:0);
-      enemy.position.addScaledVector(v.normalize(),(enemy.userData.chaseSpeed+timeBoost)*dt);
+      enemy.position.addScaledVector(v.normalize(),(enemy.userData.chaseSpeed+timeBoost)*difficulty.enemy*dt);
       if(enemy.userData.type!=='car')enemy.position.x+=Math.sin(t*1.8+activeChasers.indexOf(enemy)*1.7)*dt*.65;
       enemy.rotation.y=Math.atan2(-v.x,-v.z);
       if(enemy.userData.type==='car')enemy.userData.wheels.forEach(w=>w.rotation.x+=dt*9);else animateCow(enemy,t,enemy.userData.type==='beast'?13:9);
@@ -498,8 +504,8 @@ function tick(){
     }
     if(monsterCar.visible)hunterGlow.position.set(monsterCar.position.x,4,monsterCar.position.z-3);
     const nextSpeedLevel=Math.floor(elapsed/12);if(nextSpeedLevel>speedLevel){speedLevel=nextSpeedLevel;say(`敌人速度提升 · ${speedLevel+1}级`,1800);sound(96+speedLevel*18,.32,'square',.055);}
-    for(const snake of snakes){snake.userData.segments.forEach((s,i)=>s.position.x=Math.sin(t*2+i*.72)*1.4);const d=Math.hypot(player.position.x-snake.position.x,player.position.z-snake.position.z);nearest=Math.min(nearest,d);if(d<4.2){stamina=Math.max(0,stamina-55*dt);player.position.x+=(player.position.x-snake.position.x)*dt*2.5;shake=.28;if(stamina<=0)end(false);}}
-    for(const tree of treeEnemies){tree.userData.arms.forEach((a,i)=>a.rotation.z+=(i?1:-1)*dt*.45);const d=Math.hypot(player.position.x-tree.position.x,player.position.z-tree.position.z);nearest=Math.min(nearest,d);if(d<5.2){stamina=Math.max(0,stamina-38*dt);shake=.2;if(stamina<=0)end(false);}}
+    for(const snake of snakes){snake.userData.segments.forEach((s,i)=>s.position.x=Math.sin(t*2+i*.72)*1.4);const d=Math.hypot(player.position.x-snake.position.x,player.position.z-snake.position.z);nearest=Math.min(nearest,d);if(d<4.2){stamina=Math.max(0,stamina-55*difficulty.hazard*dt);player.position.x+=(player.position.x-snake.position.x)*dt*2.5;shake=.28;if(stamina<=0)end(false);}}
+    for(const tree of treeEnemies){tree.userData.arms.forEach((a,i)=>a.rotation.z+=(i?1:-1)*dt*.45);const d=Math.hypot(player.position.x-tree.position.x,player.position.z-tree.position.z);nearest=Math.min(nearest,d);if(d<5.2){stamina=Math.max(0,stamina-38*difficulty.hazard*dt);shake=.2;if(stamina<=0)end(false);}}
     if(nearest<26&&!dangerLatched){
       dangerLatched=true;document.body.classList.add('enemy-near');dangerAudio.currentTime=0;dangerAudio.play().catch(()=>{});
       if(musicMaster){musicMaster.gain.cancelScheduledValues(audio.currentTime);musicMaster.gain.setTargetAtTime(.065,audio.currentTime,.12);}
