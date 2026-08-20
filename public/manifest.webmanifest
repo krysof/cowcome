@@ -1,0 +1,34 @@
+{
+  "id": "./",
+  "name": "牛来：草原大逃亡",
+  "short_name": "牛来",
+  "description": "在诡异草原、雨幕与怪物追击中活着逃出去。",
+  "lang": "zh-CN",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#11150f",
+  "theme_color": "#11150f",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    {
+      "src": "icons/niulai-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/niulai-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/niulai-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
