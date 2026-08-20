@@ -10,12 +10,24 @@
   <body>
     <canvas id="game"></canvas>
 
+    <section class="audio-gate" id="audioGate" role="dialog" aria-modal="true" aria-labelledby="gateTitle">
+      <div class="gate-card">
+        <div class="gate-mark">牛</div>
+        <div class="eyebrow">进入草原之前</div>
+        <h2 id="gateTitle">请打开声音</h2>
+        <p>本游戏包含诡异背景音乐及敌人接近警报。点击下方按钮进入，并授权浏览器播放声音。</p>
+        <div class="copyright">版权声明<br><a href="http://www.ff18.com" target="_blank" rel="noopener">www.ff18.com</a>　/　白河愁</div>
+        <button id="enterGameBtn"><span>进入并开启声音</span><small>🔊</small></button>
+        <div class="gate-version">VERSION <b>20260820.1</b></div>
+      </div>
+    </section>
+
     <div class="noise"></div>
     <header class="hud" id="hud">
       <div class="brand"><b>牛来</b><span>草原大逃亡</span></div>
       <div class="hud-right">
         <div class="distance"><small>距离出口</small><strong id="distance">666m</strong></div>
-        <div class="stamina-wrap"><span>犟劲</span><div class="stamina"><i id="staminaBar"></i></div></div>
+        <div class="stamina-wrap"><span>体力</span><div class="stamina"><i id="staminaBar"></i></div></div>
       </div>
     </header>
 
@@ -26,6 +38,8 @@
 
     <div class="subtitle" id="subtitle"></div>
     <div class="warning" id="warning">它看见你了</div>
+    <div class="state-layer danger-state"><span>后面有东西</span></div>
+    <div class="state-layer exhausted-state"><span>腿不听使唤了</span></div>
     <div class="crosshair">⌄</div>
 
     <section class="screen intro" id="intro">
@@ -45,7 +59,7 @@
         <div class="controls"><b>WASD / 方向键</b> 对应屏幕方向　<b>S / ↓</b> 向终点逃亡　<b>SHIFT</b> 狂奔</div>
       </div>
       <div class="stamp">粗糙<br />但完整</div>
-      <div class="credits">信号源：未知　/　版本：0.0.牛</div>
+      <div class="credits">© <a href="http://www.ff18.com" target="_blank" rel="noopener">ff18.com</a> / 白河愁　版本：20260820.1</div>
     </section>
 
     <section class="screen result" id="result">
@@ -62,7 +76,7 @@
 
     <div class="mobile-controls" aria-label="触屏控制">
       <div class="joystick" id="joystick" aria-label="移动摇杆"><div class="joystick-ring"><i id="joystickKnob"></i></div></div>
-      <button class="run" data-key="ShiftLeft">奔</button>
+      <button class="run" data-key="ShiftLeft" aria-label="按住奔跑"><span>按住</span>奔</button>
     </div>
 
     <script type="module" src="/main.js"></script>

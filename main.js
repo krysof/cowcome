@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 
 const canvas = document.querySelector('#game');
-const dangerAudio=new Audio(`${import.meta.env.BASE_URL}audio/enemy-near.mp3`);dangerAudio.preload='auto';dangerAudio.volume=.95;
-let dangerLatched=false;
+const dangerAudio=new Audio(`${import.meta.env.BASE_URL}audio/enemy-near.mp3`);dangerAudio.preload='auto';dangerAudio.volume=.95;dangerAudio.setAttribute('playsinline','');dangerAudio.setAttribute('webkit-playsinline','');
+let dangerLatched=false,audioUnlocked=false;
 const ui = {
   intro: document.querySelector('#intro'), result: document.querySelector('#result'),
   distance: document.querySelector('#distance'), stamina: document.querySelector('#staminaBar'),
@@ -46,7 +46,7 @@ function makeNiuLai(scale=1, dark=false){
   const fur=flat(dark?0x342019:0xe97837), muzzle=flat(dark?0x84624e:0xf2d3a0);
   const hoof=flat(dark?0x0e0b09:0x3a241b), eye=flat(0xf3ead8), pupil=flat(dark?0xff3b21:0x231711), inner=flat(0xeaa181);
   // 电影中的牛来是橙色、直立、大头宽嘴的拟人小牛。
-  mesh(new THREE.SphereGeometry(1.05,7,5),fur,g,0,2.45,0,[1.04,1.22,.74]);
+  const body=mesh(new THREE.SphereGeometry(1.05,7,5),fur,g,0,2.45,0,[1.04,1.22,.74]);
   const head=mesh(new THREE.SphereGeometry(1.2,7,6),fur,g,0,4.25,-.08,[1.08,.92,.8]);
   mesh(new THREE.SphereGeometry(.74,7,5),muzzle,head,0,-.25,-.9,[1.12,.7,.38]);
   mesh(new THREE.BoxGeometry(.78,.07,.08),hoof,head,0,-.38,-1.25,[1,1,1]);
@@ -67,7 +67,7 @@ function makeNiuLai(scale=1, dark=false){
     const l=mesh(new THREE.CapsuleGeometry(.27,1.25,2,5),fur,g,x,.9,0,[1,1,1]);legs.push(l);
     mesh(new THREE.SphereGeometry(.36,6,5),hoof,l,0,-.85,-.13,[1,.65,1.35]);
   }
-  g.scale.setScalar(scale); g.userData.legs=legs; g.userData.arms=arms; return g;
+  g.scale.setScalar(scale); g.userData.legs=legs; g.userData.arms=arms;g.userData.body=body;g.userData.head=head;g.userData.canCrawl=true; return g;
 }
 
 function makeYellowBull(scale=1,dark=false){
@@ -209,7 +209,7 @@ for(let i=0;i<46;i++){
 }
 
 const keys={}, joystick={x:0,y:0}, clock=new THREE.Clock();
-let state='intro', stamina=100, distance=638, hunterSpeed=7.5, elapsed=0, lastLine=-1, shake=0, audio, musicMaster, musicNodes=[], musicTimer, storyStage=0, activeChasers=[];
+let state='intro', stamina=100, exhausted=false, distance=638, hunterSpeed=7.5, elapsed=0, lastLine=-1, shake=0, audio, musicMaster, musicNodes=[], musicTimer, storyStage=0, activeChasers=[], speedLevel=0;
 const lines=[
   [25,'妈妈说：别招惹草蛇。'],[80,'云雀：狼群正在靠近。'],[145,'豹拉：你们先走，我来引开它们。'],
   [230,'牛群散开了。别停下！'],[330,'妈妈说：过后我就和你会合。'],[440,'云雀：有一个更大的怪物来了。'],[540,'悬崖下面……也许有草场。']
@@ -236,13 +236,26 @@ async function startMusic(){
   const wind=audio.createBufferSource(),windFilter=audio.createBiquadFilter(),windGain=audio.createGain();wind.buffer=noiseBuffer;wind.loop=true;windFilter.type='bandpass';windFilter.frequency.value=480;windFilter.Q.value=.7;windGain.gain.value=.08;wind.connect(windFilter).connect(windGain).connect(musicMaster);wind.start();musicNodes.push(wind);
   musicTimer=setInterval(()=>{if(state!=='playing'||!musicMaster)return;const o=audio.createOscillator(),g=audio.createGain();o.type='sine';o.frequency.value=[164,185,220,247][Math.floor(Math.random()*4)];g.gain.setValueAtTime(.0001,audio.currentTime);g.gain.exponentialRampToValueAtTime(.16,audio.currentTime+.08);g.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+2.1);o.connect(g).connect(musicMaster);o.start();o.stop(audio.currentTime+2.2);},2200);
 }
+function unlockAudio(){
+  if(audioUnlocked){document.querySelector('#audioGate').classList.add('hidden');return;}
+  audioUnlocked=true;
+  if(!audio)audio=new (window.AudioContext||window.webkitAudioContext)();
+  audio.resume().catch(()=>{});
+  // 在用户点击的同一个事件中同时解锁 WebAudio 和 HTMLAudio，兼容 iOS 微信内置浏览器。
+  const silent=audio.createOscillator(),silentGain=audio.createGain();silentGain.gain.value=.00001;silent.connect(silentGain).connect(audio.destination);silent.start();silent.stop(audio.currentTime+.04);
+  dangerAudio.volume=.001;dangerAudio.currentTime=0;
+  dangerAudio.play().then(()=>setTimeout(()=>{dangerAudio.pause();dangerAudio.currentTime=0;dangerAudio.volume=.95;},80)).catch(()=>{dangerAudio.volume=.95;});
+  document.querySelector('#audioGate').classList.add('hidden');
+}
+document.querySelector('#enterGameBtn').addEventListener('click',unlockAudio);
+document.addEventListener('WeixinJSBridgeReady',()=>{dangerAudio.load();if(audio)audio.resume().catch(()=>{});},{once:true});
 function start(){
-  state='playing'; elapsed=0; stamina=100; hunterSpeed=7.5; lastLine=-1;
+  state='playing'; elapsed=0; stamina=100;exhausted=false; hunterSpeed=7.5; lastLine=-1;speedLevel=0;document.body.classList.remove('exhausted','enemy-near');
   player.position.set(0,.05,18);player.rotation.set(0,0,0);storyStage=0;activeChasers=[];allEnemies.forEach(e=>e.visible=false);[...snakes,...treeEnemies].forEach(e=>e.visible=true);hunterGlow.visible=false;document.body.classList.add('playing');ui.intro.classList.add('hidden');ui.result.classList.remove('show');
-  dangerAudio.pause();dangerAudio.currentTime=0;dangerLatched=false;sound(55,.8,'sawtooth',.08);startMusic();setTimeout(()=>say('跑，牛来。'),500);
+  dangerAudio.pause();dangerAudio.currentTime=0;dangerAudio.volume=.95;dangerLatched=false;sound(55,.8,'sawtooth',.08);startMusic();setTimeout(()=>say('跑，牛来。'),500);
 }
 function end(win){
-  state=win?'win':'caught';document.body.classList.remove('playing');ui.result.classList.add('show');
+  state=win?'win':'caught';document.body.classList.remove('playing','exhausted','enemy-near');ui.result.classList.add('show');
   ui.eyebrow.textContent=win?'你找到了出口':'逃亡终止';ui.title.textContent=win?'门后还是草原。':'牛来，回家。';
   ui.resultText.innerHTML=win?`你跑了 ${Math.floor(elapsed)} 秒。<br>远处，又传来了妈妈的声音。`:`你离出口还剩 ${Math.max(0,Math.floor(distance))} 米。<br>这一次，妈妈追上你了。`;
   dangerAudio.pause();dangerAudio.currentTime=0;dangerLatched=false;stopMusic();sound(win?220:38,1.5,'sawtooth',.1);
@@ -250,7 +263,8 @@ function end(win){
 document.querySelector('#startBtn').onclick=start;document.querySelector('#restartBtn').onclick=start;
 document.querySelector('#changeBtn').onclick=()=>{
   stopMusic();state='intro';document.body.classList.remove('playing');ui.result.classList.remove('show');ui.intro.classList.remove('hidden');
-  player.position.set(0,.05,18);player.rotation.y=0;storyStage=0;activeChasers=[];allEnemies.forEach(e=>e.visible=false);hunterGlow.visible=false;
+  document.body.classList.remove('exhausted','enemy-near');
+  player.position.set(0,.05,18);player.rotation.set(0,0,0);storyStage=0;activeChasers=[];allEnemies.forEach(e=>e.visible=false);hunterGlow.visible=false;
 };
 document.querySelectorAll('.character').forEach(button=>button.addEventListener('click',()=>{
   if(state!=='intro')return;
@@ -280,6 +294,15 @@ function animateCow(cow,t,speed){
   cow.userData.arms.forEach((a,i)=>a.rotation.x=Math.sin(t*speed+(i%2)*Math.PI)*.42);
   cow.rotation.z=Math.sin(t*speed*.5)*.025;
 }
+function animatePlayer(cow,t,moving,sprinting){
+  if(cow.userData.canCrawl&&sprinting){
+    cow.rotation.x=THREE.MathUtils.lerp(cow.rotation.x,-.82,.16);cow.position.y=THREE.MathUtils.lerp(cow.position.y,.48,.16);cow.rotation.z=Math.sin(t*18)*.045;
+    cow.userData.arms.forEach((a,i)=>a.rotation.x=Math.sin(t*18+i*Math.PI)*.78-.2);
+    cow.userData.legs.forEach((l,i)=>l.rotation.x=Math.sin(t*18+i*Math.PI)*.68+.18);
+  }else{
+    cow.rotation.x=THREE.MathUtils.lerp(cow.rotation.x,0,.2);cow.position.y=THREE.MathUtils.lerp(cow.position.y,.05,.18);animateCow(cow,t,moving?10:1);
+  }
+}
 function placeChaser(enemy,xOffset,zOffset,speed){enemy.position.set(player.position.x+xOffset,.05,player.position.z+zOffset);enemy.visible=true;enemy.userData.chaseSpeed=speed;activeChasers.push(enemy);}
 function updateStoryWave(progress){
   if(storyStage===0&&(progress>18||elapsed>2.5)){
@@ -300,29 +323,41 @@ function tick(){
     // 因此键盘与摇杆都严格按屏幕方向换算，W/A/S/D 分别就是上/左/下/右。
     let x=(keys.KeyA||keys.ArrowLeft?1:0)-(keys.KeyD||keys.ArrowRight?1:0)-joystick.x;
     let z=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0)-joystick.y;
-    const moving=x||z, sprint=(keys.ShiftLeft||keys.ShiftRight)&&stamina>2&&moving;
-    let speed=sprint?15:9;if(sprint)stamina-=24*dt;else stamina=Math.min(100,stamina+13*dt);
+    const moving=x||z,wantsSprint=(keys.ShiftLeft||keys.ShiftRight)&&moving,sprint=wantsSprint&&!exhausted&&stamina>0;
+    let speed=sprint?15:(exhausted?3.15:9);
+    if(sprint){
+      stamina=Math.max(0,stamina-29*dt);
+      if(stamina<=0){exhausted=true;document.body.classList.add('exhausted');say('没有力气了。松开奔跑，喘口气。',2300);sound(43,.75,'sawtooth',.11);}
+    }else{
+      // 力竭后必须松开“奔跑”才会恢复，迫使玩家用一阵、停一阵。
+      const canRecover=!exhausted||!wantsSprint;if(canRecover)stamina=Math.min(100,stamina+(moving?10:18)*dt);
+      if(exhausted&&stamina>=32){exhausted=false;document.body.classList.remove('exhausted');say('腿又能动了。',1200);sound(132,.24,'triangle',.045);}
+    }
     if(moving){const len=Math.hypot(x,z);x/=len;z/=len;player.position.x+=x*speed*dt;player.position.z+=z*speed*dt;player.rotation.y=Math.atan2(-x,-z);}
     player.position.x=THREE.MathUtils.clamp(player.position.x,-59,59);player.position.z=Math.min(24,player.position.z);
     // collision response
     for(const o of obstacles){const dx=player.position.x-o.position.x,dz=player.position.z-o.position.z;if(dx*dx+dz*dz<8){player.position.x+=dx*dt*5;player.position.z+=dz*dt*5;}}
-    animateCow(player,t,moving?(sprint?15:10):1);
+    animatePlayer(player,t,Boolean(moving),Boolean(sprint));
     const progress=-player.position.z;updateStoryWave(progress);
     let nearest=999;
     for(const enemy of activeChasers){
       const v=new THREE.Vector3().subVectors(player.position,enemy.position);v.y=0;const d=v.length();nearest=Math.min(nearest,d);
-      enemy.position.addScaledVector(v.normalize(),enemy.userData.chaseSpeed*dt);enemy.rotation.y=Math.atan2(-v.x,-v.z);
+      const timeBoost=Math.min(enemy.userData.type==='car'?2.4:3.8,elapsed*(enemy.userData.type==='car'?.032:.052));
+      enemy.position.addScaledVector(v.normalize(),(enemy.userData.chaseSpeed+timeBoost)*dt);
+      if(enemy.userData.type!=='car')enemy.position.x+=Math.sin(t*1.8+activeChasers.indexOf(enemy)*1.7)*dt*.65;
+      enemy.rotation.y=Math.atan2(-v.x,-v.z);
       if(enemy.userData.type==='car')enemy.userData.wheels.forEach(w=>w.rotation.x+=dt*9);else animateCow(enemy,t,enemy.userData.type==='beast'?13:9);
       if(d<(enemy.userData.type==='car'?6.2:3.3)){shake=1;document.body.classList.add('hit');setTimeout(()=>document.body.classList.remove('hit'),400);end(false);}
     }
     if(monsterCar.visible)hunterGlow.position.set(monsterCar.position.x,4,monsterCar.position.z-3);
+    const nextSpeedLevel=Math.floor(elapsed/12);if(nextSpeedLevel>speedLevel){speedLevel=nextSpeedLevel;say(`敌人速度提升 · ${speedLevel+1}级`,1800);sound(96+speedLevel*18,.32,'square',.055);}
     for(const snake of snakes){snake.userData.segments.forEach((s,i)=>s.position.x=Math.sin(t*2+i*.72)*1.4);const d=Math.hypot(player.position.x-snake.position.x,player.position.z-snake.position.z);nearest=Math.min(nearest,d);if(d<4.2){stamina=Math.max(0,stamina-55*dt);player.position.x+=(player.position.x-snake.position.x)*dt*2.5;shake=.28;if(stamina<=0)end(false);}}
     for(const tree of treeEnemies){tree.userData.arms.forEach((a,i)=>a.rotation.z+=(i?1:-1)*dt*.45);const d=Math.hypot(player.position.x-tree.position.x,player.position.z-tree.position.z);nearest=Math.min(nearest,d);if(d<5.2){stamina=Math.max(0,stamina-38*dt);shake=.2;if(stamina<=0)end(false);}}
     if(nearest<26&&!dangerLatched){
-      dangerLatched=true;dangerAudio.currentTime=0;dangerAudio.play().catch(()=>{});
+      dangerLatched=true;document.body.classList.add('enemy-near');dangerAudio.currentTime=0;dangerAudio.play().catch(()=>{});
       if(musicMaster){musicMaster.gain.cancelScheduledValues(audio.currentTime);musicMaster.gain.setTargetAtTime(.065,audio.currentTime,.12);}
     }else if(nearest>34&&dangerLatched){
-      dangerLatched=false;if(musicMaster){musicMaster.gain.cancelScheduledValues(audio.currentTime);musicMaster.gain.setTargetAtTime(.19,audio.currentTime,.3);}
+      dangerLatched=false;document.body.classList.remove('enemy-near');if(musicMaster){musicMaster.gain.cancelScheduledValues(audio.currentTime);musicMaster.gain.setTargetAtTime(.19,audio.currentTime,.3);}
     }
     if(nearest<18&&!ui.warning.classList.contains('show')){ui.warning.classList.add('show');sound(62,.7,'sawtooth',.08);setTimeout(()=>ui.warning.classList.remove('show'),1200);}
     if(player.position.z<-614)end(true);
@@ -343,4 +378,7 @@ function tick(){
   renderer.render(scene,camera);
 }
 tick();
-addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+function resizeGame(){const w=Math.round(window.visualViewport?.width||innerWidth),h=Math.round(window.visualViewport?.height||innerHeight);camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false);canvas.style.width=w+'px';canvas.style.height=h+'px';}
+addEventListener('resize',resizeGame);window.visualViewport?.addEventListener('resize',resizeGame);addEventListener('orientationchange',()=>setTimeout(resizeGame,250));
+document.addEventListener('touchmove',e=>{if(state==='playing')e.preventDefault();},{passive:false});document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});
+resizeGame();
