@@ -37,6 +37,7 @@ body.death-maul .danger-state span{font-size:13px;color:#ffb0a0}.death-maul .mob
 @keyframes otherworldPulse{50%{opacity:.96;filter:brightness(.66) contrast(1.8)}}
 @keyframes maulPulse{to{opacity:.66;transform:scale(1.035)}}
 .audio-gate{position:fixed;inset:0;z-index:30;display:grid;place-items:center;padding:22px;background:#0b0d09e8;backdrop-filter:blur(12px);transition:opacity .45s,visibility .45s}
+.language-picker{position:fixed;z-index:45;right:max(16px,env(safe-area-inset-right));top:max(16px,env(safe-area-inset-top));color:#f4f1e7;font-size:12px}.language-picker>button{min-height:42px;padding:9px 13px;display:flex;align-items:center;gap:8px;border:1px solid #ffffff3d;border-radius:22px;color:inherit;background:#111814dd;box-shadow:0 6px 24px #0006;backdrop-filter:blur(12px);font:700 12px inherit}.language-picker>button span{font-size:18px}.language-menu{position:absolute;right:0;top:49px;min-width:184px;padding:7px;border:1px solid #ffffff2e;border-radius:14px;background:#161b18f2;box-shadow:0 14px 45px #0009;backdrop-filter:blur(18px)}.language-menu[hidden]{display:none}.language-menu button{width:100%;padding:11px 12px;display:grid;grid-template-columns:20px 1fr;gap:7px;border:0;border-radius:8px;color:#f2f0e8;background:transparent;text-align:left;font:600 13px inherit}.language-menu button:hover,.language-menu button:focus-visible{outline:none;background:#d9ff431c}.language-menu button i{visibility:hidden;color:var(--acid);font-style:normal}.language-menu button[aria-checked="true"] i{visibility:visible}.language-menu hr{height:1px;margin:5px 7px;border:0;background:#fff2}
 .audio-gate.hidden{opacity:0;visibility:hidden;pointer-events:none}
 .gate-card{position:relative;width:min(440px,100%);padding:42px 38px 34px;background:#151810;border:1px solid #d9ff4355;box-shadow:12px 12px 0 #050604,0 0 80px #d9ff4314;overflow:hidden}
 .gate-card:after{content:"";position:absolute;width:180px;height:180px;right:-85px;top:-85px;border:1px solid #d9ff4344;border-radius:50%;box-shadow:0 0 0 24px #d9ff4308,0 0 0 48px #d9ff4308}
@@ -55,6 +56,8 @@ body.death-maul .danger-state span{font-size:13px;color:#ffb0a0}.death-maul .mob
 .brand b { color:var(--ink); background:var(--acid); font-size:23px; font-weight:900; padding:5px 9px 7px; transform:rotate(-2deg); }
 .brand span { font-weight:700; letter-spacing:.16em; }
 .hud-right { display:flex; align-items:center; gap:24px; text-align:right; }
+.survival-bars{display:flex;flex-direction:column;align-items:flex-end;gap:8px}.hearts{display:flex;gap:5px;font-size:20px;filter:drop-shadow(0 2px 3px #000)}.hearts span{display:inline-block;transition:.25s}.hearts span.lost{filter:grayscale(1) brightness(.25);opacity:.35;transform:scale(.72)}.hearts span.hit-heart{animation:heartHit .45s steps(2)}
+@keyframes heartHit{35%{transform:scale(1.55);filter:brightness(2) saturate(2)}70%{transform:scale(.55)}}
 .distance small { display:block; font-size:10px; letter-spacing:.2em; opacity:.7; }
 .distance strong { font-size:25px; font-style:italic; }
 .stamina-wrap { width:150px; font-size:10px; letter-spacing:.25em; }
@@ -80,7 +83,7 @@ body.death-maul .danger-state span{font-size:13px;color:#ffb0a0}.death-maul .mob
 .screen { position:fixed; inset:0; z-index:10; display:flex; align-items:center; padding:7vw; transition:opacity .8s,visibility .8s; background:linear-gradient(90deg,#10130ee8 0%,#10130eaa 42%,transparent 78%); }
 .screen.hidden { opacity:0; visibility:hidden; pointer-events:none; }
 .intro-copy { position:relative; max-width:650px; }
-.intro-copy:after{content:"妈妈——！";position:absolute;left:50%;top:24%;z-index:4;color:#a50904;font:900 clamp(42px,10vw,120px) STKaiti,"KaiTi",serif;white-space:nowrap;letter-spacing:.12em;text-shadow:4px 4px 0 #050000,0 0 25px #e30000;opacity:0;pointer-events:none}
+.intro-copy:after{content:var(--title-cry,"妈妈——！");position:absolute;left:50%;top:24%;z-index:4;color:#a50904;font:900 clamp(42px,10vw,120px) STKaiti,"KaiTi",serif;white-space:nowrap;letter-spacing:.12em;text-shadow:4px 4px 0 #050000,0 0 25px #e30000;opacity:0;pointer-events:none}
 body.title-cry .intro-copy:after{animation:titleCryText 1.35s steps(2) both}
 body.title-cry .intro h1{animation:titleCryShake .62s steps(2) both}
 @keyframes titleCryText{0%{opacity:0;transform:translate(-50%,20%) scale(2.4)}8%,48%{opacity:1;transform:translate(-50%,0) scale(1)}64%{opacity:.3;transform:translate(-49%,0) scale(1.06)}100%{opacity:0;transform:translate(-50%,-8%) scale(.92)}}
@@ -124,6 +127,7 @@ body.glitch #game { filter:blur(1.1px) hue-rotate(80deg) contrast(1.7); transfor
 body.hit { animation:hit .22s linear 2; }
 @keyframes hit { 50%{transform:translateX(7px);filter:brightness(2) saturate(2)} }
 @media(max-width:700px) {
+  .language-picker{right:max(10px,env(safe-area-inset-right));top:max(10px,env(safe-area-inset-top))}.language-picker>button{width:42px;padding:0;justify-content:center}.language-picker>button b{display:none}.language-menu{right:0;top:47px}
   #game{filter:blur(.2px) saturate(var(--game-sat,.76)) brightness(var(--game-light,.93)) contrast(var(--game-contrast,1.06))}
   .noise{opacity:.18;animation-duration:.28s}
   .screen{padding:20px 24px}.intro{background:#e8e3d3}
@@ -132,7 +136,7 @@ body.hit { animation:hit .22s linear 2; }
   .intro-copy{margin:auto 0}.ink-landscape{right:-46%;width:145vw;opacity:.38}.eyebrow{margin-bottom:12px}h1{margin-bottom:16px}
   h1 span{font-size:clamp(62px,24vw,88px)}h1 em{margin-top:14px;font-size:18px}.intro p{margin:10px 0;font-size:12px}.stamp{display:none}
   .chooser>div{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.chooser .character{padding:0 0 7px}.chooser .character b{display:block;padding:6px 3px 0;font-size:9px}.chooser .character small{padding:2px 3px 0;font-size:7px}.intro .menu-actions{width:100%;gap:9px;margin-top:14px}.intro .menu-actions button{width:100%;min-height:58px;padding:15px 16px;margin-top:0}.intro .menu-actions #startBtn{min-height:68px;font-size:18px}.score-card{padding:28px 22px}
-  .hud{padding:16px}.brand span{display:none}.stamina-wrap{display:block;position:fixed;right:16px;top:82px;width:118px}.stamina-wrap>span{display:block}.stamina{height:7px}.mission{left:16px;top:85px}.distance strong{font-size:19px}.controls{display:none}
+  .hud{padding:16px}.brand span{display:none}.survival-bars{position:fixed;right:16px;top:78px}.hearts{font-size:18px}.stamina-wrap{display:block;width:118px}.stamina-wrap>span{display:block}.stamina{height:7px}.mission{left:16px;top:85px}.distance strong{font-size:19px}.controls{display:none}
   .mobile-controls{display:none;position:fixed;inset:0;z-index:8;pointer-events:none}
   .playing .mobile-controls{display:block}
   .joystick{position:absolute;left:22px;bottom:max(24px,env(safe-area-inset-bottom));width:124px;height:124px;pointer-events:auto;touch-action:none}

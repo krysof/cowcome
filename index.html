@@ -16,38 +16,44 @@
   </head>
   <body>
     <canvas id="game"></canvas>
+    <div class="language-picker" id="languagePicker">
+      <button id="languageBtn" type="button" aria-haspopup="menu" aria-expanded="false" data-i18n-aria="language.label"><span aria-hidden="true">🌐</span><b id="languageCurrent">自动</b></button>
+      <div class="language-menu" id="languageMenu" role="menu" hidden>
+        <button role="menuitemradio" data-language="auto"><i>✓</i><span data-i18n="language.auto">自动</span></button><hr><div id="languageOptions"></div>
+      </div>
+    </div>
 
     <section class="audio-gate" id="audioGate" role="dialog" aria-modal="true" aria-labelledby="gateTitle">
       <div class="gate-card">
         <div class="gate-mark">牛</div>
-        <div class="eyebrow">进入草原之前</div>
-        <h2 id="gateTitle">进入草原</h2>
-        <p>雾里有东西在等你。选好角色以后，不要停下，也不要回头。<br><small>警告：游戏含强烈但低频率的闪屏与惊吓画面。</small></p>
-        <div class="copyright">版权声明<br><a href="http://www.ff18.com" target="_blank" rel="noopener">www.ff18.com</a>　/　白河愁</div>
-        <button id="enterGameBtn"><span>进入</span><small>→</small></button>
-        <div class="gate-version">VERSION <b>20260820.21</b></div>
+        <div class="eyebrow" data-i18n="gate.before">进入草原之前</div>
+        <h2 id="gateTitle" data-i18n="gate.title">进入草原</h2>
+        <p><span data-i18n="gate.description">雾里有东西在等你。选好角色以后，不要停下，也不要回头。</span><br><small data-i18n="gate.flashWarning">警告：游戏含强烈但低频率的闪屏与惊吓画面。</small></p>
+        <div class="copyright"><span data-i18n="gate.copyright">版权声明</span><br><a href="http://www.ff18.com" target="_blank" rel="noopener">www.ff18.com</a>　/　白河愁</div>
+        <button id="enterGameBtn"><span data-i18n="gate.enter">进入</span><small>→</small></button>
+        <div class="gate-version">VERSION <b>20260820.22</b></div>
       </div>
     </section>
 
     <div class="noise"></div>
     <div class="horror-overlay" aria-hidden="true"><i class="left-eye"></i><i class="right-eye"></i><span></span></div>
     <header class="hud" id="hud">
-      <div class="brand"><b>牛来</b><span>草原大逃亡</span></div>
+      <div class="brand"><b>牛来</b><span data-i18n="brand.subtitle">草原大逃亡</span></div>
       <div class="hud-right">
-        <div class="distance"><small>距离出口</small><strong id="distance">666m</strong></div>
-        <div class="stamina-wrap"><span>体力</span><div class="stamina"><i id="staminaBar"></i></div></div>
+        <div class="distance"><small data-i18n="hud.exitDistance">距离出口</small><strong id="distance">666m</strong></div>
+        <div class="survival-bars"><div class="hearts" id="hearts" aria-label="生命值" data-i18n-aria="hud.health"><span>❤️</span><span>❤️</span><span>❤️</span></div><div class="stamina-wrap"><span data-i18n="hud.stamina">体力</span><div class="stamina"><i id="staminaBar"></i></div></div></div>
       </div>
     </header>
 
     <aside class="mission" id="mission">
-      <span>当前任务</span>
-      <strong id="missionText">穿过雾，别回头。</strong>
+      <span data-i18n="hud.currentMission">当前任务</span>
+      <strong id="missionText" data-i18n="hud.defaultMission">穿过雾，别回头。</strong>
     </aside>
 
     <div class="subtitle" id="subtitle"></div>
-    <div class="warning" id="warning">它看见你了</div>
-    <div class="state-layer danger-state"><span>后面有东西</span></div>
-    <div class="state-layer exhausted-state"><span>腿不听使唤了</span></div>
+    <div class="warning" id="warning" data-i18n="hud.seen">它看见你了</div>
+    <div class="state-layer danger-state"><span data-i18n="hud.behind">后面有东西</span></div>
+    <div class="state-layer exhausted-state"><span data-i18n="hud.exhausted">腿不听使唤了</span></div>
     <div class="crosshair">⌄</div>
 
     <section class="screen intro" id="intro">
@@ -58,59 +64,59 @@
         <g fill="none" stroke="#3b4541" stroke-width="5"><path d="m720 158 12-7 10 7"/><path d="m755 130 10-6 10 6"/><path d="m694 104 9-5 9 5"/></g>
       </svg>
       <div class="intro-copy">
-        <div class="eyebrow">诡异草原 · 生存逃亡</div>
-        <h1><span>牛来</span><em>草原大逃亡</em></h1>
-        <p>太阳不会落下。雾里的它们不会停下。<br />穿过兽群与死树林，活着抵达草原尽头。</p>
-        <div class="chooser" aria-label="选择主角">
-          <span>选择主角</span>
+        <div class="eyebrow" data-i18n="title.eyebrow">诡异草原 · 生存逃亡</div>
+        <h1><span>牛来</span><em data-i18n="title.subtitle">草原大逃亡</em></h1>
+        <p><span data-i18n="title.description1">太阳不会落下。雾里的它们不会停下。</span><br /><span data-i18n="title.description2">穿过兽群与死树林，活着抵达草原尽头。</span></p>
+        <div class="chooser" aria-label="选择主角" data-i18n-aria="title.choose">
+          <span data-i18n="title.choose">选择主角</span>
           <div>
-            <button class="character active" data-character="orange"><img src="%BASE_URL%portraits/orange-niulai.png" alt="牛来头像"><b>牛来</b><small><em>简单</em> 敌人较慢</small></button>
-            <button class="character" data-character="yellow"><img src="%BASE_URL%portraits/yellow-bull.png" alt="大角头像"><b>大角</b><small><em>普通</em> 标准逃亡</small></button>
-            <button class="character" data-character="leopard"><img src="%BASE_URL%portraits/leopard.png" alt="豹拉头像"><b>豹拉</b><small><em>困难</em> 敌人凶猛</small></button>
+            <button class="character active" data-character="orange"><img src="%BASE_URL%portraits/orange-niulai.png" alt="牛来头像" data-i18n-alt="alt.niulaiPortrait"><b>牛来</b><small><em data-i18n="character.easy">简单</em> <span data-i18n="character.easyDesc">敌人较慢</span></small></button>
+            <button class="character" data-character="yellow"><img src="%BASE_URL%portraits/yellow-bull.png" alt="大角头像" data-i18n-alt="alt.bullPortrait"><b>大角</b><small><em data-i18n="character.normal">普通</em> <span data-i18n="character.normalDesc">标准逃亡</span></small></button>
+            <button class="character" data-character="leopard"><img src="%BASE_URL%portraits/leopard.png" alt="豹拉头像" data-i18n-alt="alt.leopardPortrait"><b>豹拉</b><small><em data-i18n="character.hard">困难</em> <span data-i18n="character.hardDesc">敌人凶猛</span></small></button>
           </div>
         </div>
         <div class="menu-actions">
-          <button id="startBtn"><span>开始游戏</span><small>开始逃亡</small></button>
-          <button id="scoreBtn" class="secondary"><span>高分榜</span><small>逃亡记录</small></button>
+          <button id="startBtn"><span data-i18n="menu.start">开始游戏</span><small data-i18n="menu.startHint">开始逃亡</small></button>
+          <button id="scoreBtn" class="secondary"><span data-i18n="menu.scores">高分榜</span><small data-i18n="menu.scoresHint">逃亡记录</small></button>
         </div>
-        <button id="installBtn" class="install-pwa"><img src="%BASE_URL%icons/niulai-v2-192.png" alt="牛来PWA图标"><span>安装到桌面</span><small>PWA</small></button>
-        <div class="controls"><strong>电脑操作</strong><span class="key-group"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span><em>移动</em><span class="key-group"><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></span><em>也可移动</em><kbd class="wide-key">SHIFT</kbd><em>按住加速爬行，松开恢复体力</em></div>
+        <button id="installBtn" class="install-pwa"><img src="%BASE_URL%icons/niulai-v2-192.png" alt="牛来PWA图标" data-i18n-alt="alt.pwaIcon"><span data-i18n="menu.install">安装到桌面</span><small>PWA</small></button>
+        <div class="controls"><strong data-i18n="menu.desktop">电脑操作</strong><span class="key-group"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span><em data-i18n="menu.move">移动</em><span class="key-group"><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></span><em data-i18n="menu.alsoMove">也可移动</em><kbd class="wide-key">SHIFT</kbd><em data-i18n="menu.sprint">按住加速爬行，松开恢复体力</em></div>
       </div>
-      <div class="stamp">生存<br />逃亡</div>
-      <div class="credits">© <a href="http://www.ff18.com" target="_blank" rel="noopener">ff18.com</a> / 白河愁　版本：20260820.21</div>
+      <div class="stamp"><span data-i18n="menu.survive">生存</span><br /><span data-i18n="menu.escape">逃亡</span></div>
+      <div class="credits">© <a href="http://www.ff18.com" target="_blank" rel="noopener">ff18.com</a> / 白河愁　<span data-i18n="menu.version">版本</span>：20260820.22</div>
     </section>
 
     <section class="scoreboard" id="installHint" aria-hidden="true">
       <div class="score-card install-card">
-        <img src="%BASE_URL%icons/niulai-v2-192.png" alt="牛来应用图标">
-        <div><div class="eyebrow">PWA 应用</div><h2>安装牛来</h2><p id="installText">在浏览器菜单中选择“添加到主屏幕”。</p></div>
-        <button id="closeInstallBtn"><span>知道了</span><small>关闭</small></button>
+        <img src="%BASE_URL%icons/niulai-v2-192.png" alt="牛来应用图标" data-i18n-alt="alt.appIcon">
+        <div><div class="eyebrow" data-i18n="install.app">PWA 应用</div><h2 data-i18n="install.title">安装牛来</h2><p id="installText" data-i18n="install.default">在浏览器菜单中选择“添加到主屏幕”。</p></div>
+        <button id="closeInstallBtn"><span data-i18n="install.ok">知道了</span><small data-i18n="install.close">关闭</small></button>
       </div>
     </section>
 
     <section class="scoreboard" id="scoreboard" aria-hidden="true">
       <div class="score-card">
-        <div class="eyebrow">逃亡记录</div><h2>高分榜</h2>
+        <div class="eyebrow" data-i18n="scores.eyebrow">逃亡记录</div><h2 data-i18n="scores.title">高分榜</h2>
         <ol id="scoreList"></ol>
-        <button id="closeScoreBtn"><span>返回标题</span><small>继续选择</small></button>
+        <button id="closeScoreBtn"><span data-i18n="scores.back">返回标题</span><small data-i18n="scores.continue">继续选择</small></button>
       </div>
     </section>
 
     <section class="screen result" id="result">
       <div>
-        <div class="eyebrow" id="resultEyebrow">逃亡终止</div>
-        <h2 id="resultTitle">牛来，回家。</h2>
+        <div class="eyebrow" id="resultEyebrow" data-i18n="result.terminated">逃亡终止</div>
+        <h2 id="resultTitle" data-i18n="result.home">牛来，回家。</h2>
         <p id="resultText"></p>
         <div class="result-actions">
-          <button id="restartBtn"><span>再跑一次</span><small>重新逃亡</small></button>
-          <button id="changeBtn" class="secondary"><span>更换角色</span><small>角色选择</small></button>
+          <button id="restartBtn"><span data-i18n="result.retry">再跑一次</span><small data-i18n="result.retryHint">重新逃亡</small></button>
+          <button id="changeBtn" class="secondary"><span data-i18n="result.change">更换角色</span><small data-i18n="result.changeHint">角色选择</small></button>
         </div>
       </div>
     </section>
 
-    <div class="mobile-controls" aria-label="触屏控制">
-      <div class="joystick" id="joystick" aria-label="移动摇杆"><div class="joystick-ring"><i id="joystickKnob"></i></div></div>
-      <button class="run" data-key="ShiftLeft" aria-label="按住奔跑"><span>按住</span>奔</button>
+    <div class="mobile-controls" aria-label="触屏控制" data-i18n-aria="controls.touch">
+      <div class="joystick" id="joystick" aria-label="移动摇杆" data-i18n-aria="controls.joystick"><div class="joystick-ring"><i id="joystickKnob"></i></div></div>
+      <button class="run" data-key="ShiftLeft" aria-label="按住奔跑" data-i18n-aria="controls.holdRun"><span data-i18n="controls.hold">按住</span><b data-i18n="controls.run">奔</b></button>
     </div>
 
     <script type="module" src="/main.js"></script>

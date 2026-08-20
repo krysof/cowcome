@@ -3,7 +3,7 @@
   "name": "牛来：草原大逃亡",
   "short_name": "牛来",
   "description": "在诡异草原、雨幕与怪物追击中活着逃出去。",
-  "lang": "zh-CN",
+  "lang": "zh-Hans",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

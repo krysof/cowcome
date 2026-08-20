@@ -1,4 +1,7 @@
 import * as THREE from 'three';
+import {t,initI18n,setLanguage,currentLanguage,locales,languageOrder} from './i18n.js';
+
+initI18n();
 
 // 数值模拟由独立 WebAssembly 核心执行；网络或旧浏览器失败时保留等价回退。
 let gameCore={
@@ -19,19 +22,27 @@ let dangerLatched=false,audioUnlocked=false;
 const ui = {
   intro: document.querySelector('#intro'), result: document.querySelector('#result'),
   distance: document.querySelector('#distance'), stamina: document.querySelector('#staminaBar'),
+  hearts: document.querySelector('#hearts'),
   subtitle: document.querySelector('#subtitle'), warning: document.querySelector('#warning'),
   mission: document.querySelector('#missionText'), title: document.querySelector('#resultTitle'),
   resultText: document.querySelector('#resultText'), eyebrow: document.querySelector('#resultEyebrow')
 };
 const scoreboard=document.querySelector('#scoreboard'),scoreList=document.querySelector('#scoreList');
 const installHint=document.querySelector('#installHint'),installText=document.querySelector('#installText'),installBtn=document.querySelector('#installBtn');let deferredInstallPrompt=null;
+const languagePicker=document.querySelector('#languagePicker'),languageBtn=document.querySelector('#languageBtn'),languageMenu=document.querySelector('#languageMenu'),languageCurrent=document.querySelector('#languageCurrent');
+document.querySelector('#languageOptions').innerHTML=languageOrder.map(code=>`<button role="menuitemradio" data-language="${code}"><i>✓</i><span>${locales[code].nativeName}</span></button>`).join('');
+function refreshLanguageMenu(){const {choice}=currentLanguage();languageCurrent.textContent=choice==='auto'?t('language.auto'):locales[choice].nativeName;languageMenu.querySelectorAll('[data-language]').forEach(button=>button.setAttribute('aria-checked',String(button.dataset.language===choice)));}
+function toggleLanguageMenu(force){const open=force??languageMenu.hidden;languageMenu.hidden=!open;languageBtn.setAttribute('aria-expanded',String(open));if(open)languageMenu.querySelector('[aria-checked="true"]')?.focus();}
+languageBtn.onclick=()=>toggleLanguageMenu();languageMenu.querySelectorAll('[data-language]').forEach(button=>button.onclick=()=>{setLanguage(button.dataset.language);refreshLanguageMenu();toggleLanguageMenu(false);languageBtn.focus();});
+languageMenu.addEventListener('keydown',event=>{const buttons=[...languageMenu.querySelectorAll('[data-language]')],index=buttons.indexOf(document.activeElement);if(event.key==='Escape'){toggleLanguageMenu(false);languageBtn.focus();}if(event.key==='ArrowDown'||event.key==='ArrowUp'){event.preventDefault();buttons[(index+(event.key==='ArrowDown'?1:-1)+buttons.length)%buttons.length].focus();}});
+document.addEventListener('pointerdown',event=>{if(!languagePicker.contains(event.target))toggleLanguageMenu(false);});refreshLanguageMenu();
 addEventListener('beforeinstallprompt',event=>{event.preventDefault();deferredInstallPrompt=event;installBtn.classList.add('available');});
-const characterNames={orange:'橙色小牛',yellow:'黄色大牛',leopard:'花豹'};
-const difficultyNames={orange:'简单',yellow:'普通',leopard:'困难'};
+const characterKeys={orange:'character.orangeFull',yellow:'character.yellowFull',leopard:'character.leopardFull'};
+const difficultyKeys={orange:'character.easy',yellow:'character.normal',leopard:'character.hard'};
 function formatTime(ms){const min=Math.floor(ms/60000),sec=Math.floor((ms%60000)/1000),milli=ms%1000;return `${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')}.${String(milli).padStart(3,'0')}`;}
 function readScores(){try{return JSON.parse(localStorage.getItem('niulai-highscores')||'[]')}catch{return[]}}
 function renderScores(){
-  const scores=readScores();scoreList.innerHTML=scores.length?scores.map(s=>`<li><div><b>${characterNames[s.character]||'牛来'}</b><small>${difficultyNames[s.character]||'简单'} · ${s.win?'成功逃出':'被它们追上'} · ${s.distance}m</small></div><strong>${formatTime(s.time)}</strong></li>`).join(''):'<li class="empty">还没有逃亡记录</li>';
+  const scores=readScores();scoreList.innerHTML=scores.length?scores.map(s=>`<li><div><b>${t(characterKeys[s.character]||'character.niulai')}</b><small>${t(difficultyKeys[s.character]||'character.easy')} · ${t(s.win?'scores.escaped':'scores.caught')} · ${t('scores.meter',{distance:s.distance})}</small></div><strong>${formatTime(s.time)}</strong></li>`).join(''):`<li class="empty">${t('scores.empty')}</li>`;
 }
 function recordScore(win){
   const entry={win,character:selectedCharacter,distance:Math.max(0,Math.min(runLength,Math.round(18-player.position.z))),time:Math.max(0,Math.round(elapsed*1000)),date:Date.now()};entry.score=gameCore.rank_score(win?1:0,entry.distance,entry.time);
@@ -199,7 +210,7 @@ function makeAlienCow(scale=1,variant=0){
   const arms=[],legs=[];
   for(const x of [-.9,.9]){const a=mesh(new THREE.CapsuleGeometry(.18,1.12,2,6),skin,g,x,2.15,0,[1,1,1],[0,0,x>0?-.08:.08]);arms.push(a);mesh(new THREE.SphereGeometry(.24,6,5),skin,a,0,-.75,0,[1,.85,.9]);}
   for(const x of [-.38,.38]){const l=mesh(new THREE.CapsuleGeometry(.24,1.18,2,6),skin,g,x,.72,0);legs.push(l);mesh(new THREE.SphereGeometry(.3,6,5),dark,l,0,-.78,-.08,[1,.58,1.2]);}
-  g.scale.setScalar(scale);g.userData.legs=legs;g.userData.arms=arms;g.userData.enemyName=`外星牛${variant+1}号`;return g;
+  g.scale.setScalar(scale);g.userData.legs=legs;g.userData.arms=arms;g.userData.enemyKey='enemy.alien';g.userData.enemyParams={number:variant+1};return g;
 }
 
 function makeDarkBeast(scale=1){
@@ -211,7 +222,7 @@ function makeDarkBeast(scale=1){
   for(const x of [-.43,.43]){mesh(new THREE.SphereGeometry(.12,6,5),eye,head,x,.19,-.82,[1,.8,.35]);mesh(new THREE.ConeGeometry(.25,.58,4),hide,head,x*1.75,.63,0,[1,1,1],[0,0,x>0?-.55:.55]);}
   const arms=[],legs=[];for(const x of [-.86,.86]){const a=mesh(new THREE.CapsuleGeometry(.2,1.05,2,5),hide,g,x,2.16,0);arms.push(a);}
   for(const x of [-.4,.4]){const l=mesh(new THREE.CapsuleGeometry(.27,1.2,2,5),hide,g,x,.72,0);legs.push(l);}
-  g.scale.setScalar(scale);g.userData.legs=legs;g.userData.arms=arms;g.userData.enemyName='黑面兽';return g;
+  g.scale.setScalar(scale);g.userData.legs=legs;g.userData.arms=arms;g.userData.enemyKey='enemy.beast';return g;
 }
 
 function makeHerdCow(scale=1){
@@ -259,15 +270,15 @@ function makeMonsterCar(scale=1){
   mesh(new THREE.BoxGeometry(4.5,.72,.18),glass,face,0,-.75,-1.18);for(let i=-3;i<=3;i++)mesh(new THREE.ConeGeometry(.22,.55,4),tooth,face,i*.55,-.68,-1.36,[1,1,1],[Math.PI,0,0]);
   const wheels=[];for(const x of [-2.65,2.65])for(const z of [-2.2,2.15]){const w=mesh(new THREE.CylinderGeometry(1.25,1.25,.8,8),rubber,g,x,1.15,z,[1,1,1],[0,0,Math.PI/2]);wheels.push(w);}
   mesh(new THREE.CylinderGeometry(.16,.22,3.5,6),metal,g,-2.1,5.3,-.1,[1,1,1],[0,0,-.3]);mesh(new THREE.ConeGeometry(.32,.8,6),eye,g,-2.62,6.85,-.1);
-  g.scale.setScalar(scale);g.userData.wheels=wheels;g.userData.type='car';g.userData.enemyName='无人怪车';return g;
+  g.scale.setScalar(scale);g.userData.wheels=wheels;g.userData.type='car';g.userData.enemyKey='enemy.car';return g;
 }
 
 function createCharacter(kind){return kind==='yellow'?makeYellowBull(.68):kind==='leopard'?makeLeopard(.78):makeNiuLai(.72,false);}
 let selectedCharacter='orange';
 const difficulties={
-  orange:{name:'简单',length:430,pack:3,stalkers:4,ambushers:2,wave2At:185,wave2Time:34,carAt:335,carTime:58,player:1.06,enemy:.86,drain:.78,recovery:1.25,hazard:.72,fog:.014,rain:.75,flashMin:9,flashRange:13},
-  yellow:{name:'普通',length:535,pack:5,stalkers:7,ambushers:4,wave2At:250,wave2Time:27,carAt:405,carTime:52,player:1,enemy:1,drain:1,recovery:1,hazard:1,fog:.021,rain:1,flashMin:6,flashRange:10},
-  leopard:{name:'困难',length:638,pack:6,stalkers:10,ambushers:7,wave2At:285,wave2Time:22,carAt:465,carTime:42,player:.97,enemy:1.14,drain:1.24,recovery:.82,hazard:1.3,fog:.03,rain:1.35,flashMin:4,flashRange:7}
+  orange:{nameKey:'character.easy',length:430,pack:3,stalkers:4,ambushers:2,wave2At:185,wave2Time:34,carAt:335,carTime:58,player:1.06,enemy:.86,drain:.78,recovery:1.25,hazard:.72,fog:.014,rain:.75,flashMin:9,flashRange:13},
+  yellow:{nameKey:'character.normal',length:535,pack:5,stalkers:7,ambushers:4,wave2At:250,wave2Time:27,carAt:405,carTime:52,player:1,enemy:1,drain:1,recovery:1,hazard:1,fog:.021,rain:1,flashMin:6,flashRange:10},
+  leopard:{nameKey:'character.hard',length:638,pack:6,stalkers:10,ambushers:7,wave2At:285,wave2Time:22,carAt:465,carTime:42,player:.97,enemy:1.14,drain:1.24,recovery:.82,hazard:1.3,fog:.03,rain:1.35,flashMin:4,flashRange:7}
 };
 let player=createCharacter(selectedCharacter); player.position.set(0,.05,18); player.rotation.y=0; scene.add(player);
 const hunter=makeDarkBeast(.78); hunter.position.set(0,.05,51); scene.add(hunter);
@@ -307,8 +318,9 @@ const gateRing=mesh(new THREE.TorusGeometry(9,1.05,6,20),new THREE.MeshBasicMate
 gate.position.z=-620; scene.add(gate);
 const beacon=new THREE.PointLight(0xd9ff43,260,115);beacon.position.set(0,14,-618);scene.add(beacon);
 const gateBeam=mesh(new THREE.CylinderGeometry(2.8,8,100,10,1,true),new THREE.MeshBasicMaterial({color:0xd9ff43,transparent:true,opacity:.13,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}),scene,0,50,-620);
-const signCanvas=document.createElement('canvas');signCanvas.width=512;signCanvas.height=256;const signCtx=signCanvas.getContext('2d');signCtx.fillStyle='#11150fe8';signCtx.fillRect(20,28,472,190);signCtx.strokeStyle='#d9ff43';signCtx.lineWidth=12;signCtx.strokeRect(20,28,472,190);signCtx.fillStyle='#d9ff43';signCtx.textAlign='center';signCtx.font='900 112px sans-serif';signCtx.fillText('出口',256,155);signCtx.font='900 54px sans-serif';signCtx.fillText('▼',256,208);
-const gateSign=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(signCanvas),transparent:true,depthTest:false,fog:false}));gateSign.position.set(0,36,-619);gateSign.scale.set(22,11,1);scene.add(gateSign);
+const signCanvas=document.createElement('canvas');signCanvas.width=512;signCanvas.height=256;const signCtx=signCanvas.getContext('2d'),signTexture=new THREE.CanvasTexture(signCanvas);
+function drawExitSign(){signCtx.clearRect(0,0,512,256);signCtx.fillStyle='#11150fe8';signCtx.fillRect(20,28,472,190);signCtx.strokeStyle='#d9ff43';signCtx.lineWidth=12;signCtx.strokeRect(20,28,472,190);signCtx.fillStyle='#d9ff43';signCtx.textAlign='center';signCtx.font='900 112px sans-serif';signCtx.fillText(t('world.exit'),256,155);signCtx.font='900 54px sans-serif';signCtx.fillText('▼',256,208);signTexture.needsUpdate=true;}drawExitSign();
+const gateSign=new THREE.Sprite(new THREE.SpriteMaterial({map:signTexture,transparent:true,depthTest:false,fog:false}));gateSign.position.set(0,36,-619);gateSign.scale.set(22,11,1);scene.add(gateSign);
 const guidePosts=[];for(let z=-95;z>-595;z-=75)for(const x of [-8,8]){const post=mesh(new THREE.BoxGeometry(.7,4,.7),gateMat,scene,x,2,z);post.castShadow=false;guidePosts.push(post);}
 
 // 电影草原里那种光秃、发白、像手臂一样伸向雾里的树。
@@ -347,16 +359,19 @@ function makeWatcher(){const g=new THREE.Group(),voidMat=new THREE.MeshBasicMate
 const watchers=Array.from({length:4},makeWatcher);
 
 const keys={}, joystick={x:0,y:0}, clock=new THREE.Clock();
-let state='intro', stamina=100, exhausted=false, runLength=430, exitZ=-412, distance=430, hunterSpeed=7.5, elapsed=0, lastLine=-1, shake=0, audio, musicMaster, radioGain, musicNodes=[], musicTimer, storyStage=0, snowStage=0, snowBlend=0, activeChasers=[], speedLevel=0, nextTerrorFlash=9,nextHaunt=6,hauntTimer,deathElapsed=0,deathAttacker=null,deathReason='',nextDeathBlood=0,lastCollisionSound=-99;
+let state='intro', stamina=100, hearts=3, exhausted=false, runLength=430, exitZ=-412, distance=430, hunterSpeed=7.5, elapsed=0, lastLine=-1, shake=0, audio, musicMaster, radioGain, musicNodes=[], musicTimer, storyStage=0, snowStage=0, snowBlend=0, activeChasers=[], speedLevel=0, nextTerrorFlash=9,nextHaunt=6,hauntTimer,deathElapsed=0,deathAttacker=null,deathReason=null,nextDeathBlood=0,lastCollisionSound=-99,invulnerableUntil=0;
 const bloodEffects=[];
 const lines=[
-  [25,'妈妈说：别招惹草蛇。'],[80,'云雀：狼群正在靠近。'],[145,'豹拉：你们先走，我来引开它们。'],
-  [230,'牛群散开了。别停下！'],[330,'妈妈说：过后我就和你会合。'],[440,'云雀：有一个更大的怪物来了。'],[540,'悬崖下面……也许有草场。']
+  [25,'story.0'],[80,'story.1'],[145,'story.2'],[230,'story.3'],[330,'story.4'],[440,'story.5'],[540,'story.6']
 ];
-const herdFleeLines=['前面的牛发现了兽群，开始拼命逃跑。','那头发光的牛突然加速——它不是普通牛。','另一头牛冲出草丛，黑面兽紧跟在后。','它还在跑。后面的喘息声越来越近。','左边的牛群散了，有一头落在最后。','雨里传来蹄声，又一头牛正在逃命。','最后那头牛也被它们盯上了。'];
-const herdCaughtLines=['第一头牛被扑倒了。它的叫声很快消失。','它们咬住了那头牛的后腿，把它拖进草里。','那头牛差一点甩开它们，却在水洼边被围住。','它还在挣扎。黑面兽已经撕开了牛腹。','落单的牛被撞翻，血顺着雨水流了下来。','蹄声停了。雾里只剩下咀嚼声。','最后那头牛没能跑出去。它们分食了它。'];
+const herdFleeLines=Array.from({length:7},(_,i)=>`herd.flee.${i}`),herdCaughtLines=Array.from({length:7},(_,i)=>`herd.caught.${i}`);
 
-function say(text,time=2600){ui.subtitle.textContent=text;ui.subtitle.classList.add('show');clearTimeout(say.t);say.t=setTimeout(()=>ui.subtitle.classList.remove('show'),time);}
+let activeSayKey='',activeSayParams={},activeMissionKey='hud.defaultMission',activeMissionParams={};
+function say(key,time=2600,params={}){activeSayKey=key;activeSayParams=params;ui.subtitle.textContent=t(key,params);ui.subtitle.classList.add('show');clearTimeout(say.t);say.t=setTimeout(()=>{ui.subtitle.classList.remove('show');activeSayKey='';},time);}
+function setMission(key,params={}){activeMissionKey=key;activeMissionParams=params;ui.mission.textContent=t(key,params);}
+function renderHearts(hit=false){[...ui.hearts.children].forEach((heart,index)=>{heart.classList.toggle('lost',index>=hearts);heart.classList.remove('hit-heart');if(hit&&index===hearts){void heart.offsetWidth;heart.classList.add('hit-heart');}});}
+function damageHeart(hitKey,attacker,deathKey){if(state!=='playing'||elapsed<invulnerableUntil)return;invulnerableUntil=elapsed+2;hearts=Math.max(0,hearts-1);renderHearts(true);terrorFlash();shake=.75;say(hearts?'event.heartLost':hitKey,1800,hearts?{count:hearts}:{});if(hearts<=0)beginPlayerDeath(attacker,deathKey);else if(attacker){const dx=player.position.x-attacker.position.x,dz=player.position.z-attacker.position.z,d=Math.max(1,Math.hypot(dx,dz));player.position.x+=dx/d*3;player.position.z+=dz/d*3;}}
+renderHearts();
 function sound(freq=80,dur=.16,type='sawtooth',vol=.05){
   if(!audio) audio=new (window.AudioContext||window.webkitAudioContext)();
   const o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.setValueAtTime(freq,audio.currentTime);o.frequency.exponentialRampToValueAtTime(Math.max(22,freq*.4),audio.currentTime+dur);g.gain.setValueAtTime(vol,audio.currentTime);g.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+dur);o.connect(g).connect(audio.destination);o.start();o.stop(audio.currentTime+dur);
@@ -371,7 +386,7 @@ function triggerHaunt(){
   else if(kind===1){document.body.classList.add('apparition');horrorSound(1);shake=.8;hauntTimer=setTimeout(()=>document.body.classList.remove('apparition'),480);}
   else if(kind===2){document.body.classList.add('blood-flash');horrorSound(2);hauntTimer=setTimeout(()=>document.body.classList.remove('blood-flash'),520);}
   else if(kind===3){const w=watchers.find(x=>!x.visible)||watchers[0],side=Math.random()<.5?-1:1;w.position.set(player.position.x+side*(7+Math.random()*9),0,player.position.z-12-Math.random()*20);w.rotation.y=side>0?-.4:.4;w.visible=true;horrorSound(0);hauntTimer=setTimeout(()=>w.visible=false,420+Math.random()*750);}
-  else{document.body.classList.add('otherworld');horrorSound(3);say('警报响了。草原正在变成另一种东西。',3000);shake=.65;hauntTimer=setTimeout(()=>document.body.classList.remove('otherworld'),4200);}
+  else{document.body.classList.add('otherworld');horrorSound(3);say('event.otherworld',3000);shake=.65;hauntTimer=setTimeout(()=>document.body.classList.remove('otherworld'),4200);}
 }
 function stopMusic(){
   if(!musicMaster||!audio)return;clearInterval(musicTimer);radioGain=null;musicMaster.gain.cancelScheduledValues(audio.currentTime);musicMaster.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+.8);
@@ -408,33 +423,35 @@ document.addEventListener('WeixinJSBridgeReady',()=>{dangerAudio.load();titleCry
 function start(){
   titleCryAudio.pause();titleCryAudio.currentTime=0;document.body.classList.remove('title-cry');
   const mode=difficulties[selectedCharacter];runLength=mode.length;exitZ=18-runLength;distance=runLength;gate.position.z=exitZ;beacon.position.z=exitZ+2;gateBeam.position.z=exitZ;gateSign.position.z=exitZ+1;guidePosts.forEach(post=>post.visible=post.position.z>exitZ+18);scene.fog.density=mode.fog;scene.background.set(selectedCharacter==='orange'?0xaeba88:selectedCharacter==='yellow'?0x9daa7c:0x77806a);
-  state='playing'; elapsed=0; stamina=100;exhausted=false; hunterSpeed=7.5; lastLine=-1;speedLevel=0;deathElapsed=0;deathAttacker=null;deathReason='';nextDeathBlood=0;snowStage=0;snowBlend=0;snow.visible=false;snow.material.opacity=0;snowGhost.visible=false;nextTerrorFlash=mode.flashMin+Math.random()*mode.flashRange;nextHaunt=5+Math.random()*6;clearTimeout(hauntTimer);watchers.forEach(w=>w.visible=false);document.body.classList.remove('death-maul','exhausted','enemy-near','terror-flash','flash-negative','apparition','blackout','blood-flash','heartbeat','otherworld','snow-haunting','difficulty-easy','difficulty-normal','difficulty-hard');document.body.classList.add(selectedCharacter==='orange'?'difficulty-easy':selectedCharacter==='yellow'?'difficulty-normal':'difficulty-hard');ui.distance.textContent=runLength+'m';
+  state='playing'; elapsed=0; stamina=100;hearts=3;renderHearts();invulnerableUntil=0;exhausted=false; hunterSpeed=7.5; lastLine=-1;speedLevel=0;deathElapsed=0;deathAttacker=null;deathReason=null;nextDeathBlood=0;snowStage=0;snowBlend=0;snow.visible=false;snow.material.opacity=0;snowGhost.visible=false;nextTerrorFlash=mode.flashMin+Math.random()*mode.flashRange;nextHaunt=5+Math.random()*6;clearTimeout(hauntTimer);watchers.forEach(w=>w.visible=false);document.body.classList.remove('death-maul','exhausted','enemy-near','terror-flash','flash-negative','apparition','blackout','blood-flash','heartbeat','otherworld','snow-haunting','difficulty-easy','difficulty-normal','difficulty-hard');document.body.classList.add(selectedCharacter==='orange'?'difficulty-easy':selectedCharacter==='yellow'?'difficulty-normal':'difficulty-hard');ui.distance.textContent=runLength+t('world.m');
   player.position.set(0,.05,18);player.rotation.set(0,0,0);storyStage=0;activeChasers=[];allEnemies.forEach(e=>e.visible=false);[...snakes,...treeEnemies].forEach(e=>e.visible=true);
   bloodEffects.splice(0).forEach(f=>scene.remove(f.group));
   herdCows.forEach((c,i)=>{c.position.copy(c.userData.start);c.rotation.set(0,0,0);c.visible=c.position.z>exitZ;c.userData.active=false;c.userData.eaten=false;c.userData.escaped=false;c.userData.announced=false;const e=ambushers[i];e.position.copy(e.userData.start);e.rotation.set(0,0,0);e.visible=false;e.userData.disabled=i>=mode.ambushers;e.userData.feeding=0;e.userData.joined=false;});
   strangeTravellers.forEach(c=>{c.position.copy(c.userData.start);c.rotation.set(0,0,0);c.visible=true;c.userData.fleeing=false;});
   hunterGlow.visible=false;document.body.classList.add('playing');ui.intro.classList.add('hidden');ui.result.classList.remove('show');
-  dangerAudio.pause();dangerAudio.currentTime=0;dangerAudio.volume=.95;dangerLatched=false;sound(55,.8,'sawtooth',.08);startMusic();setTimeout(()=>say(`${difficulties[selectedCharacter].name}难度。跑，别回头。`),500);
+  dangerAudio.pause();dangerAudio.currentTime=0;dangerAudio.volume=.95;dangerLatched=false;sound(55,.8,'sawtooth',.08);startMusic();setTimeout(()=>say('difficulty.start',2600,{difficulty:t(difficulties[selectedCharacter].nameKey)}),500);
 }
+let resultSnapshot=null;
+function localizeDeath(reason){if(!reason)return t('result.defaultDeath');const params={...(reason.params||{})};if(params.enemyKey){params.enemy=t(params.enemyKey,params.enemyParams);delete params.enemyKey;delete params.enemyParams;}return t(reason.key,params);}
+function renderResult(){if(!resultSnapshot)return;const {win,runDistance,exactTime,reason}=resultSnapshot;ui.eyebrow.textContent=t(win?'result.exitFound':'result.deathConfirmed');ui.title.textContent=t(win?'result.winTitle':'result.deadTitle');ui.resultText.innerHTML=t(win?'result.win':'result.dead',{distance:runDistance,time:exactTime,reason:localizeDeath(reason)});}
 function end(win){
   state=win?'win':'caught';recordScore(win);clearTimeout(hauntTimer);watchers.forEach(w=>w.visible=false);snowGhost.visible=false;snow.visible=false;document.body.classList.remove('playing','death-maul','exhausted','enemy-near','terror-flash','flash-negative','apparition','blackout','blood-flash','heartbeat','otherworld','snow-haunting');ui.result.classList.add('show');
-  ui.eyebrow.textContent=win?'你找到了出口':'死亡确认';ui.title.textContent=win?'门后还是草原。':'你已经死亡';
   const runDistance=Math.max(0,Math.min(runLength,Math.round(18-player.position.z))),exactTime=formatTime(Math.round(elapsed*1000));
-  ui.resultText.innerHTML=win?`逃出距离 ${runDistance} 米 · 用时 ${exactTime}<br>远处，又传来了妈妈的声音。`:`本次逃出 ${runDistance} 米 · 坚持 ${exactTime}<br>${deathReason||'它们扑倒牛来，在雨里撕咬了很久。'}`;
+  resultSnapshot={win,runDistance,exactTime,reason:deathReason};renderResult();
   dangerAudio.pause();dangerAudio.currentTime=0;dangerLatched=false;stopMusic();sound(win?220:38,1.5,'sawtooth',.1);
 }
 document.querySelector('#startBtn').onclick=start;document.querySelector('#restartBtn').onclick=start;
 document.querySelector('#scoreBtn').onclick=()=>{renderScores();scoreboard.classList.add('show');scoreboard.setAttribute('aria-hidden','false');};
 document.querySelector('#closeScoreBtn').onclick=()=>{scoreboard.classList.remove('show');scoreboard.setAttribute('aria-hidden','true');};
-function showInstallHint(text){installText.textContent=text;installHint.classList.add('show');installHint.setAttribute('aria-hidden','false');}
+let installHintKey='install.default';function showInstallHint(key){installHintKey=key;installText.textContent=t(key);installHint.classList.add('show');installHint.setAttribute('aria-hidden','false');}
 installBtn.onclick=async()=>{
-  if(matchMedia('(display-mode: standalone)').matches||navigator.standalone){showInstallHint('牛来已经作为应用安装在这台设备上。');return;}
+  if(matchMedia('(display-mode: standalone)').matches||navigator.standalone){showInstallHint('install.already');return;}
   if(deferredInstallPrompt){deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;return;}
   const inWechat=/MicroMessenger/i.test(navigator.userAgent),ios=/iPad|iPhone|iPod/i.test(navigator.userAgent);
-  showInstallHint(inWechat?'先点击右下角指南针，在 Safari 中打开游戏；再点击分享按钮，选择“添加到主屏幕”。':ios?'点击浏览器底部的分享按钮（方框向上箭头），再选择“添加到主屏幕”。':'打开浏览器菜单，选择“安装应用”或“添加到主屏幕”。');
+  showInstallHint(inWechat?'install.wechat':ios?'install.ios':'install.other');
 };
 document.querySelector('#closeInstallBtn').onclick=()=>{installHint.classList.remove('show');installHint.setAttribute('aria-hidden','true');};
-addEventListener('appinstalled',()=>{deferredInstallPrompt=null;installBtn.classList.add('installed');installBtn.querySelector('span').textContent='已经安装';});
+addEventListener('appinstalled',()=>{deferredInstallPrompt=null;installBtn.classList.add('installed');installBtn.querySelector('span').textContent=t('install.installed');});
 document.querySelector('#changeBtn').onclick=()=>{
   stopMusic();state='intro';document.body.classList.remove('playing');ui.result.classList.remove('show');ui.intro.classList.remove('hidden');
   clearTimeout(hauntTimer);watchers.forEach(w=>w.visible=false);snowGhost.visible=false;snow.visible=false;document.body.classList.remove('exhausted','enemy-near','terror-flash','flash-negative','apparition','blackout','blood-flash','heartbeat','otherworld','snow-haunting');
@@ -465,8 +482,8 @@ joystickEl.addEventListener('pointerup',resetJoystick);joystickEl.addEventListen
 
 function glitch(){document.body.classList.add('glitch');sound(48,.1,'square',.03);setTimeout(()=>document.body.classList.remove('glitch'),80+Math.random()*160);}
 function terrorFlash(){
-  const messages=['不要回头','它在你后面','这里没有出口','你已经死过一次','妈妈不在这里'];
-  document.querySelector('.horror-overlay span').textContent=messages[Math.floor(Math.random()*messages.length)];document.body.classList.remove('terror-flash','flash-negative');void document.body.offsetWidth;document.body.classList.add('terror-flash');if(Math.random()>.48)document.body.classList.add('flash-negative');
+  const key=`flash.${Math.floor(Math.random()*5)}`;
+  document.querySelector('.horror-overlay span').textContent=t(key);document.body.classList.remove('terror-flash','flash-negative');void document.body.offsetWidth;document.body.classList.add('terror-flash');if(Math.random()>.48)document.body.classList.add('flash-negative');
   shake=Math.max(shake,.65);horrorSound(Math.random()>.5?1:2);
   setTimeout(()=>document.body.classList.remove('terror-flash','flash-negative'),840);
 }
@@ -474,8 +491,8 @@ function spawnBloodBurst(x,z,amount=22){
   const group=new THREE.Group(),red=flat(0x9d0805),darkRed=flat(0x300000);const pool=mesh(new THREE.CircleGeometry(1.85,10),darkRed,group,0,.025,0,[1,.72,1],[-Math.PI/2,0,Math.random()*Math.PI]);pool.castShadow=false;const drops=[];
   for(let i=0;i<amount;i++){const d=mesh(new THREE.DodecahedronGeometry(.08+Math.random()*.16,0),red,group,0,.7,0);d.userData.velocity=new THREE.Vector3((Math.random()-.5)*7,2+Math.random()*6,(Math.random()-.5)*7);drops.push(d);}group.position.set(x,0,z);scene.add(group);bloodEffects.push({group,drops,age:0});
 }
-function beginPlayerDeath(attacker,reason){
-  if(state!=='playing')return;state='dying';deathElapsed=0;nextDeathBlood=.15;deathAttacker=attacker;deathReason=reason;document.body.classList.add('death-maul','enemy-near');ui.warning.classList.remove('show');ui.mission.textContent='它们已经抓住你了。';say('牛来被扑倒了。它们正在撕咬。',2700);terrorFlash();spawnBloodBurst(player.position.x,player.position.z,28);sound(25,1.1,'sawtooth',.16);shake=1.4;
+function beginPlayerDeath(attacker,reasonKey,reasonParams={}){
+  if(state!=='playing')return;state='dying';deathElapsed=0;nextDeathBlood=.5;deathAttacker=attacker;deathReason={key:reasonKey,params:reasonParams};document.body.classList.add('death-maul','enemy-near');ui.warning.classList.remove('show');setMission('event.caughtMission');say('event.maul',2700);terrorFlash();spawnBloodBurst(player.position.x,player.position.z,28);sound(25,1.1,'sawtooth',.16);shake=1.4;
 }
 function bloodyAttack(cow,enemy){
   const victim=enemy.userData.herdIndex||0;cow.userData.eaten=true;cow.rotation.z=Math.PI/2;cow.position.y=.42;enemy.userData.feeding=2.8;shake=.8;terrorFlash();say(herdCaughtLines[victim%herdCaughtLines.length],2500);
@@ -503,13 +520,13 @@ function placeChaser(enemy,xOffset,zOffset,speed){enemy.position.set(player.posi
 function updateStoryWave(progress){
   const mode=difficulties[selectedCharacter];
   if(storyStage===0&&(progress>18||elapsed>2.5)){
-    storyStage=1;const pack=[[-12,36],[-7,31],[-2,39],[3,33],[8,40],[13,35]];wolfPack.slice(0,mode.pack).forEach((e,i)=>placeChaser(e,pack[i][0],pack[i][1],6.85+(i%3)*.16));say(`${mode.pack}只黑面兽追上来了！`,2200);glitch();
+    storyStage=1;const pack=[[-12,36],[-7,31],[-2,39],[3,33],[8,40],[13,35]];wolfPack.slice(0,mode.pack).forEach((e,i)=>placeChaser(e,pack[i][0],pack[i][1],6.85+(i%3)*.16));say('event.pack',2200,{count:mode.pack});glitch();
   }
   if(storyStage===1&&(progress>mode.wave2At||elapsed>mode.wave2Time)){
-    storyStage=2;stalkers.slice(0,mode.stalkers).forEach((e,i)=>{const side=i%2?-1:1,rank=Math.floor(i/2);placeChaser(e,side*(12+rank*5),46+rank*4,e.userData.type==='beast'?7.5:7.2);});say('更多怪物从两侧包围过来。',2600);
+    storyStage=2;stalkers.slice(0,mode.stalkers).forEach((e,i)=>{const side=i%2?-1:1,rank=Math.floor(i/2);placeChaser(e,side*(12+rank*5),46+rank*4,e.userData.type==='beast'?7.5:7.2);});say('event.more',2600);
   }
   if(storyStage===2&&(progress>mode.carAt||elapsed>mode.carTime)){
-    storyStage=3;placeChaser(monsterCar,0,62,10.2);hunterGlow.visible=true;say('无人怪车来了——但后面的东西没有散去。',3200);sound(31,1.6,'sawtooth',.14);glitch();
+    storyStage=3;placeChaser(monsterCar,0,62,10.2);hunterGlow.visible=true;say('event.car',3200);sound(31,1.6,'sawtooth',.14);glitch();
   }
 }
 function tick(){
@@ -532,8 +549,8 @@ function tick(){
   if(state==='dying'){
     deathElapsed+=dt;player.rotation.z=THREE.MathUtils.lerp(player.rotation.z,Math.PI/2,.16);player.position.y=THREE.MathUtils.lerp(player.position.y,.48,.12);shake=Math.max(shake,.35+Math.abs(Math.sin(t*15))*.45);
     if(deathAttacker){deathAttacker.position.x=THREE.MathUtils.lerp(deathAttacker.position.x,player.position.x,.08);deathAttacker.position.z=THREE.MathUtils.lerp(deathAttacker.position.z,player.position.z+1.15,.08);deathAttacker.position.y=.05+Math.abs(Math.sin(t*12))*.24;deathAttacker.rotation.y=Math.PI;deathAttacker.userData.arms?.forEach((a,i)=>a.rotation.x=Math.sin(t*14+i*Math.PI)*.7);deathAttacker.userData.legs?.forEach((l,i)=>l.rotation.x=Math.sin(t*14+i*Math.PI)*.55);}
-    if(deathElapsed>=nextDeathBlood){nextDeathBlood+=.48;spawnBloodBurst(player.position.x+(Math.random()-.5)*.7,player.position.z+(Math.random()-.5)*.7,8);sound(28+Math.random()*18,.18,'sawtooth',.07);}
-    if(deathElapsed>2.75)end(false);
+    if(deathElapsed>=nextDeathBlood){nextDeathBlood+=.72;if(hearts>0){hearts--;renderHearts(true);}spawnBloodBurst(player.position.x+(Math.random()-.5)*.7,player.position.z+(Math.random()-.5)*.7,8);sound(28+Math.random()*18,.18,'sawtooth',.07);}
+    if(hearts<=0&&deathElapsed>2.55)end(false);
   }
   if(state==='playing'){
     elapsed+=dt;
@@ -547,9 +564,9 @@ function tick(){
     const difficulty=difficulties[selectedCharacter],speed=gameCore.movement_speed(sprint?1:0,exhausted?1:0)*difficulty.player;
     stamina=gameCore.update_stamina(stamina,dt*(sprint?difficulty.drain:difficulty.recovery),moving?1:0,wantsSprint?1:0,exhausted?1:0,sprint?1:0);
     if(sprint){
-      if(stamina<=0){exhausted=true;document.body.classList.add('exhausted');say('没有力气了。松开奔跑，喘口气。',2300);sound(43,.75,'sawtooth',.11);}
+      if(stamina<=0){exhausted=true;document.body.classList.add('exhausted');say('event.tired',2300);sound(43,.75,'sawtooth',.11);}
     }else{
-      if(exhausted&&stamina>=32){exhausted=false;document.body.classList.remove('exhausted');say('腿又能动了。',1200);sound(132,.24,'triangle',.045);}
+      if(exhausted&&stamina>=32){exhausted=false;document.body.classList.remove('exhausted');say('event.recovered',1200);sound(132,.24,'triangle',.045);}
     }
     if(moving){const len=Math.hypot(x,z);x/=len;z/=len;player.position.x+=x*speed*dt;player.position.z+=z*speed*dt;player.rotation.y=Math.atan2(-x,-z);}
     player.position.x=THREE.MathUtils.clamp(player.position.x,-59,59);player.position.z=Math.min(24,player.position.z);
@@ -561,22 +578,22 @@ function tick(){
     const snowStart=runLength*.34,snowEnd=runLength*.68,snowActive=progress>snowStart&&progress<snowEnd;
     snowBlend=THREE.MathUtils.lerp(snowBlend,snowActive?1:0,1-Math.pow(.0005,dt));snow.visible=snowBlend>.015;document.body.classList.toggle('snow-haunting',snowBlend>.28);
     const baseBg=selectedCharacter==='orange'?0xaeba88:selectedCharacter==='yellow'?0x9daa7c:0x77806a;scene.background.set(baseBg).lerp(snowBgColor,snowBlend*.86);scene.fog.color.set(baseBg).lerp(snowFogColor,snowBlend*.8);scene.fog.density=difficulty.fog*(1+snowBlend*1.45);ground.material.color.set(0x6e7e47).lerp(snowGroundColor,snowBlend*.82);rainMat.opacity*=(1-snowBlend*.84);
-    if(snowStage===0&&snowActive){snowStage=1;snowGhost.position.set(player.position.x+(Math.random()<.5?-1:1)*9,.1,player.position.z+35);snowGhost.visible=true;terrorFlash();say('无归雪夜：雪里有个女人在叫你的名字。不要停，也不要回答。',3600);}
-    if(snowStage===1&&progress>snowStart+(snowEnd-snowStart)*.48){snowStage=2;snowGhost.position.set(player.position.x+(Math.random()<.5?-1:1)*5,.1,player.position.z+19);terrorFlash();say('她没有脚印。她刚才明明还在前面。',3000);}
-    if(snowStage<3&&progress>=snowEnd){snowStage=3;snowGhost.visible=false;terrorFlash();say('雪停了。身后却还传来女人踩雪的声音。',3200);}
+    if(snowStage===0&&snowActive){snowStage=1;snowGhost.position.set(player.position.x+(Math.random()<.5?-1:1)*9,.1,player.position.z+35);snowGhost.visible=true;terrorFlash();say('event.snowStart',3600);}
+    if(snowStage===1&&progress>snowStart+(snowEnd-snowStart)*.48){snowStage=2;snowGhost.position.set(player.position.x+(Math.random()<.5?-1:1)*5,.1,player.position.z+19);terrorFlash();say('event.snowNear',3000);}
+    if(snowStage<3&&progress>=snowEnd){snowStage=3;snowGhost.visible=false;terrorFlash();say('event.snowEnd',3200);}
     herdCows.forEach((cow,i)=>{
       const enemy=ambushers[i];if(cow.userData.eaten){if(enemy.userData.feeding>0){enemy.userData.feeding-=dt;enemy.userData.headBob=(enemy.userData.headBob||0)+dt;enemy.position.y=.05+Math.abs(Math.sin(t*12))*.18;}else if(!enemy.userData.joined){enemy.userData.joined=true;enemy.position.y=.05;enemy.userData.chaseSpeed=7.15+(i%3)*.14;activeChasers.push(enemy);}return;}
       if(!cow.visible)return;if(!cow.userData.active&&Math.abs(player.position.z-cow.position.z)<58){cow.userData.active=true;enemy.visible=!enemy.userData.disabled;if(!cow.userData.announced){cow.userData.announced=true;say(herdFleeLines[i%herdFleeLines.length],2300);}}
       if(!cow.userData.active)return;
       const cowSpeed=cow.userData.super?11.2:5.35+(i%3)*.32;cow.position.z-=cowSpeed*dt;cow.position.x+=Math.sin(t*1.4+i)*dt*(cow.userData.super?.85:.45);cow.userData.legs.forEach((l,n)=>l.rotation.x=Math.sin(t*(cow.userData.super?17:12)+n*Math.PI)*.58);if(cow.userData.halo){cow.userData.halo.rotation.z+=dt*2.8;cow.userData.halo.scale.setScalar(1+Math.sin(t*5)*.09);}
-      if(cow.userData.super&&cow.position.z<exitZ+5){cow.userData.escaped=true;cow.visible=false;enemy.userData.joined=true;enemy.userData.chaseSpeed=7.15;activeChasers.push(enemy);say('超级牛甩开了怪物，冲进出口，逃之夭夭！',3000);sound(260,.55,'triangle',.09);return;}
+      if(cow.userData.super&&cow.position.z<exitZ+5){cow.userData.escaped=true;cow.visible=false;enemy.userData.joined=true;enemy.userData.chaseSpeed=7.15;activeChasers.push(enemy);say('event.superCow',3000);sound(260,.55,'triangle',.09);return;}
       if(enemy.userData.disabled)return;
       const chase=new THREE.Vector3().subVectors(cow.position,enemy.position),d=chase.length();enemy.position.addScaledVector(chase.normalize(),(cow.userData.super?7.1:7.05+i*.08)*dt);enemy.rotation.y=Math.atan2(-chase.x,-chase.z);animateCow(enemy,t,11);
       if(d<2.05)bloodyAttack(cow,enemy);
     });
     strangeTravellers.forEach((c,i)=>{if(!c.userData.fleeing&&Math.abs(player.position.z-c.position.z)<72)c.userData.fleeing=true;if(c.userData.fleeing){c.position.z-=(5.6+i*.4)*dt;c.position.x+=Math.sin(t*1.2+i)*dt*.35;animateCow(c,t,9+i);}});
     let nearest=999;
-    if(snowGhost.visible){const ghostV=new THREE.Vector3().subVectors(player.position,snowGhost.position);ghostV.y=0;const ghostD=ghostV.length();nearest=Math.min(nearest,ghostD);snowGhost.position.addScaledVector(ghostV.normalize(),(8.4+elapsed*.018)*difficulty.enemy*dt);snowGhost.position.y=.18+Math.sin(t*2.4)*.28;snowGhost.rotation.y=Math.atan2(-ghostV.x,-ghostV.z);snowGhost.rotation.z=Math.sin(t*3.1)*.035;if(ghostD<2.75)beginPlayerDeath(snowGhost,'雪中女鬼贴上牛来的后背，随后雾里的怪物围上来撕咬。');}
+    if(snowGhost.visible){const ghostV=new THREE.Vector3().subVectors(player.position,snowGhost.position);ghostV.y=0;const ghostD=ghostV.length();nearest=Math.min(nearest,ghostD);snowGhost.position.addScaledVector(ghostV.normalize(),(8.4+elapsed*.018)*difficulty.enemy*dt);snowGhost.position.y=.18+Math.sin(t*2.4)*.28;snowGhost.rotation.y=Math.atan2(-ghostV.x,-ghostV.z);snowGhost.rotation.z=Math.sin(t*3.1)*.035;if(ghostD<2.75)beginPlayerDeath(snowGhost,'death.snow');}
     for(const enemy of activeChasers){
       const v=new THREE.Vector3().subVectors(player.position,enemy.position);v.y=0;const d=v.length();nearest=Math.min(nearest,d);
       const timeBoost=gameCore.enemy_time_boost(elapsed,enemy.userData.type==='car'?1:0);
@@ -584,13 +601,13 @@ function tick(){
       if(enemy.userData.type!=='car')enemy.position.x+=Math.sin(t*1.8+activeChasers.indexOf(enemy)*1.7)*dt*.65;
       enemy.rotation.y=Math.atan2(-v.x,-v.z);
       if(enemy.userData.type==='car')enemy.userData.wheels.forEach(w=>w.rotation.x+=dt*9);else animateCow(enemy,t,enemy.userData.type==='beast'?13:9);
-      if(d<(enemy.userData.type==='car'?6.2:3.3)){shake=1;document.body.classList.add('hit');setTimeout(()=>document.body.classList.remove('hit'),400);beginPlayerDeath(enemy,`${enemy.userData.enemyName||'它们'}把牛来扑倒，咬开皮毛，鲜血混进了雨水。`);}
+      if(d<(enemy.userData.type==='car'?6.2:3.3)){shake=1;document.body.classList.add('hit');setTimeout(()=>document.body.classList.remove('hit'),400);beginPlayerDeath(enemy,'death.enemy',{enemyKey:enemy.userData.enemyKey||'enemy.them',enemyParams:enemy.userData.enemyParams});}
     }
     if(monsterCar.visible)hunterGlow.position.set(monsterCar.position.x,4,monsterCar.position.z-3);
     industrialLights.forEach((lamp,i)=>lamp.intensity=(document.body.classList.contains('otherworld')?42:12)*(Math.sin(t*(3.5+i*.17)+i*2)>0.45?1:0));
-    const nextSpeedLevel=Math.floor(elapsed/12);if(nextSpeedLevel>speedLevel){speedLevel=nextSpeedLevel;say(`敌人速度提升 · ${speedLevel+1}级`,1800);sound(96+speedLevel*18,.32,'square',.055);}
-    for(const snake of snakes){snake.userData.segments.forEach((s,i)=>s.position.x=Math.sin(t*2+i*.72)*1.4);const d=Math.hypot(player.position.x-snake.position.x,player.position.z-snake.position.z);nearest=Math.min(nearest,d);if(d<4.2){stamina=Math.max(0,stamina-55*difficulty.hazard*dt);player.position.x+=(player.position.x-snake.position.x)*dt*2.5;shake=.28;if(stamina<=0)beginPlayerDeath(snake,'草蛇缠住牛来的四肢，随后赶来的怪物将它扑倒撕咬。');}}
-    for(const tree of treeEnemies){tree.userData.arms.forEach((a,i)=>a.rotation.z+=(i?1:-1)*dt*.45);const d=Math.hypot(player.position.x-tree.position.x,player.position.z-tree.position.z);nearest=Math.min(nearest,d);if(d<5.2){stamina=Math.max(0,stamina-38*difficulty.hazard*dt);shake=.2;if(stamina<=0)beginPlayerDeath(tree,'怪树卡住了牛来。追来的它们扑上去，直到雨水完全变红。');}}
+    const nextSpeedLevel=Math.floor(elapsed/12);if(nextSpeedLevel>speedLevel){speedLevel=nextSpeedLevel;say('difficulty.speedUp',1800,{level:speedLevel+1});sound(96+speedLevel*18,.32,'square',.055);}
+    for(const snake of snakes){snake.userData.segments.forEach((s,i)=>s.position.x=Math.sin(t*2+i*.72)*1.4);const d=Math.hypot(player.position.x-snake.position.x,player.position.z-snake.position.z);nearest=Math.min(nearest,d);if(d<4.2){stamina=Math.max(0,stamina-25*difficulty.hazard*dt);player.position.x+=(player.position.x-snake.position.x)*dt*2.5;shake=.28;damageHeart('event.snakeHit',snake,'death.snake');}}
+    for(const tree of treeEnemies){tree.userData.arms.forEach((a,i)=>a.rotation.z+=(i?1:-1)*dt*.45);const d=Math.hypot(player.position.x-tree.position.x,player.position.z-tree.position.z);nearest=Math.min(nearest,d);if(d<5.2){stamina=Math.max(0,stamina-18*difficulty.hazard*dt);shake=.2;damageHeart('event.treeHit',tree,'death.tree');}}
     document.body.classList.toggle('heartbeat',nearest<15);if(radioGain&&audio)radioGain.gain.setTargetAtTime(nearest<45?THREE.MathUtils.mapLinear(Math.max(6,nearest),6,45,.22,.012):.002,audio.currentTime,.08);
     if(nearest<26&&!dangerLatched){
       dangerLatched=true;document.body.classList.add('enemy-near');dangerAudio.currentTime=0;dangerAudio.play().catch(()=>{});terrorFlash();
@@ -600,8 +617,8 @@ function tick(){
     }
     if(nearest<18&&!ui.warning.classList.contains('show')){ui.warning.classList.add('show');sound(62,.7,'sawtooth',.08);setTimeout(()=>ui.warning.classList.remove('show'),1200);}
     if(state==='playing'&&player.position.z<exitZ+6)end(true);
-    distance=Math.max(0,(player.position.z-exitZ));ui.distance.textContent=Math.floor(distance)+'m';ui.stamina.style.width=stamina+'%';
-    ui.mission.textContent=distance<180?'发光的出口就在前面！':nearest<16?'敌人靠近。换个方向！':'穿过雾，别回头。';
+    distance=Math.max(0,(player.position.z-exitZ));ui.distance.textContent=Math.floor(distance)+t('world.m');ui.stamina.style.width=stamina+'%';
+    setMission(distance<180?'event.exitNear':nearest<16?'event.enemyNear':'hud.defaultMission');
     lines.forEach((line,i)=>{if(progress>line[0]&&lastLine<i){lastLine=i;say(line[1]);if(i===2||i===5)glitch();}});
     if(Math.random()<dt*.018)glitch();
   }
@@ -622,6 +639,8 @@ function resizeGame(){const w=Math.round(window.visualViewport?.width||innerWidt
 addEventListener('resize',resizeGame);window.visualViewport?.addEventListener('resize',resizeGame);addEventListener('orientationchange',()=>setTimeout(resizeGame,250));
 document.addEventListener('touchmove',e=>{if(state==='playing')e.preventDefault();},{passive:false});document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});
 resizeGame();
+
+addEventListener('niulai:languagechange',()=>{refreshLanguageMenu();renderScores();drawExitSign();if(activeSayKey){if(activeSayKey==='difficulty.start')activeSayParams={difficulty:t(difficulties[selectedCharacter].nameKey)};ui.subtitle.textContent=t(activeSayKey,activeSayParams);}setMission(activeMissionKey,activeMissionParams);if(resultSnapshot)renderResult();installText.textContent=t(installHintKey);ui.distance.textContent=Math.floor(distance)+t('world.m');});
 
 if('serviceWorker' in navigator){
   addEventListener('load',()=>navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`,{scope:import.meta.env.BASE_URL}).catch(()=>{}));
