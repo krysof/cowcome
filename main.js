@@ -38,6 +38,7 @@ ground.geometry.computeVertexNormals(); scene.add(ground);
 function mesh(geo,mat,parent,x,y,z,scale=[1,1,1],rot=[0,0,0]){
   const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.scale.set(...scale);m.rotation.set(...rot);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;
 }
+function tuft(parent,mat,x,y,z,s=.18,rot=0){return mesh(new THREE.ConeGeometry(s,s*2.4,4),mat,parent,x,y,z,[1,1,1],[0,0,rot]);}
 function makeNiuLai(scale=1, dark=false){
   const g=new THREE.Group();
   const fur=flat(dark?0x342019:0xe97837), muzzle=flat(dark?0x84624e:0xf2d3a0);
@@ -54,6 +55,7 @@ function makeNiuLai(scale=1, dark=false){
     mesh(new THREE.ConeGeometry(.11,.42,4),inner,head,x*1.94,.18,-.08,[1,1,1],[0,0,x>0?-1.25:1.25]);
     mesh(new THREE.BoxGeometry(.38,.07,.06),hoof,head,x,.5,-.77,[1,1,1],[0,0,x>0?.12:-.12]);
   }
+  tuft(g,fur,-.35,5.17,0,.17,-.12);tuft(g,fur,.05,5.25,0,.19,.06);tuft(g,fur,.4,5.14,0,.15,.18);
   const arms=[], legs=[];
   for(const x of [-1.03,1.03]){
     const a=mesh(new THREE.CapsuleGeometry(.22,1.15,2,5),fur,g,x,2.45,0,[1,1,1],[0,0,x>0?-.16:.16]);arms.push(a);
@@ -67,15 +69,18 @@ function makeNiuLai(scale=1, dark=false){
 }
 
 function makeYellowBull(scale=1,dark=false){
-  const g=new THREE.Group(), fur=flat(dark?0x32251a:0xc89c22), muzzle=flat(dark?0x725958:0xa88aa4), hoof=flat(dark?0x130e0b:0x806d83), eye=flat(0xf2e8d5), pupil=flat(dark?0xff3b21:0x231711), horn=flat(0x39363b);
-  mesh(new THREE.SphereGeometry(1.18,7,6),fur,g,0,2.55,0,[1.02,1.34,.78]);
-  const head=mesh(new THREE.SphereGeometry(1.16,7,6),fur,g,0,4.5,-.05,[1.05,1,.8]);
-  mesh(new THREE.SphereGeometry(.68,7,5),muzzle,head,0,-.23,-.9,[1.08,.65,.4]);
+  const g=new THREE.Group(), fur=flat(dark?0x32251a:0xd2a72c), muzzle=flat(dark?0x725958:0xaa8ba8), hoof=flat(dark?0x130e0b:0x9a829b), eye=flat(0xf2e8d5), pupil=flat(dark?0xff3b21:0x231711), horn=flat(0x403a49), brow=flat(0x6c542c);
+  mesh(new THREE.CapsuleGeometry(.92,1.8,3,7),fur,g,0,2.5,0,[1.08,1,.82]);
+  const head=mesh(new THREE.SphereGeometry(1.16,8,6),fur,g,0,4.55,-.05,[1.05,1,.8]);
+  const lip=mesh(new THREE.SphereGeometry(.7,8,5),muzzle,head,0,-.23,-.9,[1.12,.68,.42]);
+  mesh(new THREE.BoxGeometry(.85,.07,.08),hoof,lip,0,-.18,-.66);
   for(const x of [-.45,.45]){
     mesh(new THREE.SphereGeometry(.23,7,5),eye,head,x,.17,-.78,[1,.8,.32]);mesh(new THREE.SphereGeometry(.095,6,5),pupil,head,x,.16,-.9,[1,1,.5]);
-    mesh(new THREE.ConeGeometry(.16,.92,6),horn,head,x*1.25,1.02,-.03,[1,1,1],[0,0,x>0?-.22:.22]);
+    mesh(new THREE.BoxGeometry(.43,.07,.08),brow,head,x,.48,-.79,[1,1,1],[0,0,x>0?-.12:.12]);
+    mesh(new THREE.ConeGeometry(.17,1.12,7),horn,head,x*1.3,1.12,-.03,[1,1,1],[0,0,x>0?-.28:.28]);
     mesh(new THREE.ConeGeometry(.22,.62,4),fur,head,x*2.05,.12,0,[1,1,1],[0,0,x>0?-1.25:1.25]);
   }
+  tuft(g,fur,-.28,5.55,0,.17,-.15);tuft(g,fur,.1,5.62,0,.19,.1);
   const arms=[],legs=[];for(const x of [-1.05,1.05]){const a=mesh(new THREE.CapsuleGeometry(.25,1.2,2,5),fur,g,x,2.45,0);arms.push(a);mesh(new THREE.SphereGeometry(.3,6,5),hoof,a,0,-.82,0);}
   for(const x of [-.5,.5]){const l=mesh(new THREE.CapsuleGeometry(.3,1.35,2,5),fur,g,x,.9,0);legs.push(l);mesh(new THREE.SphereGeometry(.37,6,5),hoof,l,0,-.9,-.12,[1,.65,1.3]);}
   g.scale.setScalar(scale);g.userData.legs=legs;g.userData.arms=arms;return g;
@@ -88,7 +93,8 @@ function makeLeopard(scale=1){
   for(const x of [-.38,.38]){mesh(new THREE.SphereGeometry(.2,6,5),eye,head,x,.15,-.72,[1,.9,.3]);mesh(new THREE.SphereGeometry(.08,6,5),spot,head,x,.15,-.83);mesh(new THREE.ConeGeometry(.28,.55,4),fur,head,x*1.8,.72,-.02,[1,1,1],[0,0,x>0?-.58:.58]);}
   const arms=[],legs=[];for(const x of [-.82,.82]){const a=mesh(new THREE.CapsuleGeometry(.18,1.05,2,5),fur,g,x,2.35,0);arms.push(a);}
   for(const x of [-.36,.36]){const l=mesh(new THREE.CapsuleGeometry(.22,1.25,2,5),fur,g,x,.82,0);legs.push(l);}
-  for(let i=0;i<14;i++){const a=i/14*Math.PI*2,r=i<7?.78:.58,y=i<7?2.45:4.07;mesh(new THREE.SphereGeometry(.09+(i%3)*.03,5,4),spot,g,Math.cos(a)*r,y+Math.sin(a)*.65,-.62,[1,.7,.25]);}
+  for(let i=0;i<24;i++){const a=i/12*Math.PI*2,r=i<12?.78:.68,y=i<12?2.45:4.07;mesh(new THREE.SphereGeometry(.075+(i%4)*.025,5,4),spot,g,Math.cos(a)*r,y+Math.sin(a)*.68,-.62,[1,.7,.25]);}
+  tuft(g,fur,-.2,4.95,0,.13,-.1);tuft(g,fur,.12,4.99,0,.14,.12);
   const tail=mesh(new THREE.CapsuleGeometry(.12,1.7,2,5),fur,g,.62,2.1,.35,[1,1,1],[0,0,-.8]);mesh(new THREE.SphereGeometry(.16,6,5),spot,tail,0,-1,0);
   g.scale.setScalar(scale);g.userData.legs=legs;g.userData.arms=arms;return g;
 }
@@ -121,13 +127,15 @@ function makeAlienCow(scale=1,variant=0){
 }
 
 function makeDarkBeast(scale=1){
-  const g=new THREE.Group(), hide=flat(0x291715), mask=flat(0xd8d5c7), eye=flat(0xff762b);
-  mesh(new THREE.BoxGeometry(2.25,1.5,3.8),hide,g,0,1.7,0);
-  const head=mesh(new THREE.BoxGeometry(2,1.55,1.55),hide,g,0,1.9,-2.45);
-  mesh(new THREE.SphereGeometry(.9,6,5),mask,head,0,-.15,-.85,[1,.65,.28]);
-  for(const x of [-.47,.47]){mesh(new THREE.SphereGeometry(.12,5,4),eye,head,x,.27,-.8);mesh(new THREE.ConeGeometry(.25,.65,4),hide,head,x*1.55,.85,0);}
-  const legs=[];for(const x of [-.7,.7])for(const z of [-1.15,1.15])legs.push(mesh(new THREE.BoxGeometry(.42,1.5,.48),hide,g,x,.65,z));
-  g.scale.setScalar(scale);g.userData.legs=legs;g.userData.arms=[];g.userData.enemyName='黑面兽';return g;
+  const g=new THREE.Group(), hide=flat(0x301817), mask=flat(0xd7d5ce), eye=flat(0xff6e25), mouth=flat(0x100b0a);
+  mesh(new THREE.CapsuleGeometry(.94,1.55,3,7),hide,g,0,2.25,0,[1.12,1,.78]);
+  const bib=mesh(new THREE.SphereGeometry(.82,7,5),mask,g,0,2.5,-.72,[.92,1.12,.22]);
+  const head=mesh(new THREE.SphereGeometry(1.05,7,6),hide,g,0,4.05,-.04,[1.04,.92,.78]);
+  mesh(new THREE.SphereGeometry(.72,7,5),mask,head,0,-.22,-.86,[1.18,.68,.38]);mesh(new THREE.BoxGeometry(.48,.07,.08),mouth,head,0,-.33,-1.18);
+  for(const x of [-.43,.43]){mesh(new THREE.SphereGeometry(.12,6,5),eye,head,x,.19,-.82,[1,.8,.35]);mesh(new THREE.ConeGeometry(.25,.58,4),hide,head,x*1.75,.63,0,[1,1,1],[0,0,x>0?-.55:.55]);}
+  const arms=[],legs=[];for(const x of [-.86,.86]){const a=mesh(new THREE.CapsuleGeometry(.2,1.05,2,5),hide,g,x,2.16,0);arms.push(a);}
+  for(const x of [-.4,.4]){const l=mesh(new THREE.CapsuleGeometry(.27,1.2,2,5),hide,g,x,.72,0);legs.push(l);}
+  g.scale.setScalar(scale);g.userData.legs=legs;g.userData.arms=arms;g.userData.enemyName='黑面兽';return g;
 }
 
 function makeSnake(scale=1){
@@ -149,13 +157,14 @@ function makeTreeEnemy(scale=1){
 
 function createCharacter(kind){return kind==='yellow'?makeYellowBull(.68):kind==='leopard'?makeLeopard(.78):makeNiuLai(.72,false);}
 let selectedCharacter='orange';
-let player=createCharacter(selectedCharacter); player.position.set(0,.05,18); player.rotation.y=Math.PI; scene.add(player);
+let player=createCharacter(selectedCharacter); player.position.set(0,.05,18); player.rotation.y=0; scene.add(player);
 const hunter=makeAlienCow(1.38,0); hunter.position.set(0,.05,51); hunter.rotation.y=Math.PI; scene.add(hunter);
 const hunterGlow=new THREE.PointLight(0xff2b16,22,24); hunterGlow.position.set(0,5,46); scene.add(hunterGlow);
 const enemyConfigs=[[-24,-85,'alien'],[27,-165,'beast'],[-29,-255,'beast'],[25,-340,'alien'],[-24,-450,'beast'],[22,-545,'alien']];
 const stalkers=enemyConfigs.map(([x,z,type],i)=>{const e=type==='alien'?makeAlienCow(.9,i%2):makeDarkBeast(.72);e.position.set(x,.05,z);e.userData.home=new THREE.Vector3(x,.05,z);e.userData.speed=type==='alien'?5.2:6.1;e.userData.type=type;scene.add(e);return e;});
 const snakes=[[-11,-120],[17,-305],[-14,-505]].map(([x,z])=>{const s=makeSnake(.82);s.position.set(x,0,z);s.rotation.y=Math.PI/2;scene.add(s);return s;});
 const treeEnemies=[[-18,-210],[16,-405]].map(([x,z])=>{const t=makeTreeEnemy(1.25);t.position.set(x,0,z);scene.add(t);return t;});
+const allEnemies=[hunter,...stalkers,...snakes,...treeEnemies];allEnemies.forEach(e=>e.visible=false);hunterGlow.visible=false;
 
 const obstacles=[];
 function addRock(x,z,s=1){const r=mesh(new THREE.DodecahedronGeometry(1.5,0),flat(Math.random()>.5?0x4a4b3b:0x675e49),scene,x,s*.8,z,[s,s,s]);obstacles.push(r);}
@@ -185,7 +194,7 @@ for(let i=0;i<46;i++){
 }
 
 const keys={}, clock=new THREE.Clock();
-let state='intro', stamina=100, distance=638, hunterSpeed=7.5, elapsed=0, lastLine=-1, shake=0, audio;
+let state='intro', stamina=100, distance=638, hunterSpeed=7.5, elapsed=0, lastLine=-1, shake=0, audio, musicMaster, musicNodes=[], musicTimer;
 const lines=[
   [25,'妈妈说：别回头。'],[80,'云雀：前面没有路。'],[145,'妈妈说：牛来，你跑反了。'],
   [230,'这里以前不是这样的。'],[330,'不要相信黄色的门。'],[440,'妈妈说：回家吧。'],[540,'出口正在看着你。']
@@ -196,22 +205,38 @@ function sound(freq=80,dur=.16,type='sawtooth',vol=.05){
   if(!audio) audio=new (window.AudioContext||window.webkitAudioContext)();
   const o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.setValueAtTime(freq,audio.currentTime);o.frequency.exponentialRampToValueAtTime(Math.max(22,freq*.4),audio.currentTime+dur);g.gain.setValueAtTime(vol,audio.currentTime);g.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+dur);o.connect(g).connect(audio.destination);o.start();o.stop(audio.currentTime+dur);
 }
+function stopMusic(){
+  if(!musicMaster||!audio)return;clearInterval(musicTimer);musicMaster.gain.cancelScheduledValues(audio.currentTime);musicMaster.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+.8);
+  const nodes=[...musicNodes];setTimeout(()=>nodes.forEach(n=>{try{n.stop()}catch{}}),900);musicNodes=[];musicMaster=null;
+}
+function startMusic(){
+  if(!audio)audio=new (window.AudioContext||window.webkitAudioContext)();audio.resume();stopMusic();
+  musicMaster=audio.createGain();musicMaster.gain.setValueAtTime(.0001,audio.currentTime);musicMaster.gain.exponentialRampToValueAtTime(.055,audio.currentTime+1.8);musicMaster.connect(audio.destination);
+  const filter=audio.createBiquadFilter();filter.type='lowpass';filter.frequency.value=360;filter.Q.value=7;filter.connect(musicMaster);
+  [41.2,43.7,61.8].forEach((freq,i)=>{const o=audio.createOscillator(),g=audio.createGain();o.type=i===2?'triangle':'sawtooth';o.frequency.value=freq;g.gain.value=i===2?.08:.13;o.connect(g).connect(filter);o.start();musicNodes.push(o);});
+  const lfo=audio.createOscillator(),lfoGain=audio.createGain();lfo.frequency.value=.11;lfoGain.gain.value=140;lfo.connect(lfoGain).connect(filter.frequency);lfo.start();musicNodes.push(lfo);
+  musicTimer=setInterval(()=>{if(state!=='playing'||!musicMaster)return;const o=audio.createOscillator(),g=audio.createGain();o.type='sine';o.frequency.value=[164,185,207,233][Math.floor(Math.random()*4)];g.gain.setValueAtTime(.0001,audio.currentTime);g.gain.exponentialRampToValueAtTime(.035,audio.currentTime+.08);g.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+1.8);o.connect(g).connect(musicMaster);o.start();o.stop(audio.currentTime+2);},2400);
+}
 function start(){
   state='playing'; elapsed=0; stamina=100; hunterSpeed=7.5; lastLine=-1;
-  player.position.set(0,.05,18);player.rotation.set(0,0,0);hunter.position.set(0,.05,51);stalkers.forEach(e=>e.position.copy(e.userData.home));document.body.classList.add('playing');ui.intro.classList.add('hidden');ui.result.classList.remove('show');
-  sound(55,.8,'sawtooth',.08);setTimeout(()=>say('跑，牛来。'),500);
+  player.position.set(0,.05,18);player.rotation.set(0,0,0);hunter.position.set(0,.05,51);stalkers.forEach(e=>e.position.copy(e.userData.home));allEnemies.forEach(e=>e.visible=true);hunterGlow.visible=true;document.body.classList.add('playing');ui.intro.classList.add('hidden');ui.result.classList.remove('show');
+  sound(55,.8,'sawtooth',.08);startMusic();setTimeout(()=>say('跑，牛来。'),500);
 }
 function end(win){
   state=win?'win':'caught';document.body.classList.remove('playing');ui.result.classList.add('show');
   ui.eyebrow.textContent=win?'你找到了出口':'逃亡终止';ui.title.textContent=win?'门后还是草原。':'牛来，回家。';
   ui.resultText.innerHTML=win?`你跑了 ${Math.floor(elapsed)} 秒。<br>远处，又传来了妈妈的声音。`:`你离出口还剩 ${Math.max(0,Math.floor(distance))} 米。<br>这一次，妈妈追上你了。`;
-  sound(win?220:38,1.5,'sawtooth',.1);
+  stopMusic();sound(win?220:38,1.5,'sawtooth',.1);
 }
 document.querySelector('#startBtn').onclick=start;document.querySelector('#restartBtn').onclick=start;
+document.querySelector('#changeBtn').onclick=()=>{
+  stopMusic();state='intro';document.body.classList.remove('playing');ui.result.classList.remove('show');ui.intro.classList.remove('hidden');
+  player.position.set(0,.05,18);player.rotation.y=0;hunter.position.set(0,.05,51);stalkers.forEach(e=>e.position.copy(e.userData.home));allEnemies.forEach(e=>e.visible=false);hunterGlow.visible=false;
+};
 document.querySelectorAll('.character').forEach(button=>button.addEventListener('click',()=>{
   if(state!=='intro')return;
   selectedCharacter=button.dataset.character;document.querySelectorAll('.character').forEach(b=>b.classList.toggle('active',b===button));
-  const old=player;player=createCharacter(selectedCharacter);player.position.copy(old.position);player.rotation.y=Math.PI;scene.remove(old);scene.add(player);sound(120,.12,'square',.025);
+  const old=player;player=createCharacter(selectedCharacter);player.position.copy(old.position);player.rotation.y=0;scene.remove(old);scene.add(player);sound(120,.12,'square',.025);
 }));
 addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='Enter'&&state==='intro')start();if(e.code==='KeyR'&&state!=='playing')start();});
 addEventListener('keyup',e=>keys[e.code]=false);
@@ -229,7 +254,7 @@ function animateCow(cow,t,speed){
 function tick(){
   requestAnimationFrame(tick);const dt=Math.min(clock.getDelta(),.04),t=clock.elapsedTime;
   if(state==='playing'){
-    elapsed+=dt;let x=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0), z=(keys.KeyS||keys.ArrowDown?1:0)-(keys.KeyW||keys.ArrowUp?1:0);
+    elapsed+=dt;let x=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0), z=(keys.KeyS||keys.ArrowUp?1:0)-(keys.KeyW||keys.ArrowDown?1:0);
     const moving=x||z, sprint=(keys.ShiftLeft||keys.ShiftRight)&&stamina>2&&moving;
     let speed=sprint?15:9;if(sprint)stamina-=24*dt;else stamina=Math.min(100,stamina+13*dt);
     if(moving){const len=Math.hypot(x,z);x/=len;z/=len;player.position.x+=x*speed*dt;player.position.z+=z*speed*dt;player.rotation.y=Math.atan2(-x,-z);}
@@ -258,10 +283,14 @@ function tick(){
     if(Math.random()<dt*.018)glitch();
   } else animateCow(hunter,t,2.5);
   const narrow=innerWidth<700;
-  const desired=new THREE.Vector3(player.position.x*(narrow?.82:.72)+(narrow?1.3:3.2),narrow?17:10.5,player.position.z+(narrow?13:23));
+  // 镜头位于奔跑方向前方：角色朝屏幕下方跑，且始终能看到正脸和身后的敌人。
+  const desired=state==='intro'
+    ? new THREE.Vector3(player.position.x+2.3,narrow?10:8.5,player.position.z-(narrow?10:11))
+    : new THREE.Vector3(player.position.x*(narrow?.86:.74)+(narrow?.8:2.2),narrow?24:19,player.position.z-(narrow?13:18));
   camera.position.lerp(desired,1-Math.pow(.001,dt));
   if(shake>0){camera.position.x+=(Math.random()-.5)*shake;camera.position.y+=(Math.random()-.5)*shake;shake*=.88;}
-  camera.lookAt(player.position.x,narrow?1.4:2.1,player.position.z-(narrow?9:12));
+  if(state==='intro')camera.lookAt(player.position.x,2.5,player.position.z);
+  else camera.lookAt(player.position.x,narrow?1.2:1.8,player.position.z+(narrow?5:8));
   renderer.render(scene,camera);
 }
 tick();

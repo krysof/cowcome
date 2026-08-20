@@ -56,16 +56,21 @@ button { border:0; font:inherit; cursor:pointer; }
 .result h2 { font-size:clamp(44px,8vw,100px); margin:5px 0 15px; letter-spacing:-.06em; }
 .result p { line-height:1.8; opacity:.75; }
 .result button { margin:30px auto 0; }
+.result-actions { display:flex; justify-content:center; gap:12px; flex-wrap:wrap; }
+.result button.secondary { color:#fff; background:#222; box-shadow:7px 7px 0 #000; }
 .mobile-controls { display:none; }
 body.glitch #game { filter:hue-rotate(80deg) contrast(1.7); transform:translateX(4px); }
 body.hit { animation:hit .22s linear 2; }
 @keyframes hit { 50%{transform:translateX(7px);filter:brightness(2) saturate(2)} }
 @media(max-width:700px) {
   .noise{display:none}
-  .screen{padding:28px;background:linear-gradient(90deg,#10130eee,transparent 140%)}
-  h1 span{font-size:90px}.stamp{right:25px;bottom:90px;width:75px;height:75px;font-size:15px}
+  .screen{padding:20px 24px;background:linear-gradient(90deg,#10130eee,transparent 140%)}
+  .intro{overflow-y:auto;align-items:flex-start;padding-top:max(22px,env(safe-area-inset-top))}
+  .intro-copy{margin:auto 0}.eyebrow{margin-bottom:12px}h1{margin-bottom:16px}
+  h1 span{font-size:clamp(62px,24vw,88px)}h1 em{margin-top:14px;font-size:18px}.intro p{margin:10px 0;font-size:12px}.stamp{display:none}
   .chooser .character b{display:none}.chooser .character{padding:5px}
   .hud{padding:16px}.brand span,.stamina-wrap{display:none}.mission{left:16px;top:85px}.distance strong{font-size:19px}.controls{display:none}
-  .mobile-controls{display:grid;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(2,48px);gap:5px;position:fixed;left:18px;bottom:18px;z-index:8;opacity:.55}
+  .mobile-controls{display:none;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(2,48px);gap:5px;position:fixed;left:18px;bottom:18px;z-index:8;opacity:.55}
+  .playing .mobile-controls{display:grid}
   .mobile-controls button{background:#151712aa;color:#fff;border:1px solid #fff5;border-radius:5px;font-weight:900}.mobile-controls button:nth-child(1){grid-column:2}.mobile-controls .run{position:fixed;right:22px;bottom:25px;width:68px;height:68px;border-radius:50%;color:var(--acid);border-color:var(--acid)}
 }
