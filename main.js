@@ -359,7 +359,7 @@ function makeWatcher(){const g=new THREE.Group(),voidMat=new THREE.MeshBasicMate
 const watchers=Array.from({length:4},makeWatcher);
 
 const keys={}, joystick={x:0,y:0}, clock=new THREE.Clock();
-let state='intro', stamina=100, hearts=3, exhausted=false, runLength=430, exitZ=-412, distance=430, hunterSpeed=7.5, elapsed=0, lastLine=-1, shake=0, audio, musicMaster, radioGain, musicNodes=[], musicTimer, storyStage=0, snowStage=0, snowBlend=0, activeChasers=[], speedLevel=0, nextTerrorFlash=9,nextHaunt=6,hauntTimer,deathElapsed=0,deathAttacker=null,deathReason=null,nextDeathBlood=0,lastCollisionSound=-99,invulnerableUntil=0;
+let state='intro', stamina=100, hearts=3, exhausted=false, runLength=430, exitZ=-412, distance=430, hunterSpeed=7.5, elapsed=0, lastLine=-1, shake=0, audio, musicMaster, radioGain, musicNodes=[], musicTimer, storyStage=0, snowStage=0, snowBlend=0, activeChasers=[], speedLevel=0, nextTerrorFlash=9,nextHaunt=6,hauntTimer,titleCryTimer,deathElapsed=0,deathAttacker=null,deathReason=null,nextDeathBlood=0,lastCollisionSound=-99,invulnerableUntil=0;
 const bloodEffects=[];
 const lines=[
   [25,'story.0'],[80,'story.1'],[145,'story.2'],[230,'story.3'],[330,'story.4'],[440,'story.5'],[540,'story.6']
@@ -369,8 +369,19 @@ const herdFleeLines=Array.from({length:7},(_,i)=>`herd.flee.${i}`),herdCaughtLin
 let activeSayKey='',activeSayParams={},activeMissionKey='hud.defaultMission',activeMissionParams={};
 function say(key,time=2600,params={}){activeSayKey=key;activeSayParams=params;ui.subtitle.textContent=t(key,params);ui.subtitle.classList.add('show');clearTimeout(say.t);say.t=setTimeout(()=>{ui.subtitle.classList.remove('show');activeSayKey='';},time);}
 function setMission(key,params={}){activeMissionKey=key;activeMissionParams=params;ui.mission.textContent=t(key,params);}
-function renderHearts(hit=false){[...ui.hearts.children].forEach((heart,index)=>{heart.classList.toggle('lost',index>=hearts);heart.classList.remove('hit-heart');if(hit&&index===hearts){void heart.offsetWidth;heart.classList.add('hit-heart');}});}
-function damageHeart(hitKey,attacker,deathKey){if(state!=='playing'||elapsed<invulnerableUntil)return;invulnerableUntil=elapsed+2;hearts=Math.max(0,hearts-1);renderHearts(true);terrorFlash();shake=.75;say(hearts?'event.heartLost':hitKey,1800,hearts?{count:hearts}:{});if(hearts<=0)beginPlayerDeath(attacker,deathKey);else if(attacker){const dx=player.position.x-attacker.position.x,dz=player.position.z-attacker.position.z,d=Math.max(1,Math.hypot(dx,dz));player.position.x+=dx/d*3;player.position.z+=dz/d*3;}}
+function applyPlayerHealthAppearance(){
+  document.body.classList.remove('health-3','health-2','health-1','health-0');document.body.classList.add(`health-${hearts}`);
+  if(!player)return;
+  if(!player.userData.wounds){
+    const wounds=new THREE.Group(),blood=new THREE.MeshBasicMaterial({color:0x850500,fog:false});
+    [[-.42,3.05,-.8,.22,.55,.08,.55],[.45,2.25,-.79,.18,.42,-.07,.4],[-.25,4.12,-.82,.13,.34,.05,.25]].forEach(([x,y,z,sx,sy,rz,minHearts])=>{const cut=new THREE.Mesh(new THREE.SphereGeometry(1,6,4),blood);cut.position.set(x,y,z);cut.scale.set(sx,sy,.06);cut.rotation.z=rz;cut.userData.minDamage=minHearts;wounds.add(cut);});
+    player.add(wounds);player.userData.wounds=wounds;
+  }
+  const damage=3-hearts;player.userData.wounds.children.forEach((cut,index)=>cut.visible=index<damage+Math.max(0,damage-1));
+  player.traverse(part=>{if(!part.isMesh||!part.material?.color)return;if(!part.userData.healthyColor)part.userData.healthyColor=part.material.color.clone();part.material.color.copy(part.userData.healthyColor).lerp(new THREE.Color(0x3b1513),damage*(damage===1?.09:.17));});
+}
+function renderHearts(hit=false){[...ui.hearts.children].forEach((heart,index)=>{heart.classList.toggle('lost',index>=hearts);heart.classList.remove('hit-heart');if(hit&&index===hearts){void heart.offsetWidth;heart.classList.add('hit-heart');}});applyPlayerHealthAppearance();}
+function damageHeart(hitKey,attacker,deathKey,deathParams={}){if(state!=='playing'||elapsed<invulnerableUntil)return;invulnerableUntil=elapsed+2.15;hearts=Math.max(0,hearts-1);renderHearts(true);terrorFlash();shake=.9;if(hearts)say('event.heartLost',1800,{count:hearts});if(hearts<=0)beginPlayerDeath(attacker,deathKey,deathParams);else if(attacker){const dx=player.position.x-attacker.position.x,dz=player.position.z-attacker.position.z,d=Math.max(1,Math.hypot(dx,dz));player.position.x+=dx/d*4.2;player.position.z+=dz/d*4.2;attacker.position.x-=dx/d*1.5;attacker.position.z-=dz/d*1.5;}}
 renderHearts();
 function sound(freq=80,dur=.16,type='sawtooth',vol=.05){
   if(!audio) audio=new (window.AudioContext||window.webkitAudioContext)();
@@ -417,18 +428,19 @@ function unlockAudio(){
   document.querySelector('#audioGate').classList.add('hidden');
   playTitleCry();
 }
-function playTitleCry(){titleCryAudio.pause();titleCryAudio.currentTime=0;titleCryAudio.volume=1;titleCryAudio.play().catch(()=>{});document.body.classList.remove('title-cry');void document.body.offsetWidth;document.body.classList.add('title-cry');setTimeout(()=>document.body.classList.remove('title-cry'),1400);}
+function playTitleCry(){clearTimeout(titleCryTimer);titleCryAudio.pause();titleCryAudio.currentTime=0;titleCryAudio.volume=1;titleCryAudio.play().catch(()=>{});document.body.classList.remove('title-cry');void document.body.offsetWidth;document.body.classList.add('title-cry');titleCryTimer=setTimeout(()=>document.body.classList.remove('title-cry'),1400);}
 document.querySelector('#enterGameBtn').addEventListener('click',unlockAudio);
 document.addEventListener('WeixinJSBridgeReady',()=>{dangerAudio.load();titleCryAudio.load();if(audio)audio.resume().catch(()=>{});},{once:true});
 function start(){
-  titleCryAudio.pause();titleCryAudio.currentTime=0;document.body.classList.remove('title-cry');
+  clearTimeout(titleCryTimer);titleCryAudio.pause();titleCryAudio.currentTime=0;document.body.classList.remove('title-cry');
+  clearTimeout(say.t);clearTimeout(hauntTimer);ui.subtitle.classList.remove('show');ui.warning.classList.remove('show');activeSayKey='';activeMissionKey='hud.defaultMission';activeMissionParams={};Object.keys(keys).forEach(key=>delete keys[key]);resetJoystick();stopMusic();
   const mode=difficulties[selectedCharacter];runLength=mode.length;exitZ=18-runLength;distance=runLength;gate.position.z=exitZ;beacon.position.z=exitZ+2;gateBeam.position.z=exitZ;gateSign.position.z=exitZ+1;guidePosts.forEach(post=>post.visible=post.position.z>exitZ+18);scene.fog.density=mode.fog;scene.background.set(selectedCharacter==='orange'?0xaeba88:selectedCharacter==='yellow'?0x9daa7c:0x77806a);
-  state='playing'; elapsed=0; stamina=100;hearts=3;renderHearts();invulnerableUntil=0;exhausted=false; hunterSpeed=7.5; lastLine=-1;speedLevel=0;deathElapsed=0;deathAttacker=null;deathReason=null;nextDeathBlood=0;snowStage=0;snowBlend=0;snow.visible=false;snow.material.opacity=0;snowGhost.visible=false;nextTerrorFlash=mode.flashMin+Math.random()*mode.flashRange;nextHaunt=5+Math.random()*6;clearTimeout(hauntTimer);watchers.forEach(w=>w.visible=false);document.body.classList.remove('death-maul','exhausted','enemy-near','terror-flash','flash-negative','apparition','blackout','blood-flash','heartbeat','otherworld','snow-haunting','difficulty-easy','difficulty-normal','difficulty-hard');document.body.classList.add(selectedCharacter==='orange'?'difficulty-easy':selectedCharacter==='yellow'?'difficulty-normal':'difficulty-hard');ui.distance.textContent=runLength+t('world.m');
-  player.position.set(0,.05,18);player.rotation.set(0,0,0);storyStage=0;activeChasers=[];allEnemies.forEach(e=>e.visible=false);[...snakes,...treeEnemies].forEach(e=>e.visible=true);
+  state='playing'; elapsed=0; stamina=100;hearts=3;invulnerableUntil=0;exhausted=false; hunterSpeed=7.5; lastLine=-1;speedLevel=0;deathElapsed=0;deathAttacker=null;deathReason=null;resultSnapshot=null;nextDeathBlood=0;snowStage=0;snowBlend=0;snow.visible=false;snow.material.opacity=0;snowGhost.visible=false;nextTerrorFlash=mode.flashMin+Math.random()*mode.flashRange;nextHaunt=5+Math.random()*6;watchers.forEach(w=>w.visible=false);document.body.classList.remove('death-maul','exhausted','enemy-near','terror-flash','flash-negative','apparition','blackout','blood-flash','heartbeat','otherworld','snow-haunting','hit','glitch','title-cry','health-3','health-2','health-1','health-0','difficulty-easy','difficulty-normal','difficulty-hard');document.body.classList.add(selectedCharacter==='orange'?'difficulty-easy':selectedCharacter==='yellow'?'difficulty-normal':'difficulty-hard');ui.distance.textContent=runLength+t('world.m');
+  const oldPlayer=player;player=createCharacter(selectedCharacter);player.position.set(0,.05,18);player.rotation.set(0,0,0);scene.remove(oldPlayer);scene.add(player);renderHearts();storyStage=0;activeChasers=[];allEnemies.forEach(e=>{e.visible=false;e.position.y=e.userData.type==='car'?0:.05;e.userData.feeding=0;e.userData.joined=false;e.userData.headBob=0;});stalkers.forEach(e=>e.position.copy(e.userData.home));monsterCar.position.set(0,0,80);[...snakes,...treeEnemies].forEach(e=>e.visible=true);
   bloodEffects.splice(0).forEach(f=>scene.remove(f.group));
   herdCows.forEach((c,i)=>{c.position.copy(c.userData.start);c.rotation.set(0,0,0);c.visible=c.position.z>exitZ;c.userData.active=false;c.userData.eaten=false;c.userData.escaped=false;c.userData.announced=false;const e=ambushers[i];e.position.copy(e.userData.start);e.rotation.set(0,0,0);e.visible=false;e.userData.disabled=i>=mode.ambushers;e.userData.feeding=0;e.userData.joined=false;});
   strangeTravellers.forEach(c=>{c.position.copy(c.userData.start);c.rotation.set(0,0,0);c.visible=true;c.userData.fleeing=false;});
-  hunterGlow.visible=false;document.body.classList.add('playing');ui.intro.classList.add('hidden');ui.result.classList.remove('show');
+  const mobileView=mobileDevice||innerWidth<700;hunterGlow.visible=false;shake=0;camera.fov=66;camera.updateProjectionMatrix();camera.position.set(mobileView?.8:2.2,mobileView?24:19,mobileView?5:0);setMission('hud.defaultMission');document.body.classList.add('playing');ui.intro.classList.add('hidden');ui.result.classList.remove('show');canvas.focus?.();
   dangerAudio.pause();dangerAudio.currentTime=0;dangerAudio.volume=.95;dangerLatched=false;sound(55,.8,'sawtooth',.08);startMusic();setTimeout(()=>say('difficulty.start',2600,{difficulty:t(difficulties[selectedCharacter].nameKey)}),500);
 }
 let resultSnapshot=null;
@@ -453,7 +465,7 @@ installBtn.onclick=async()=>{
 document.querySelector('#closeInstallBtn').onclick=()=>{installHint.classList.remove('show');installHint.setAttribute('aria-hidden','true');};
 addEventListener('appinstalled',()=>{deferredInstallPrompt=null;installBtn.classList.add('installed');installBtn.querySelector('span').textContent=t('install.installed');});
 document.querySelector('#changeBtn').onclick=()=>{
-  stopMusic();state='intro';document.body.classList.remove('playing');ui.result.classList.remove('show');ui.intro.classList.remove('hidden');
+  stopMusic();state='intro';hearts=3;renderHearts();document.body.classList.remove('playing');ui.result.classList.remove('show');ui.intro.classList.remove('hidden');
   clearTimeout(hauntTimer);watchers.forEach(w=>w.visible=false);snowGhost.visible=false;snow.visible=false;document.body.classList.remove('exhausted','enemy-near','terror-flash','flash-negative','apparition','blackout','blood-flash','heartbeat','otherworld','snow-haunting');
   player.position.set(0,.05,18);player.rotation.set(0,0,0);storyStage=0;activeChasers=[];allEnemies.forEach(e=>e.visible=false);hunterGlow.visible=false;
   playTitleCry();
@@ -461,13 +473,17 @@ document.querySelector('#changeBtn').onclick=()=>{
 document.querySelectorAll('.character').forEach(button=>button.addEventListener('click',()=>{
   if(state!=='intro')return;
   selectedCharacter=button.dataset.character;document.querySelectorAll('.character').forEach(b=>b.classList.toggle('active',b===button));
-  const old=player;player=createCharacter(selectedCharacter);player.position.copy(old.position);player.rotation.y=0;scene.remove(old);scene.add(player);sound(120,.12,'square',.025);
+  const old=player;player=createCharacter(selectedCharacter);player.position.copy(old.position);player.rotation.y=0;scene.remove(old);scene.add(player);renderHearts();sound(120,.12,'square',.025);
 }));
-addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='Escape'){scoreboard.classList.remove('show');scoreboard.setAttribute('aria-hidden','true');}if(e.code==='Enter'&&state==='intro'&&!scoreboard.classList.contains('show'))start();if(e.code==='KeyR'&&state!=='playing'&&!scoreboard.classList.contains('show'))start();});
+const movementCodes=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowLeft','ArrowDown','ArrowRight','ShiftLeft','ShiftRight']);
+addEventListener('keydown',e=>{if(movementCodes.has(e.code)){e.preventDefault();keys[e.code]=true;}if(e.code==='Escape'){scoreboard.classList.remove('show');scoreboard.setAttribute('aria-hidden','true');}if(e.code==='Enter'&&state==='intro'&&!scoreboard.classList.contains('show'))start();if(e.code==='KeyR'&&state!=='playing'&&!scoreboard.classList.contains('show'))start();});
 addEventListener('keyup',e=>keys[e.code]=false);
+addEventListener('blur',()=>{Object.keys(keys).forEach(key=>delete keys[key]);resetJoystick();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){Object.keys(keys).forEach(key=>delete keys[key]);resetJoystick();}});
 document.querySelectorAll('.mobile-controls button').forEach(b=>{
   const k=b.dataset.key;b.addEventListener('pointerdown',e=>{e.preventDefault();keys[k]=true});
   ['pointerup','pointercancel','pointerleave'].forEach(ev=>b.addEventListener(ev,()=>keys[k]=false));
+  if(!window.PointerEvent){b.addEventListener('touchstart',e=>{e.preventDefault();keys[k]=true},{passive:false});['touchend','touchcancel'].forEach(ev=>b.addEventListener(ev,()=>keys[k]=false));}
 });
 const joystickEl=document.querySelector('#joystick'),joystickKnob=document.querySelector('#joystickKnob');
 function moveJoystick(e){
@@ -479,6 +495,11 @@ joystickEl.addEventListener('pointerdown',e=>{e.preventDefault();joystickEl.setP
 joystickEl.addEventListener('pointermove',e=>{if(joystickEl.hasPointerCapture(e.pointerId))moveJoystick(e);});
 function resetJoystick(){joystick.x=joystick.y=0;joystickKnob.style.transform='translate(0,0)';}
 joystickEl.addEventListener('pointerup',resetJoystick);joystickEl.addEventListener('pointercancel',resetJoystick);
+addEventListener('pointerup',e=>{if(!e.target.closest?.('.joystick'))resetJoystick();});
+if(!window.PointerEvent){
+  const moveTouch=e=>{e.preventDefault();const touch=e.touches[0];if(touch)moveJoystick(touch);};
+  joystickEl.addEventListener('touchstart',moveTouch,{passive:false});joystickEl.addEventListener('touchmove',moveTouch,{passive:false});joystickEl.addEventListener('touchend',resetJoystick,{passive:false});joystickEl.addEventListener('touchcancel',resetJoystick,{passive:false});
+}
 
 function glitch(){document.body.classList.add('glitch');sound(48,.1,'square',.03);setTimeout(()=>document.body.classList.remove('glitch'),80+Math.random()*160);}
 function terrorFlash(){
@@ -515,6 +536,7 @@ function animatePlayer(cow,t,moving,sprinting){
   }else{
     cow.rotation.x=THREE.MathUtils.lerp(cow.rotation.x,0,.2);cow.position.y=THREE.MathUtils.lerp(cow.position.y,.05,.18);if(cow.userData.head)cow.userData.head.rotation.x=THREE.MathUtils.lerp(cow.userData.head.rotation.x,0,.2);cow.userData.arms.forEach((a,i)=>a.rotation.z=THREE.MathUtils.lerp(a.rotation.z,i?-.16:.16,.2));cow.userData.legs.forEach(l=>l.rotation.z=THREE.MathUtils.lerp(l.rotation.z,0,.2));animateCow(cow,t,moving?10:1);
   }
+  const damage=3-hearts;if(damage){cow.rotation.z+=Math.sin(t*(damage===2?7:4.5))*(damage===2?.1:.045);if(!sprinting)cow.rotation.x-=damage*.075;if(cow.userData.head){cow.userData.head.rotation.z=THREE.MathUtils.lerp(cow.userData.head.rotation.z||0,damage*.1,.16);}if(cow.userData.arms?.[0])cow.userData.arms[0].rotation.x-=damage*.18;}
 }
 function placeChaser(enemy,xOffset,zOffset,speed){enemy.position.set(player.position.x+xOffset,.05,player.position.z+zOffset);enemy.visible=true;enemy.userData.chaseSpeed=speed;activeChasers.push(enemy);}
 function updateStoryWave(progress){
@@ -593,7 +615,7 @@ function tick(){
     });
     strangeTravellers.forEach((c,i)=>{if(!c.userData.fleeing&&Math.abs(player.position.z-c.position.z)<72)c.userData.fleeing=true;if(c.userData.fleeing){c.position.z-=(5.6+i*.4)*dt;c.position.x+=Math.sin(t*1.2+i)*dt*.35;animateCow(c,t,9+i);}});
     let nearest=999;
-    if(snowGhost.visible){const ghostV=new THREE.Vector3().subVectors(player.position,snowGhost.position);ghostV.y=0;const ghostD=ghostV.length();nearest=Math.min(nearest,ghostD);snowGhost.position.addScaledVector(ghostV.normalize(),(8.4+elapsed*.018)*difficulty.enemy*dt);snowGhost.position.y=.18+Math.sin(t*2.4)*.28;snowGhost.rotation.y=Math.atan2(-ghostV.x,-ghostV.z);snowGhost.rotation.z=Math.sin(t*3.1)*.035;if(ghostD<2.75)beginPlayerDeath(snowGhost,'death.snow');}
+    if(snowGhost.visible){const ghostV=new THREE.Vector3().subVectors(player.position,snowGhost.position);ghostV.y=0;const ghostD=ghostV.length();nearest=Math.min(nearest,ghostD);snowGhost.position.addScaledVector(ghostV.normalize(),(8.4+elapsed*.018)*difficulty.enemy*dt);snowGhost.position.y=.18+Math.sin(t*2.4)*.28;snowGhost.rotation.y=Math.atan2(-ghostV.x,-ghostV.z);snowGhost.rotation.z=Math.sin(t*3.1)*.035;if(ghostD<2.75)damageHeart('event.heartLost',snowGhost,'death.snow');}
     for(const enemy of activeChasers){
       const v=new THREE.Vector3().subVectors(player.position,enemy.position);v.y=0;const d=v.length();nearest=Math.min(nearest,d);
       const timeBoost=gameCore.enemy_time_boost(elapsed,enemy.userData.type==='car'?1:0);
@@ -601,7 +623,7 @@ function tick(){
       if(enemy.userData.type!=='car')enemy.position.x+=Math.sin(t*1.8+activeChasers.indexOf(enemy)*1.7)*dt*.65;
       enemy.rotation.y=Math.atan2(-v.x,-v.z);
       if(enemy.userData.type==='car')enemy.userData.wheels.forEach(w=>w.rotation.x+=dt*9);else animateCow(enemy,t,enemy.userData.type==='beast'?13:9);
-      if(d<(enemy.userData.type==='car'?6.2:3.3)){shake=1;document.body.classList.add('hit');setTimeout(()=>document.body.classList.remove('hit'),400);beginPlayerDeath(enemy,'death.enemy',{enemyKey:enemy.userData.enemyKey||'enemy.them',enemyParams:enemy.userData.enemyParams});}
+      if(d<(enemy.userData.type==='car'?6.2:3.3)){shake=1;document.body.classList.add('hit');setTimeout(()=>document.body.classList.remove('hit'),400);damageHeart('event.heartLost',enemy,'death.enemy',{enemyKey:enemy.userData.enemyKey||'enemy.them',enemyParams:enemy.userData.enemyParams});}
     }
     if(monsterCar.visible)hunterGlow.position.set(monsterCar.position.x,4,monsterCar.position.z-3);
     industrialLights.forEach((lamp,i)=>lamp.intensity=(document.body.classList.contains('otherworld')?42:12)*(Math.sin(t*(3.5+i*.17)+i*2)>0.45?1:0));
@@ -622,7 +644,7 @@ function tick(){
     lines.forEach((line,i)=>{if(progress>line[0]&&lastLine<i){lastLine=i;say(line[1]);if(i===2||i===5)glitch();}});
     if(Math.random()<dt*.018)glitch();
   }
-  const narrow=innerWidth<700;
+  const narrow=mobileDevice||innerWidth<700;
   // 镜头位于奔跑方向前方：角色朝屏幕下方跑，且始终能看到正脸和身后的敌人。
   const desired=state==='intro'
     ? new THREE.Vector3(player.position.x+2.3,narrow?10:8.5,player.position.z-(narrow?10:11))

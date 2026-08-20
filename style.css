@@ -4,6 +4,10 @@ html,body { margin:0; width:100%; height:100%; min-height:100dvh; overflow:hidde
 #game { position:fixed; inset:-1px; width:calc(100% + 2px); height:calc(100% + 2px); filter:blur(.65px) saturate(var(--game-sat,.72)) brightness(var(--game-light,.9)) contrast(var(--game-contrast,1.08));transition:filter .35s; }
 body.difficulty-easy{--game-sat:.82;--game-light:.97;--game-contrast:1.02}body.difficulty-normal{--game-sat:.7;--game-light:.9;--game-contrast:1.1}body.difficulty-hard{--game-sat:.48;--game-light:.72;--game-contrast:1.24}.difficulty-easy .noise{opacity:.17}.difficulty-normal .noise{opacity:.27}.difficulty-hard .noise{opacity:.39}.difficulty-hard .danger-state{filter:saturate(1.5) contrast(1.2)}
 body.enemy-near{--game-contrast:1.2}body.exhausted{--game-sat:.24;--game-light:.66;--game-contrast:1.22}body.enemy-near.exhausted{--game-sat:.15;--game-light:.57;--game-contrast:1.48}
+body.health-2{--game-sat:.64;--game-light:.84;--game-contrast:1.18}body.health-1{--game-sat:.3;--game-light:.66;--game-contrast:1.42}body.health-0{--game-sat:.08;--game-light:.46;--game-contrast:1.68}
+body.health-2:after,body.health-1:after,body.health-0:after{content:"";position:fixed;inset:0;z-index:6;pointer-events:none;mix-blend-mode:multiply;background:radial-gradient(ellipse at 50% 48%,transparent 28%,#4d000070 78%,#150000e8 118%)}
+body.health-2:after{opacity:.28}body.health-1:after{opacity:.7;animation:woundPulse 1.15s ease-in-out infinite}body.health-0:after{opacity:.96}
+@keyframes woundPulse{50%{opacity:.46;transform:scale(1.025)}}
 .noise { position:fixed; inset:-8%; pointer-events:none; opacity:.27; z-index:3; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.65'/%3E%3C/svg%3E"),radial-gradient(ellipse at 50% 55%,transparent 16%,#d8ddbd3d 54%,#1a2118aa 112%); mix-blend-mode:soft-light; animation:grain .18s steps(2) infinite; }
 .noise:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 3px,#dfe5cf0b 4px 5px);opacity:.7}
 body.terror-flash #game{animation:flashWorld .82s steps(1) both}
@@ -126,7 +130,7 @@ button { border:0; font:inherit; cursor:pointer; }
 body.glitch #game { filter:blur(1.1px) hue-rotate(80deg) contrast(1.7); transform:translateX(4px); }
 body.hit { animation:hit .22s linear 2; }
 @keyframes hit { 50%{transform:translateX(7px);filter:brightness(2) saturate(2)} }
-@media(max-width:700px) {
+@media(max-width:700px), (pointer:coarse) {
   .language-picker{right:max(10px,env(safe-area-inset-right));top:max(10px,env(safe-area-inset-top))}.language-picker>button{width:42px;padding:0;justify-content:center}.language-picker>button b{display:none}.language-menu{right:0;top:47px}
   #game{filter:blur(.2px) saturate(var(--game-sat,.76)) brightness(var(--game-light,.93)) contrast(var(--game-contrast,1.06))}
   .noise{opacity:.18;animation-duration:.28s}
@@ -136,7 +140,7 @@ body.hit { animation:hit .22s linear 2; }
   .intro-copy{margin:auto 0}.ink-landscape{right:-46%;width:145vw;opacity:.38}.eyebrow{margin-bottom:12px}h1{margin-bottom:16px}
   h1 span{font-size:clamp(62px,24vw,88px)}h1 em{margin-top:14px;font-size:18px}.intro p{margin:10px 0;font-size:12px}.stamp{display:none}
   .chooser>div{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.chooser .character{padding:0 0 7px}.chooser .character b{display:block;padding:6px 3px 0;font-size:9px}.chooser .character small{padding:2px 3px 0;font-size:7px}.intro .menu-actions{width:100%;gap:9px;margin-top:14px}.intro .menu-actions button{width:100%;min-height:58px;padding:15px 16px;margin-top:0}.intro .menu-actions #startBtn{min-height:68px;font-size:18px}.score-card{padding:28px 22px}
-  .hud{padding:16px}.brand span{display:none}.survival-bars{position:fixed;right:16px;top:78px}.hearts{font-size:18px}.stamina-wrap{display:block;width:118px}.stamina-wrap>span{display:block}.stamina{height:7px}.mission{left:16px;top:85px}.distance strong{font-size:19px}.controls{display:none}
+  .hud{padding:16px}.brand span{display:none}.survival-bars{position:fixed;right:max(72px,calc(env(safe-area-inset-right) + 72px));top:72px;align-items:flex-start}.hearts{font-size:18px}.stamina-wrap{display:block;width:118px}.stamina-wrap>span{display:block}.stamina{height:7px}.mission{left:16px;top:85px}.distance strong{font-size:19px}.controls{display:none}
   .mobile-controls{display:none;position:fixed;inset:0;z-index:8;pointer-events:none}
   .playing .mobile-controls{display:block}
   .joystick{position:absolute;left:22px;bottom:max(24px,env(safe-area-inset-bottom));width:124px;height:124px;pointer-events:auto;touch-action:none}
