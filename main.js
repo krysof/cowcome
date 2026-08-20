@@ -31,7 +31,7 @@ function renderScores(){
   const scores=readScores();scoreList.innerHTML=scores.length?scores.map(s=>`<li><div><b>${characterNames[s.character]||'牛来'}</b><small>${difficultyNames[s.character]||'简单'} · ${s.win?'成功逃出':'被它们追上'} · ${s.distance}m</small></div><strong>${formatTime(s.time)}</strong></li>`).join(''):'<li class="empty">还没有逃亡记录</li>';
 }
 function recordScore(win){
-  const entry={win,character:selectedCharacter,distance:Math.max(0,Math.min(638,Math.round(18-player.position.z))),time:Math.max(0,Math.round(elapsed*1000)),date:Date.now()};entry.score=gameCore.rank_score(win?1:0,entry.distance,entry.time);
+  const entry={win,character:selectedCharacter,distance:Math.max(0,Math.min(runLength,Math.round(18-player.position.z))),time:Math.max(0,Math.round(elapsed*1000)),date:Date.now()};entry.score=gameCore.rank_score(win?1:0,entry.distance,entry.time);
   const scoreOf=s=>Number.isFinite(s.score)?s.score:gameCore.rank_score(s.win?1:0,s.distance,s.time);
   const scores=[...readScores(),entry].sort((a,b)=>scoreOf(b)-scoreOf(a)).slice(0,5);
   try{localStorage.setItem('niulai-highscores',JSON.stringify(scores))}catch{}renderScores();
@@ -249,9 +249,9 @@ function makeMonsterCar(scale=1){
 function createCharacter(kind){return kind==='yellow'?makeYellowBull(.68):kind==='leopard'?makeLeopard(.78):makeNiuLai(.72,false);}
 let selectedCharacter='orange';
 const difficulties={
-  orange:{name:'简单',player:1.06,enemy:.86,drain:.78,recovery:1.25,hazard:.72},
-  yellow:{name:'普通',player:1,enemy:1,drain:1,recovery:1,hazard:1},
-  leopard:{name:'困难',player:.97,enemy:1.14,drain:1.24,recovery:.82,hazard:1.3}
+  orange:{name:'简单',length:430,pack:3,stalkers:4,ambushers:2,wave2At:185,wave2Time:34,carAt:Infinity,carTime:Infinity,player:1.06,enemy:.86,drain:.78,recovery:1.25,hazard:.72,fog:.014,rain:.75,flashMin:13,flashRange:20},
+  yellow:{name:'普通',length:535,pack:5,stalkers:7,ambushers:4,wave2At:250,wave2Time:27,carAt:405,carTime:52,player:1,enemy:1,drain:1,recovery:1,hazard:1,fog:.021,rain:1,flashMin:9,flashRange:17},
+  leopard:{name:'困难',length:638,pack:6,stalkers:10,ambushers:7,wave2At:285,wave2Time:22,carAt:465,carTime:42,player:.97,enemy:1.14,drain:1.24,recovery:.82,hazard:1.3,fog:.03,rain:1.35,flashMin:5,flashRange:11}
 };
 let player=createCharacter(selectedCharacter); player.position.set(0,.05,18); player.rotation.y=0; scene.add(player);
 const hunter=makeDarkBeast(.78); hunter.position.set(0,.05,51); scene.add(hunter);
@@ -293,7 +293,7 @@ const beacon=new THREE.PointLight(0xd9ff43,260,115);beacon.position.set(0,14,-61
 const gateBeam=mesh(new THREE.CylinderGeometry(2.8,8,100,10,1,true),new THREE.MeshBasicMaterial({color:0xd9ff43,transparent:true,opacity:.13,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}),scene,0,50,-620);
 const signCanvas=document.createElement('canvas');signCanvas.width=512;signCanvas.height=256;const signCtx=signCanvas.getContext('2d');signCtx.fillStyle='#11150fe8';signCtx.fillRect(20,28,472,190);signCtx.strokeStyle='#d9ff43';signCtx.lineWidth=12;signCtx.strokeRect(20,28,472,190);signCtx.fillStyle='#d9ff43';signCtx.textAlign='center';signCtx.font='900 112px sans-serif';signCtx.fillText('出口',256,155);signCtx.font='900 54px sans-serif';signCtx.fillText('▼',256,208);
 const gateSign=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(signCanvas),transparent:true,depthTest:false,fog:false}));gateSign.position.set(0,36,-619);gateSign.scale.set(22,11,1);scene.add(gateSign);
-for(let z=-95;z>-595;z-=75)for(const x of [-8,8]){const post=mesh(new THREE.BoxGeometry(.7,4,.7),gateMat,scene,x,2,z);post.castShadow=false;}
+const guidePosts=[];for(let z=-95;z>-595;z-=75)for(const x of [-8,8]){const post=mesh(new THREE.BoxGeometry(.7,4,.7),gateMat,scene,x,2,z);post.castShadow=false;guidePosts.push(post);}
 
 // 电影草原里那种光秃、发白、像手臂一样伸向雾里的树。
 const deadTreeMat=flat(0x77717d),trunkGeo=new THREE.ConeGeometry(.56,8,5),branchGeo=new THREE.ConeGeometry(.23,4.5,5);
@@ -319,7 +319,7 @@ const rainMat=new THREE.LineBasicMaterial({color:0xc9d1cd,transparent:true,opaci
 const rain=new THREE.LineSegments(rainGeo,rainMat);rain.frustumCulled=false;scene.add(rain);
 
 const keys={}, joystick={x:0,y:0}, clock=new THREE.Clock();
-let state='intro', stamina=100, exhausted=false, distance=638, hunterSpeed=7.5, elapsed=0, lastLine=-1, shake=0, audio, musicMaster, musicNodes=[], musicTimer, storyStage=0, activeChasers=[], speedLevel=0, nextTerrorFlash=9;
+let state='intro', stamina=100, exhausted=false, runLength=430, exitZ=-412, distance=430, hunterSpeed=7.5, elapsed=0, lastLine=-1, shake=0, audio, musicMaster, musicNodes=[], musicTimer, storyStage=0, activeChasers=[], speedLevel=0, nextTerrorFlash=9;
 const bloodEffects=[];
 const lines=[
   [25,'妈妈说：别招惹草蛇。'],[80,'云雀：狼群正在靠近。'],[145,'豹拉：你们先走，我来引开它们。'],
@@ -361,10 +361,11 @@ function unlockAudio(){
 document.querySelector('#enterGameBtn').addEventListener('click',unlockAudio);
 document.addEventListener('WeixinJSBridgeReady',()=>{dangerAudio.load();if(audio)audio.resume().catch(()=>{});},{once:true});
 function start(){
-  state='playing'; elapsed=0; stamina=100;exhausted=false; hunterSpeed=7.5; lastLine=-1;speedLevel=0;nextTerrorFlash=5+Math.random()*8;document.body.classList.remove('exhausted','enemy-near','terror-flash');
+  const mode=difficulties[selectedCharacter];runLength=mode.length;exitZ=18-runLength;distance=runLength;gate.position.z=exitZ;beacon.position.z=exitZ+2;gateBeam.position.z=exitZ;gateSign.position.z=exitZ+1;guidePosts.forEach(post=>post.visible=post.position.z>exitZ+18);scene.fog.density=mode.fog;scene.background.set(selectedCharacter==='orange'?0xaeba88:selectedCharacter==='yellow'?0x9daa7c:0x77806a);
+  state='playing'; elapsed=0; stamina=100;exhausted=false; hunterSpeed=7.5; lastLine=-1;speedLevel=0;nextTerrorFlash=mode.flashMin+Math.random()*mode.flashRange;document.body.classList.remove('exhausted','enemy-near','terror-flash','difficulty-easy','difficulty-normal','difficulty-hard');document.body.classList.add(selectedCharacter==='orange'?'difficulty-easy':selectedCharacter==='yellow'?'difficulty-normal':'difficulty-hard');ui.distance.textContent=runLength+'m';
   player.position.set(0,.05,18);player.rotation.set(0,0,0);storyStage=0;activeChasers=[];allEnemies.forEach(e=>e.visible=false);[...snakes,...treeEnemies].forEach(e=>e.visible=true);
   bloodEffects.splice(0).forEach(f=>scene.remove(f.group));
-  herdCows.forEach((c,i)=>{c.position.copy(c.userData.start);c.rotation.set(0,0,0);c.visible=true;c.userData.active=false;c.userData.eaten=false;const e=ambushers[i];e.position.copy(e.userData.start);e.rotation.set(0,0,0);e.visible=false;e.userData.feeding=0;e.userData.joined=false;});
+  herdCows.forEach((c,i)=>{c.position.copy(c.userData.start);c.rotation.set(0,0,0);c.visible=c.position.z>exitZ;c.userData.active=false;c.userData.eaten=false;const e=ambushers[i];e.position.copy(e.userData.start);e.rotation.set(0,0,0);e.visible=false;e.userData.disabled=i>=mode.ambushers;e.userData.feeding=0;e.userData.joined=false;});
   strangeTravellers.forEach(c=>{c.position.copy(c.userData.start);c.rotation.set(0,0,0);c.visible=true;c.userData.fleeing=false;});
   hunterGlow.visible=false;document.body.classList.add('playing');ui.intro.classList.add('hidden');ui.result.classList.remove('show');
   dangerAudio.pause();dangerAudio.currentTime=0;dangerAudio.volume=.95;dangerLatched=false;sound(55,.8,'sawtooth',.08);startMusic();setTimeout(()=>say(`${difficulties[selectedCharacter].name}难度。跑，别回头。`),500);
@@ -372,7 +373,7 @@ function start(){
 function end(win){
   state=win?'win':'caught';recordScore(win);document.body.classList.remove('playing','exhausted','enemy-near');ui.result.classList.add('show');
   ui.eyebrow.textContent=win?'你找到了出口':'逃亡终止';ui.title.textContent=win?'门后还是草原。':'牛来，回家。';
-  const runDistance=Math.max(0,Math.min(638,Math.round(18-player.position.z))),exactTime=formatTime(Math.round(elapsed*1000));
+  const runDistance=Math.max(0,Math.min(runLength,Math.round(18-player.position.z))),exactTime=formatTime(Math.round(elapsed*1000));
   ui.resultText.innerHTML=win?`逃出距离 ${runDistance} 米 · 用时 ${exactTime}<br>远处，又传来了妈妈的声音。`:`本次逃出 ${runDistance} 米 · 坚持 ${exactTime}<br>这一次，它们追上你了。`;
   dangerAudio.pause();dangerAudio.currentTime=0;dangerLatched=false;stopMusic();sound(win?220:38,1.5,'sawtooth',.1);
 }
@@ -436,13 +437,14 @@ function animatePlayer(cow,t,moving,sprinting){
 }
 function placeChaser(enemy,xOffset,zOffset,speed){enemy.position.set(player.position.x+xOffset,.05,player.position.z+zOffset);enemy.visible=true;enemy.userData.chaseSpeed=speed;activeChasers.push(enemy);}
 function updateStoryWave(progress){
+  const mode=difficulties[selectedCharacter];
   if(storyStage===0&&(progress>18||elapsed>2.5)){
-    storyStage=1;const pack=[[-12,36],[-7,31],[-2,39],[3,33],[8,40],[13,35]];wolfPack.forEach((e,i)=>placeChaser(e,pack[i][0],pack[i][1],6.85+(i%3)*.16));say('整群黑面兽追上来了！',2200);glitch();
+    storyStage=1;const pack=[[-12,36],[-7,31],[-2,39],[3,33],[8,40],[13,35]];wolfPack.slice(0,mode.pack).forEach((e,i)=>placeChaser(e,pack[i][0],pack[i][1],6.85+(i%3)*.16));say(`${mode.pack}只黑面兽追上来了！`,2200);glitch();
   }
-  if(storyStage===1&&(progress>285||elapsed>24)){
-    storyStage=2;stalkers.forEach((e,i)=>{const side=i%2?-1:1,rank=Math.floor(i/2);placeChaser(e,side*(12+rank*5),46+rank*4,e.userData.type==='beast'?7.5:7.2);});say('更多怪物从两侧包围过来。',2600);
+  if(storyStage===1&&(progress>mode.wave2At||elapsed>mode.wave2Time)){
+    storyStage=2;stalkers.slice(0,mode.stalkers).forEach((e,i)=>{const side=i%2?-1:1,rank=Math.floor(i/2);placeChaser(e,side*(12+rank*5),46+rank*4,e.userData.type==='beast'?7.5:7.2);});say('更多怪物从两侧包围过来。',2600);
   }
-  if(storyStage===2&&(progress>465||elapsed>48)){
+  if(storyStage===2&&(progress>mode.carAt||elapsed>mode.carTime)){
     storyStage=3;placeChaser(monsterCar,0,62,10.2);hunterGlow.visible=true;say('无人怪车来了——但后面的东西没有散去。',3200);sound(31,1.6,'sawtooth',.14);glitch();
   }
 }
@@ -454,7 +456,7 @@ function tick(){
     if(ny<-3){rp[p]=(Math.random()-.5)*100;rp[p+1]=45+Math.random()*5;rp[p+2]=(Math.random()-.5)*100;}else{rp[p]=nx;rp[p+1]=ny;}
     rp[p+3]=rp[p]+.2;rp[p+4]=rp[p+1]-rainLength[i];rp[p+5]=rp[p+2];
   }
-  rainGeo.attributes.position.needsUpdate=true;rain.position.set(player.position.x,0,player.position.z);rainMat.opacity=.22+Math.sin(t*.17)*.07;
+  rainGeo.attributes.position.needsUpdate=true;rain.position.set(player.position.x,0,player.position.z);rainMat.opacity=(.22+Math.sin(t*.17)*.07)*difficulties[selectedCharacter].rain;
   gateRing.rotation.z=t*.42;gateRing.scale.setScalar(1+Math.sin(t*2.1)*.055);gateBeam.material.opacity=.1+Math.sin(t*1.5)*.055;beacon.intensity=230+Math.sin(t*2.4)*70;gateSign.material.opacity=.78+Math.sin(t*2.2)*.22;
   strangeBirds.forEach((b,i)=>{
     b.position.z-=b.userData.speed*dt;b.position.x+=Math.sin(t*.7+b.userData.phase)*dt*1.7;b.position.y+=Math.sin(t*1.1+b.userData.phase)*dt*.18;
@@ -464,7 +466,7 @@ function tick(){
   bloodEffects.forEach(f=>{f.age+=dt;f.drops.forEach(d=>{if(d.position.y>.06||d.userData.velocity.y>0){d.position.addScaledVector(d.userData.velocity,dt);d.userData.velocity.y-=12*dt;if(d.position.y<.05){d.position.y=.05;d.userData.velocity.set(0,0,0);}}});});
   if(state==='playing'){
     elapsed+=dt;
-    if(elapsed>=nextTerrorFlash){terrorFlash();nextTerrorFlash=elapsed+7+Math.random()*17;}
+    if(elapsed>=nextTerrorFlash){const mode=difficulties[selectedCharacter];terrorFlash();nextTerrorFlash=elapsed+mode.flashMin+Math.random()*mode.flashRange;}
     // 镜头面向世界 +Z：世界 +X 投影到屏幕左侧，世界 +Z 投影到屏幕上方。
     // 因此键盘与摇杆都严格按屏幕方向换算，W/A/S/D 分别就是上/左/下/右。
     let x=(keys.KeyA||keys.ArrowLeft?1:0)-(keys.KeyD||keys.ArrowRight?1:0)-joystick.x;
@@ -485,9 +487,10 @@ function tick(){
     const progress=-player.position.z;updateStoryWave(progress);
     herdCows.forEach((cow,i)=>{
       const enemy=ambushers[i];if(cow.userData.eaten){if(enemy.userData.feeding>0){enemy.userData.feeding-=dt;enemy.userData.headBob=(enemy.userData.headBob||0)+dt;enemy.position.y=.05+Math.abs(Math.sin(t*12))*.18;}else if(!enemy.userData.joined){enemy.userData.joined=true;enemy.position.y=.05;enemy.userData.chaseSpeed=7.15+(i%3)*.14;activeChasers.push(enemy);}return;}
-      if(!cow.userData.active&&Math.abs(player.position.z-cow.position.z)<58){cow.userData.active=true;enemy.visible=true;}
+      if(!cow.visible)return;if(!cow.userData.active&&Math.abs(player.position.z-cow.position.z)<58){cow.userData.active=true;enemy.visible=!enemy.userData.disabled;}
       if(!cow.userData.active)return;
       const cowSpeed=4.2+(i%3)*.35;cow.position.z-=cowSpeed*dt;cow.position.x+=Math.sin(t*1.4+i)*dt*.45;cow.userData.legs.forEach((l,n)=>l.rotation.x=Math.sin(t*10+n*Math.PI)*.48);
+      if(enemy.userData.disabled)return;
       const chase=new THREE.Vector3().subVectors(cow.position,enemy.position),d=chase.length();enemy.position.addScaledVector(chase.normalize(),(6.45+i*.08)*dt);enemy.rotation.y=Math.atan2(-chase.x,-chase.z);animateCow(enemy,t,11);
       if(d<2.05)bloodyAttack(cow,enemy);
     });
@@ -513,8 +516,8 @@ function tick(){
       dangerLatched=false;document.body.classList.remove('enemy-near');if(musicMaster){musicMaster.gain.cancelScheduledValues(audio.currentTime);musicMaster.gain.setTargetAtTime(.19,audio.currentTime,.3);}
     }
     if(nearest<18&&!ui.warning.classList.contains('show')){ui.warning.classList.add('show');sound(62,.7,'sawtooth',.08);setTimeout(()=>ui.warning.classList.remove('show'),1200);}
-    if(player.position.z<-614)end(true);
-    distance=Math.max(0,(player.position.z+620));ui.distance.textContent=Math.floor(distance)+'m';ui.stamina.style.width=stamina+'%';
+    if(player.position.z<exitZ+6)end(true);
+    distance=Math.max(0,(player.position.z-exitZ));ui.distance.textContent=Math.floor(distance)+'m';ui.stamina.style.width=stamina+'%';
     ui.mission.textContent=distance<180?'发光的出口就在前面！':nearest<16?'敌人靠近。换个方向！':'穿过雾，别回头。';
     lines.forEach((line,i)=>{if(progress>line[0]&&lastLine<i){lastLine=i;say(line[1]);if(i===2||i===5)glitch();}});
     if(Math.random()<dt*.018)glitch();
