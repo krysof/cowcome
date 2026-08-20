@@ -483,7 +483,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){Object.key
 document.querySelectorAll('.mobile-controls button').forEach(b=>{
   const k=b.dataset.key;b.addEventListener('pointerdown',e=>{e.preventDefault();keys[k]=true});
   ['pointerup','pointercancel','pointerleave'].forEach(ev=>b.addEventListener(ev,()=>keys[k]=false));
-  if(!window.PointerEvent){b.addEventListener('touchstart',e=>{e.preventDefault();keys[k]=true},{passive:false});['touchend','touchcancel'].forEach(ev=>b.addEventListener(ev,()=>keys[k]=false));}
+  b.addEventListener('touchstart',e=>{e.preventDefault();keys[k]=true},{passive:false});['touchend','touchcancel'].forEach(ev=>b.addEventListener(ev,()=>keys[k]=false,{passive:false}));
 });
 const joystickEl=document.querySelector('#joystick'),joystickKnob=document.querySelector('#joystickKnob');
 function moveJoystick(e){
@@ -491,15 +491,16 @@ function moveJoystick(e){
   let dx=e.clientX-cx,dy=e.clientY-cy,len=Math.hypot(dx,dy);if(len>limit){dx*=limit/len;dy*=limit/len;}
   joystick.x=dx/limit;joystick.y=dy/limit;joystickKnob.style.transform=`translate(${dx}px,${dy}px)`;
 }
-joystickEl.addEventListener('pointerdown',e=>{e.preventDefault();joystickEl.setPointerCapture(e.pointerId);moveJoystick(e);});
-joystickEl.addEventListener('pointermove',e=>{if(joystickEl.hasPointerCapture(e.pointerId))moveJoystick(e);});
-function resetJoystick(){joystick.x=joystick.y=0;joystickKnob.style.transform='translate(0,0)';}
-joystickEl.addEventListener('pointerup',resetJoystick);joystickEl.addEventListener('pointercancel',resetJoystick);
-addEventListener('pointerup',e=>{if(!e.target.closest?.('.joystick'))resetJoystick();});
-if(!window.PointerEvent){
-  const moveTouch=e=>{e.preventDefault();const touch=e.touches[0];if(touch)moveJoystick(touch);};
-  joystickEl.addEventListener('touchstart',moveTouch,{passive:false});joystickEl.addEventListener('touchmove',moveTouch,{passive:false});joystickEl.addEventListener('touchend',resetJoystick,{passive:false});joystickEl.addEventListener('touchcancel',resetJoystick,{passive:false});
-}
+let joystickPointer=null,joystickTouch=null;
+joystickEl.addEventListener('pointerdown',e=>{e.preventDefault();joystickPointer=e.pointerId;joystickEl.classList.add('active');try{joystickEl.setPointerCapture(e.pointerId)}catch{}moveJoystick(e);});
+joystickEl.addEventListener('pointermove',e=>{if(joystickPointer===e.pointerId){e.preventDefault();moveJoystick(e);}},{passive:false});
+function resetJoystick(){joystickPointer=null;joystickTouch=null;joystick.x=joystick.y=0;joystickKnob.style.transform='translate(0,0)';joystickEl.classList.remove('active');}
+joystickEl.addEventListener('pointerup',resetJoystick);joystickEl.addEventListener('pointercancel',resetJoystick);addEventListener('pointermove',e=>{if(joystickPointer===e.pointerId)moveJoystick(e);},{passive:false});addEventListener('pointerup',resetJoystick);addEventListener('pointercancel',resetJoystick);
+function trackedTouch(event){return [...Array.from(event.changedTouches||[]),...Array.from(event.touches||[])].find(touch=>joystickTouch===null||touch.identifier===joystickTouch);}
+joystickEl.addEventListener('touchstart',e=>{e.preventDefault();const touch=e.changedTouches[0];if(!touch)return;joystickTouch=touch.identifier;joystickEl.classList.add('active');moveJoystick(touch);},{passive:false});
+joystickEl.addEventListener('touchmove',e=>{e.preventDefault();const touch=trackedTouch(e);if(touch&&touch.identifier===joystickTouch)moveJoystick(touch);},{passive:false});
+joystickEl.addEventListener('touchend',e=>{if(Array.from(e.changedTouches||[]).some(touch=>touch.identifier===joystickTouch))resetJoystick();},{passive:false});joystickEl.addEventListener('touchcancel',resetJoystick,{passive:false});
+document.addEventListener('touchmove',e=>{if(joystickTouch===null)return;const touch=trackedTouch(e);if(touch&&touch.identifier===joystickTouch){e.preventDefault();moveJoystick(touch);}},{passive:false});document.addEventListener('touchend',e=>{if(Array.from(e.changedTouches||[]).some(touch=>touch.identifier===joystickTouch))resetJoystick();},{passive:false});document.addEventListener('touchcancel',resetJoystick,{passive:false});
 
 function glitch(){document.body.classList.add('glitch');sound(48,.1,'square',.03);setTimeout(()=>document.body.classList.remove('glitch'),80+Math.random()*160);}
 function terrorFlash(){
