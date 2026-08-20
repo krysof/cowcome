@@ -155,16 +155,29 @@ function makeTreeEnemy(scale=1){
   g.scale.setScalar(scale);g.userData.arms=arms;return g;
 }
 
+function makeMonsterCar(scale=1){
+  const g=new THREE.Group(), metal=flat(0x4c4134), rust=flat(0x7a4328), glass=flat(0x171b18), eye=flat(0xff3a17), tooth=flat(0xd8cfb3), rubber=flat(0x11100e);
+  mesh(new THREE.BoxGeometry(5.4,2.1,7.2),rust,g,0,2.1,0,[1,1,1],[.03,0,0]);
+  const face=mesh(new THREE.BoxGeometry(5.8,3.6,2.3),metal,g,0,3.25,-3.35,[1,1,1],[-.08,0,0]);
+  mesh(new THREE.BoxGeometry(4.4,1.15,.14),glass,face,0,.55,-1.18);for(const x of [-1.45,1.45])mesh(new THREE.SphereGeometry(.3,7,5),eye,face,x,.45,-1.34,[1,.65,.3]);
+  mesh(new THREE.BoxGeometry(4.5,.72,.18),glass,face,0,-.75,-1.18);for(let i=-3;i<=3;i++)mesh(new THREE.ConeGeometry(.22,.55,4),tooth,face,i*.55,-.68,-1.36,[1,1,1],[Math.PI,0,0]);
+  const wheels=[];for(const x of [-2.65,2.65])for(const z of [-2.2,2.15]){const w=mesh(new THREE.CylinderGeometry(1.25,1.25,.8,8),rubber,g,x,1.15,z,[1,1,1],[0,0,Math.PI/2]);wheels.push(w);}
+  mesh(new THREE.CylinderGeometry(.16,.22,3.5,6),metal,g,-2.1,5.3,-.1,[1,1,1],[0,0,-.3]);mesh(new THREE.ConeGeometry(.32,.8,6),eye,g,-2.62,6.85,-.1);
+  g.scale.setScalar(scale);g.userData.wheels=wheels;g.userData.type='car';g.userData.enemyName='无人怪车';return g;
+}
+
 function createCharacter(kind){return kind==='yellow'?makeYellowBull(.68):kind==='leopard'?makeLeopard(.78):makeNiuLai(.72,false);}
 let selectedCharacter='orange';
 let player=createCharacter(selectedCharacter); player.position.set(0,.05,18); player.rotation.y=0; scene.add(player);
-const hunter=makeAlienCow(1.38,0); hunter.position.set(0,.05,51); hunter.rotation.y=Math.PI; scene.add(hunter);
+const hunter=makeDarkBeast(.78); hunter.position.set(0,.05,51); scene.add(hunter);
+const wolfPack=[hunter,makeDarkBeast(.74),makeDarkBeast(.8)];wolfPack[1].position.set(-7,.05,55);wolfPack[2].position.set(7,.05,58);scene.add(wolfPack[1],wolfPack[2]);
 const hunterGlow=new THREE.PointLight(0xff2b16,22,24); hunterGlow.position.set(0,5,46); scene.add(hunterGlow);
 const enemyConfigs=[[-24,-85,'alien'],[27,-165,'beast'],[-29,-255,'beast'],[25,-340,'alien'],[-24,-450,'beast'],[22,-545,'alien']];
 const stalkers=enemyConfigs.map(([x,z,type],i)=>{const e=type==='alien'?makeAlienCow(.9,i%2):makeDarkBeast(.72);e.position.set(x,.05,z);e.userData.home=new THREE.Vector3(x,.05,z);e.userData.speed=type==='alien'?5.2:6.1;e.userData.type=type;scene.add(e);return e;});
 const snakes=[[-11,-120],[17,-305],[-14,-505]].map(([x,z])=>{const s=makeSnake(.82);s.position.set(x,0,z);s.rotation.y=Math.PI/2;scene.add(s);return s;});
 const treeEnemies=[[-18,-210],[16,-405]].map(([x,z])=>{const t=makeTreeEnemy(1.25);t.position.set(x,0,z);scene.add(t);return t;});
-const allEnemies=[hunter,...stalkers,...snakes,...treeEnemies];allEnemies.forEach(e=>e.visible=false);hunterGlow.visible=false;
+const monsterCar=makeMonsterCar(.88);monsterCar.position.set(0,0,80);scene.add(monsterCar);
+const allEnemies=[...wolfPack,...stalkers,...snakes,...treeEnemies,monsterCar];allEnemies.forEach(e=>e.visible=false);hunterGlow.visible=false;
 
 const obstacles=[];
 function addRock(x,z,s=1){const r=mesh(new THREE.DodecahedronGeometry(1.5,0),flat(Math.random()>.5?0x4a4b3b:0x675e49),scene,x,s*.8,z,[s,s,s]);obstacles.push(r);}
@@ -194,10 +207,10 @@ for(let i=0;i<46;i++){
 }
 
 const keys={}, joystick={x:0,y:0}, clock=new THREE.Clock();
-let state='intro', stamina=100, distance=638, hunterSpeed=7.5, elapsed=0, lastLine=-1, shake=0, audio, musicMaster, musicNodes=[], musicTimer;
+let state='intro', stamina=100, distance=638, hunterSpeed=7.5, elapsed=0, lastLine=-1, shake=0, audio, musicMaster, musicNodes=[], musicTimer, storyStage=0, activeChasers=[];
 const lines=[
-  [25,'妈妈说：别回头。'],[80,'云雀：前面没有路。'],[145,'妈妈说：牛来，你跑反了。'],
-  [230,'这里以前不是这样的。'],[330,'不要相信黄色的门。'],[440,'妈妈说：回家吧。'],[540,'出口正在看着你。']
+  [25,'妈妈说：别招惹草蛇。'],[80,'云雀：狼群正在靠近。'],[145,'豹拉：你们先走，我来引开它们。'],
+  [230,'牛群散开了。别停下！'],[330,'妈妈说：过后我就和你会合。'],[440,'云雀：有一个更大的怪物来了。'],[540,'悬崖下面……也许有草场。']
 ];
 
 function say(text,time=2600){ui.subtitle.textContent=text;ui.subtitle.classList.add('show');clearTimeout(say.t);say.t=setTimeout(()=>ui.subtitle.classList.remove('show'),time);}
@@ -219,7 +232,7 @@ function startMusic(){
 }
 function start(){
   state='playing'; elapsed=0; stamina=100; hunterSpeed=7.5; lastLine=-1;
-  player.position.set(0,.05,18);player.rotation.set(0,0,0);hunter.position.set(0,.05,51);stalkers.forEach(e=>e.position.copy(e.userData.home));allEnemies.forEach(e=>e.visible=true);hunterGlow.visible=true;document.body.classList.add('playing');ui.intro.classList.add('hidden');ui.result.classList.remove('show');
+  player.position.set(0,.05,18);player.rotation.set(0,0,0);storyStage=0;activeChasers=[];allEnemies.forEach(e=>e.visible=false);[...snakes,...treeEnemies].forEach(e=>e.visible=true);hunterGlow.visible=false;document.body.classList.add('playing');ui.intro.classList.add('hidden');ui.result.classList.remove('show');
   sound(55,.8,'sawtooth',.08);startMusic();setTimeout(()=>say('跑，牛来。'),500);
 }
 function end(win){
@@ -231,7 +244,7 @@ function end(win){
 document.querySelector('#startBtn').onclick=start;document.querySelector('#restartBtn').onclick=start;
 document.querySelector('#changeBtn').onclick=()=>{
   stopMusic();state='intro';document.body.classList.remove('playing');ui.result.classList.remove('show');ui.intro.classList.remove('hidden');
-  player.position.set(0,.05,18);player.rotation.y=0;hunter.position.set(0,.05,51);stalkers.forEach(e=>e.position.copy(e.userData.home));allEnemies.forEach(e=>e.visible=false);hunterGlow.visible=false;
+  player.position.set(0,.05,18);player.rotation.y=0;storyStage=0;activeChasers=[];allEnemies.forEach(e=>e.visible=false);hunterGlow.visible=false;
 };
 document.querySelectorAll('.character').forEach(button=>button.addEventListener('click',()=>{
   if(state!=='intro')return;
@@ -261,6 +274,18 @@ function animateCow(cow,t,speed){
   cow.userData.arms.forEach((a,i)=>a.rotation.x=Math.sin(t*speed+(i%2)*Math.PI)*.42);
   cow.rotation.z=Math.sin(t*speed*.5)*.025;
 }
+function placeChaser(enemy,xOffset,zOffset,speed){enemy.position.set(player.position.x+xOffset,.05,player.position.z+zOffset);enemy.visible=true;enemy.userData.chaseSpeed=speed;activeChasers.push(enemy);}
+function updateStoryWave(progress){
+  if(storyStage===0&&progress>92){
+    storyStage=1;placeChaser(wolfPack[0],-7,39,7.15);placeChaser(wolfPack[1],0,45,7.25);placeChaser(wolfPack[2],7,41,7.1);say('三匹狼追上来了！',2200);glitch();
+  }
+  if(storyStage===1&&progress>285){
+    storyStage=2;const formation=[[-14,48],[14,51],[-23,58],[23,61]];stalkers.slice(0,4).forEach((e,i)=>placeChaser(e,formation[i][0],formation[i][1],e.userData.type==='beast'?7.7:7.35));say('更多猛兽从两侧包围过来。',2600);
+  }
+  if(storyStage===2&&progress>465){
+    storyStage=3;activeChasers.forEach(e=>e.visible=false);activeChasers=[];placeChaser(monsterCar,0,58,10.4);hunterGlow.visible=true;say('那个声音吓跑了狼群——无人怪车来了。',3200);sound(31,1.6,'sawtooth',.14);glitch();
+  }
+}
 function tick(){
   requestAnimationFrame(tick);const dt=Math.min(clock.getDelta(),.04),t=clock.elapsedTime;
   if(state==='playing'){
@@ -275,26 +300,24 @@ function tick(){
     // collision response
     for(const o of obstacles){const dx=player.position.x-o.position.x,dz=player.position.z-o.position.z;if(dx*dx+dz*dz<8){player.position.x+=dx*dt*5;player.position.z+=dz*dt*5;}}
     animateCow(player,t,moving?(sprint?15:10):1);
-    // hunter gains speed as the exit nears
-    const toP=new THREE.Vector3().subVectors(player.position,hunter.position);toP.y=0;const gap=toP.length();
-    hunterSpeed=7.3+elapsed*.018+(player.position.z<-350?1.4:0);hunter.position.addScaledVector(toP.normalize(),hunterSpeed*dt);hunter.rotation.y=Math.atan2(-toP.x,-toP.z);animateCow(hunter,t,10);
-    hunterGlow.position.set(hunter.position.x,5,hunter.position.z);
-    let nearest=gap;
-    for(const enemy of stalkers){
+    const progress=-player.position.z;updateStoryWave(progress);
+    let nearest=999;
+    for(const enemy of activeChasers){
       const v=new THREE.Vector3().subVectors(player.position,enemy.position);v.y=0;const d=v.length();nearest=Math.min(nearest,d);
-      if(d<62){enemy.position.addScaledVector(v.normalize(),enemy.userData.speed*dt);enemy.rotation.y=Math.atan2(-v.x,-v.z);animateCow(enemy,t,enemy.userData.type==='beast'?13:8);}
-      if(d<3.3){shake=1;document.body.classList.add('hit');setTimeout(()=>document.body.classList.remove('hit'),400);end(false);}
+      enemy.position.addScaledVector(v.normalize(),enemy.userData.chaseSpeed*dt);enemy.rotation.y=Math.atan2(-v.x,-v.z);
+      if(enemy.userData.type==='car')enemy.userData.wheels.forEach(w=>w.rotation.x+=dt*9);else animateCow(enemy,t,enemy.userData.type==='beast'?13:9);
+      if(d<(enemy.userData.type==='car'?6.2:3.3)){shake=1;document.body.classList.add('hit');setTimeout(()=>document.body.classList.remove('hit'),400);end(false);}
     }
+    if(monsterCar.visible)hunterGlow.position.set(monsterCar.position.x,4,monsterCar.position.z-3);
     for(const snake of snakes){snake.userData.segments.forEach((s,i)=>s.position.x=Math.sin(t*2+i*.72)*1.4);const d=Math.hypot(player.position.x-snake.position.x,player.position.z-snake.position.z);nearest=Math.min(nearest,d);if(d<4.2){stamina=Math.max(0,stamina-55*dt);player.position.x+=(player.position.x-snake.position.x)*dt*2.5;shake=.28;if(stamina<=0)end(false);}}
     for(const tree of treeEnemies){tree.userData.arms.forEach((a,i)=>a.rotation.z+=(i?1:-1)*dt*.45);const d=Math.hypot(player.position.x-tree.position.x,player.position.z-tree.position.z);nearest=Math.min(nearest,d);if(d<5.2){stamina=Math.max(0,stamina-38*dt);shake=.2;if(stamina<=0)end(false);}}
     if(nearest<18&&!ui.warning.classList.contains('show')){ui.warning.classList.add('show');sound(62,.7,'sawtooth',.08);setTimeout(()=>ui.warning.classList.remove('show'),1200);}
-    if(gap<4.2){shake=1;document.body.classList.add('hit');setTimeout(()=>document.body.classList.remove('hit'),400);end(false);}
     if(player.position.z<-614)end(true);
     distance=Math.max(0,(player.position.z+620));ui.distance.textContent=Math.floor(distance)+'m';ui.stamina.style.width=stamina+'%';
     ui.mission.textContent=distance<90?'穿过黄色的门。':nearest<16?'敌人靠近。换个方向！':'穿过雾，别回头。';
-    const progress=-player.position.z;lines.forEach((line,i)=>{if(progress>line[0]&&lastLine<i){lastLine=i;say(line[1]);if(i===2||i===5)glitch();}});
+    lines.forEach((line,i)=>{if(progress>line[0]&&lastLine<i){lastLine=i;say(line[1]);if(i===2||i===5)glitch();}});
     if(Math.random()<dt*.018)glitch();
-  } else animateCow(hunter,t,2.5);
+  }
   const narrow=innerWidth<700;
   // 镜头位于奔跑方向前方：角色朝屏幕下方跑，且始终能看到正脸和身后的敌人。
   const desired=state==='intro'
