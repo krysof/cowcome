@@ -23,6 +23,8 @@ const ui = {
   resultText: document.querySelector('#resultText'), eyebrow: document.querySelector('#resultEyebrow')
 };
 const scoreboard=document.querySelector('#scoreboard'),scoreList=document.querySelector('#scoreList');
+const installHint=document.querySelector('#installHint'),installText=document.querySelector('#installText'),installBtn=document.querySelector('#installBtn');let deferredInstallPrompt=null;
+addEventListener('beforeinstallprompt',event=>{event.preventDefault();deferredInstallPrompt=event;installBtn.classList.add('available');});
 const characterNames={orange:'橙色小牛',yellow:'黄色大牛',leopard:'花豹'};
 const difficultyNames={orange:'简单',yellow:'普通',leopard:'困难'};
 function formatTime(ms){const min=Math.floor(ms/60000),sec=Math.floor((ms%60000)/1000),milli=ms%1000;return `${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')}.${String(milli).padStart(3,'0')}`;}
@@ -383,6 +385,15 @@ function end(win){
 document.querySelector('#startBtn').onclick=start;document.querySelector('#restartBtn').onclick=start;
 document.querySelector('#scoreBtn').onclick=()=>{renderScores();scoreboard.classList.add('show');scoreboard.setAttribute('aria-hidden','false');};
 document.querySelector('#closeScoreBtn').onclick=()=>{scoreboard.classList.remove('show');scoreboard.setAttribute('aria-hidden','true');};
+function showInstallHint(text){installText.textContent=text;installHint.classList.add('show');installHint.setAttribute('aria-hidden','false');}
+installBtn.onclick=async()=>{
+  if(matchMedia('(display-mode: standalone)').matches||navigator.standalone){showInstallHint('牛来已经作为应用安装在这台设备上。');return;}
+  if(deferredInstallPrompt){deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;return;}
+  const inWechat=/MicroMessenger/i.test(navigator.userAgent),ios=/iPad|iPhone|iPod/i.test(navigator.userAgent);
+  showInstallHint(inWechat?'先点击右下角指南针，在 Safari 中打开游戏；再点击分享按钮，选择“添加到主屏幕”。':ios?'点击浏览器底部的分享按钮（方框向上箭头），再选择“添加到主屏幕”。':'打开浏览器菜单，选择“安装应用”或“添加到主屏幕”。');
+};
+document.querySelector('#closeInstallBtn').onclick=()=>{installHint.classList.remove('show');installHint.setAttribute('aria-hidden','true');};
+addEventListener('appinstalled',()=>{deferredInstallPrompt=null;installBtn.classList.add('installed');installBtn.querySelector('span').textContent='已经安装';});
 document.querySelector('#changeBtn').onclick=()=>{
   stopMusic();state='intro';document.body.classList.remove('playing');ui.result.classList.remove('show');ui.intro.classList.remove('hidden');
   document.body.classList.remove('exhausted','enemy-near');
