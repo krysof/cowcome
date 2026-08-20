@@ -249,7 +249,7 @@ function makeMonsterCar(scale=1){
 function createCharacter(kind){return kind==='yellow'?makeYellowBull(.68):kind==='leopard'?makeLeopard(.78):makeNiuLai(.72,false);}
 let selectedCharacter='orange';
 const difficulties={
-  orange:{name:'简单',length:430,pack:3,stalkers:4,ambushers:2,wave2At:185,wave2Time:34,carAt:Infinity,carTime:Infinity,player:1.06,enemy:.86,drain:.78,recovery:1.25,hazard:.72,fog:.014,rain:.75,flashMin:13,flashRange:20},
+  orange:{name:'简单',length:430,pack:3,stalkers:4,ambushers:2,wave2At:185,wave2Time:34,carAt:335,carTime:58,player:1.06,enemy:.86,drain:.78,recovery:1.25,hazard:.72,fog:.014,rain:.75,flashMin:13,flashRange:20},
   yellow:{name:'普通',length:535,pack:5,stalkers:7,ambushers:4,wave2At:250,wave2Time:27,carAt:405,carTime:52,player:1,enemy:1,drain:1,recovery:1,hazard:1,fog:.021,rain:1,flashMin:9,flashRange:17},
   leopard:{name:'困难',length:638,pack:6,stalkers:10,ambushers:7,wave2At:285,wave2Time:22,carAt:465,carTime:42,player:.97,enemy:1.14,drain:1.24,recovery:.82,hazard:1.3,fog:.03,rain:1.35,flashMin:5,flashRange:11}
 };
