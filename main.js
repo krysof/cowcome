@@ -209,7 +209,7 @@ for(let i=0;i<46;i++){
 }
 
 const keys={}, joystick={x:0,y:0}, clock=new THREE.Clock();
-let state='intro', stamina=100, exhausted=false, distance=638, hunterSpeed=7.5, elapsed=0, lastLine=-1, shake=0, audio, musicMaster, musicNodes=[], musicTimer, storyStage=0, activeChasers=[], speedLevel=0;
+let state='intro', stamina=100, exhausted=false, distance=638, hunterSpeed=7.5, elapsed=0, lastLine=-1, shake=0, audio, musicMaster, musicNodes=[], musicTimer, storyStage=0, activeChasers=[], speedLevel=0, nextTerrorFlash=9;
 const lines=[
   [25,'妈妈说：别招惹草蛇。'],[80,'云雀：狼群正在靠近。'],[145,'豹拉：你们先走，我来引开它们。'],
   [230,'牛群散开了。别停下！'],[330,'妈妈说：过后我就和你会合。'],[440,'云雀：有一个更大的怪物来了。'],[540,'悬崖下面……也许有草场。']
@@ -250,7 +250,7 @@ function unlockAudio(){
 document.querySelector('#enterGameBtn').addEventListener('click',unlockAudio);
 document.addEventListener('WeixinJSBridgeReady',()=>{dangerAudio.load();if(audio)audio.resume().catch(()=>{});},{once:true});
 function start(){
-  state='playing'; elapsed=0; stamina=100;exhausted=false; hunterSpeed=7.5; lastLine=-1;speedLevel=0;document.body.classList.remove('exhausted','enemy-near');
+  state='playing'; elapsed=0; stamina=100;exhausted=false; hunterSpeed=7.5; lastLine=-1;speedLevel=0;nextTerrorFlash=5+Math.random()*8;document.body.classList.remove('exhausted','enemy-near','terror-flash');
   player.position.set(0,.05,18);player.rotation.set(0,0,0);storyStage=0;activeChasers=[];allEnemies.forEach(e=>e.visible=false);[...snakes,...treeEnemies].forEach(e=>e.visible=true);hunterGlow.visible=false;document.body.classList.add('playing');ui.intro.classList.add('hidden');ui.result.classList.remove('show');
   dangerAudio.pause();dangerAudio.currentTime=0;dangerAudio.volume=.95;dangerLatched=false;sound(55,.8,'sawtooth',.08);startMusic();setTimeout(()=>say('跑，牛来。'),500);
 }
@@ -289,6 +289,11 @@ function resetJoystick(){joystick.x=joystick.y=0;joystickKnob.style.transform='t
 joystickEl.addEventListener('pointerup',resetJoystick);joystickEl.addEventListener('pointercancel',resetJoystick);
 
 function glitch(){document.body.classList.add('glitch');sound(48,.1,'square',.03);setTimeout(()=>document.body.classList.remove('glitch'),80+Math.random()*160);}
+function terrorFlash(){
+  document.body.classList.remove('terror-flash');void document.body.offsetWidth;document.body.classList.add('terror-flash');
+  shake=Math.max(shake,.3);sound(Math.random()>.5?34:58,.38,'sawtooth',.06);
+  setTimeout(()=>document.body.classList.remove('terror-flash'),620);
+}
 function animateCow(cow,t,speed){
   cow.userData.legs.forEach((l,i)=>l.rotation.x=Math.sin(t*speed+(i%2)*Math.PI)*.55);
   cow.userData.arms.forEach((a,i)=>a.rotation.x=Math.sin(t*speed+(i%2)*Math.PI)*.42);
@@ -319,6 +324,7 @@ function tick(){
   requestAnimationFrame(tick);const dt=Math.min(clock.getDelta(),.04),t=clock.elapsedTime;
   if(state==='playing'){
     elapsed+=dt;
+    if(elapsed>=nextTerrorFlash){terrorFlash();nextTerrorFlash=elapsed+7+Math.random()*17;}
     // 镜头面向世界 +Z：世界 +X 投影到屏幕左侧，世界 +Z 投影到屏幕上方。
     // 因此键盘与摇杆都严格按屏幕方向换算，W/A/S/D 分别就是上/左/下/右。
     let x=(keys.KeyA||keys.ArrowLeft?1:0)-(keys.KeyD||keys.ArrowRight?1:0)-joystick.x;
