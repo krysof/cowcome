@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 
 const canvas = document.querySelector('#game');
+const dangerAudio=new Audio(`${import.meta.env.BASE_URL}audio/enemy-near.mp3`);dangerAudio.preload='auto';dangerAudio.volume=.95;
+let dangerLatched=false;
 const ui = {
   intro: document.querySelector('#intro'), result: document.querySelector('#result'),
   distance: document.querySelector('#distance'), stamina: document.querySelector('#staminaBar'),
@@ -222,24 +224,28 @@ function stopMusic(){
   if(!musicMaster||!audio)return;clearInterval(musicTimer);musicMaster.gain.cancelScheduledValues(audio.currentTime);musicMaster.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+.8);
   const nodes=[...musicNodes];setTimeout(()=>nodes.forEach(n=>{try{n.stop()}catch{}}),900);musicNodes=[];musicMaster=null;
 }
-function startMusic(){
-  if(!audio)audio=new (window.AudioContext||window.webkitAudioContext)();audio.resume();stopMusic();
-  musicMaster=audio.createGain();musicMaster.gain.setValueAtTime(.0001,audio.currentTime);musicMaster.gain.exponentialRampToValueAtTime(.055,audio.currentTime+1.8);musicMaster.connect(audio.destination);
-  const filter=audio.createBiquadFilter();filter.type='lowpass';filter.frequency.value=360;filter.Q.value=7;filter.connect(musicMaster);
-  [41.2,43.7,61.8].forEach((freq,i)=>{const o=audio.createOscillator(),g=audio.createGain();o.type=i===2?'triangle':'sawtooth';o.frequency.value=freq;g.gain.value=i===2?.08:.13;o.connect(g).connect(filter);o.start();musicNodes.push(o);});
-  const lfo=audio.createOscillator(),lfoGain=audio.createGain();lfo.frequency.value=.11;lfoGain.gain.value=140;lfo.connect(lfoGain).connect(filter.frequency);lfo.start();musicNodes.push(lfo);
-  musicTimer=setInterval(()=>{if(state!=='playing'||!musicMaster)return;const o=audio.createOscillator(),g=audio.createGain();o.type='sine';o.frequency.value=[164,185,207,233][Math.floor(Math.random()*4)];g.gain.setValueAtTime(.0001,audio.currentTime);g.gain.exponentialRampToValueAtTime(.035,audio.currentTime+.08);g.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+1.8);o.connect(g).connect(musicMaster);o.start();o.stop(audio.currentTime+2);},2400);
+async function startMusic(){
+  if(!audio)audio=new (window.AudioContext||window.webkitAudioContext)();await audio.resume();stopMusic();
+  musicMaster=audio.createGain();musicMaster.gain.setValueAtTime(.0001,audio.currentTime);musicMaster.gain.exponentialRampToValueAtTime(.19,audio.currentTime+1.2);musicMaster.connect(audio.destination);
+  const filter=audio.createBiquadFilter();filter.type='lowpass';filter.frequency.value=820;filter.Q.value=6;filter.connect(musicMaster);
+  // 手机扬声器也能听见的中低频不协和持续音。
+  [73.4,82.4,110].forEach((freq,i)=>{const o=audio.createOscillator(),g=audio.createGain();o.type=i===2?'triangle':'sawtooth';o.frequency.value=freq;g.gain.value=i===2?.12:.17;o.connect(g).connect(filter);o.start();musicNodes.push(o);});
+  const lfo=audio.createOscillator(),lfoGain=audio.createGain();lfo.frequency.value=.09;lfoGain.gain.value=260;lfo.connect(lfoGain).connect(filter.frequency);lfo.start();musicNodes.push(lfo);
+  // 带通噪声模拟荒原风声。
+  const noiseBuffer=audio.createBuffer(1,Math.floor(audio.sampleRate*2),audio.sampleRate),data=noiseBuffer.getChannelData(0);for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*.32;
+  const wind=audio.createBufferSource(),windFilter=audio.createBiquadFilter(),windGain=audio.createGain();wind.buffer=noiseBuffer;wind.loop=true;windFilter.type='bandpass';windFilter.frequency.value=480;windFilter.Q.value=.7;windGain.gain.value=.08;wind.connect(windFilter).connect(windGain).connect(musicMaster);wind.start();musicNodes.push(wind);
+  musicTimer=setInterval(()=>{if(state!=='playing'||!musicMaster)return;const o=audio.createOscillator(),g=audio.createGain();o.type='sine';o.frequency.value=[164,185,220,247][Math.floor(Math.random()*4)];g.gain.setValueAtTime(.0001,audio.currentTime);g.gain.exponentialRampToValueAtTime(.16,audio.currentTime+.08);g.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+2.1);o.connect(g).connect(musicMaster);o.start();o.stop(audio.currentTime+2.2);},2200);
 }
 function start(){
   state='playing'; elapsed=0; stamina=100; hunterSpeed=7.5; lastLine=-1;
   player.position.set(0,.05,18);player.rotation.set(0,0,0);storyStage=0;activeChasers=[];allEnemies.forEach(e=>e.visible=false);[...snakes,...treeEnemies].forEach(e=>e.visible=true);hunterGlow.visible=false;document.body.classList.add('playing');ui.intro.classList.add('hidden');ui.result.classList.remove('show');
-  sound(55,.8,'sawtooth',.08);startMusic();setTimeout(()=>say('跑，牛来。'),500);
+  dangerAudio.pause();dangerAudio.currentTime=0;dangerLatched=false;sound(55,.8,'sawtooth',.08);startMusic();setTimeout(()=>say('跑，牛来。'),500);
 }
 function end(win){
   state=win?'win':'caught';document.body.classList.remove('playing');ui.result.classList.add('show');
   ui.eyebrow.textContent=win?'你找到了出口':'逃亡终止';ui.title.textContent=win?'门后还是草原。':'牛来，回家。';
   ui.resultText.innerHTML=win?`你跑了 ${Math.floor(elapsed)} 秒。<br>远处，又传来了妈妈的声音。`:`你离出口还剩 ${Math.max(0,Math.floor(distance))} 米。<br>这一次，妈妈追上你了。`;
-  stopMusic();sound(win?220:38,1.5,'sawtooth',.1);
+  dangerAudio.pause();dangerAudio.currentTime=0;dangerLatched=false;stopMusic();sound(win?220:38,1.5,'sawtooth',.1);
 }
 document.querySelector('#startBtn').onclick=start;document.querySelector('#restartBtn').onclick=start;
 document.querySelector('#changeBtn').onclick=()=>{
@@ -312,6 +318,12 @@ function tick(){
     if(monsterCar.visible)hunterGlow.position.set(monsterCar.position.x,4,monsterCar.position.z-3);
     for(const snake of snakes){snake.userData.segments.forEach((s,i)=>s.position.x=Math.sin(t*2+i*.72)*1.4);const d=Math.hypot(player.position.x-snake.position.x,player.position.z-snake.position.z);nearest=Math.min(nearest,d);if(d<4.2){stamina=Math.max(0,stamina-55*dt);player.position.x+=(player.position.x-snake.position.x)*dt*2.5;shake=.28;if(stamina<=0)end(false);}}
     for(const tree of treeEnemies){tree.userData.arms.forEach((a,i)=>a.rotation.z+=(i?1:-1)*dt*.45);const d=Math.hypot(player.position.x-tree.position.x,player.position.z-tree.position.z);nearest=Math.min(nearest,d);if(d<5.2){stamina=Math.max(0,stamina-38*dt);shake=.2;if(stamina<=0)end(false);}}
+    if(nearest<26&&!dangerLatched){
+      dangerLatched=true;dangerAudio.currentTime=0;dangerAudio.play().catch(()=>{});
+      if(musicMaster){musicMaster.gain.cancelScheduledValues(audio.currentTime);musicMaster.gain.setTargetAtTime(.065,audio.currentTime,.12);}
+    }else if(nearest>34&&dangerLatched){
+      dangerLatched=false;if(musicMaster){musicMaster.gain.cancelScheduledValues(audio.currentTime);musicMaster.gain.setTargetAtTime(.19,audio.currentTime,.3);}
+    }
     if(nearest<18&&!ui.warning.classList.contains('show')){ui.warning.classList.add('show');sound(62,.7,'sawtooth',.08);setTimeout(()=>ui.warning.classList.remove('show'),1200);}
     if(player.position.z<-614)end(true);
     distance=Math.max(0,(player.position.z+620));ui.distance.textContent=Math.floor(distance)+'m';ui.stamina.style.width=stamina+'%';
