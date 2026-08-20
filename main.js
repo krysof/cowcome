@@ -94,16 +94,29 @@ function makeLeopard(scale=1){
 }
 
 function makeAlienCow(scale=1,variant=0){
-  const g=new THREE.Group(), skin=flat(variant?0x9a9841:0x9aa64a), dark=flat(0x17131a), snout=flat(0xe8b9a4), eye=flat(0x17131a);
-  mesh(new THREE.SphereGeometry(1.05,7,5),skin,g,0,2.35,0,[.9,1.25,.7]);
-  const head=mesh(new THREE.SphereGeometry(1.08,7,5),skin,g,0,4.05,-.04,[1,.95,.77]);
-  mesh(new THREE.SphereGeometry(.66,7,5),snout,head,0,-.22,-.86,[1.15,.62,.38]);
-  for(const x of [-.42,.42]){
-    mesh(new THREE.SphereGeometry(.14,6,5),eye,head,x,.16,-.78,[1,1,.4]);
-    mesh(new THREE.ConeGeometry(.2,1.35,7),dark,head,x*.9,1.18,0,[1,1,1],[0,0,x>0?-.32:.32]);
+  const g=new THREE.Group(), skin=flat(variant?0x9a953d:0xa3a945), dark=flat(0x211629), snout=flat(0xe8b6a2), nostril=flat(0x9d7168), eye=flat(0x151218), inner=flat(0xe5a494);
+  // 矮胖筒形身体、方圆大头与突出的粉色宽嘴，按影片截图比例重建。
+  mesh(new THREE.CapsuleGeometry(.82,1.55,3,7),skin,g,0,2.22,0,[1.05,1,.82]);
+  const head=mesh(new THREE.SphereGeometry(1.13,8,6),skin,g,0,4.03,-.05,[1.06,.92,.78]);
+  const muzzle=mesh(new THREE.SphereGeometry(.72,8,5),snout,head,0,-.2,-.9,[1.28,.67,.42]);
+  for(const x of [-.28,.28])mesh(new THREE.SphereGeometry(.075,6,5),nostril,muzzle,x,.04,-.65,[.65,1,.35]);
+  for(const x of [-.43,.43]){
+    mesh(new THREE.SphereGeometry(.135,7,5),eye,head,x,.18,-.82,[1,.95,.38]);
+    mesh(new THREE.ConeGeometry(.22,.58,4),skin,head,x*1.96,.1,-.04,[1,1,1],[0,0,x>0?-1.22:1.22]);
+    mesh(new THREE.ConeGeometry(.105,.32,4),inner,head,x*1.96,.1,-.1,[1,1,1],[0,0,x>0?-1.22:1.22]);
   }
-  const arms=[],legs=[];for(const x of [-.83,.83]){const a=mesh(new THREE.CapsuleGeometry(.19,1.05,2,5),skin,g,x,2.2,0);arms.push(a);}
-  for(const x of [-.38,.38]){const l=mesh(new THREE.CapsuleGeometry(.24,1.25,2,5),skin,g,x,.8,0);legs.push(l);}
+  // 影片中最醒目的外弯黑紫色牛角。
+  for(const side of [-1,1]){
+    const curve=new THREE.CatmullRomCurve3([
+      new THREE.Vector3(side*.5,4.75,0),new THREE.Vector3(side*.72,5.25,.02),
+      new THREE.Vector3(side*1.05,5.48,.03),new THREE.Vector3(side*1.28,5.32,.04)
+    ]);
+    const hornMesh=new THREE.Mesh(new THREE.TubeGeometry(curve,8,.12,6,false),dark);hornMesh.castShadow=true;g.add(hornMesh);
+    mesh(new THREE.ConeGeometry(.115,.48,6),dark,g,side*1.39,5.22,.04,[1,1,1],[0,0,side>0?-1.08:1.08]);
+  }
+  const arms=[],legs=[];
+  for(const x of [-.9,.9]){const a=mesh(new THREE.CapsuleGeometry(.18,1.12,2,6),skin,g,x,2.15,0,[1,1,1],[0,0,x>0?-.08:.08]);arms.push(a);mesh(new THREE.SphereGeometry(.24,6,5),skin,a,0,-.75,0,[1,.85,.9]);}
+  for(const x of [-.38,.38]){const l=mesh(new THREE.CapsuleGeometry(.24,1.18,2,6),skin,g,x,.72,0);legs.push(l);mesh(new THREE.SphereGeometry(.3,6,5),dark,l,0,-.78,-.08,[1,.58,1.2]);}
   g.scale.setScalar(scale);g.userData.legs=legs;g.userData.arms=arms;g.userData.enemyName=`外星牛${variant+1}号`;return g;
 }
 
@@ -244,10 +257,11 @@ function tick(){
     const progress=-player.position.z;lines.forEach((line,i)=>{if(progress>line[0]&&lastLine<i){lastLine=i;say(line[1]);if(i===2||i===5)glitch();}});
     if(Math.random()<dt*.018)glitch();
   } else animateCow(hunter,t,2.5);
-  const desired=new THREE.Vector3(player.position.x*.72+3.2,10.5,player.position.z+23);
+  const narrow=innerWidth<700;
+  const desired=new THREE.Vector3(player.position.x*(narrow?.82:.72)+(narrow?1.3:3.2),narrow?17:10.5,player.position.z+(narrow?13:23));
   camera.position.lerp(desired,1-Math.pow(.001,dt));
   if(shake>0){camera.position.x+=(Math.random()-.5)*shake;camera.position.y+=(Math.random()-.5)*shake;shake*=.88;}
-  camera.lookAt(player.position.x,2.1,player.position.z-12);
+  camera.lookAt(player.position.x,narrow?1.4:2.1,player.position.z-(narrow?9:12));
   renderer.render(scene,camera);
 }
 tick();

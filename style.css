@@ -61,6 +61,7 @@ body.glitch #game { filter:hue-rotate(80deg) contrast(1.7); transform:translateX
 body.hit { animation:hit .22s linear 2; }
 @keyframes hit { 50%{transform:translateX(7px);filter:brightness(2) saturate(2)} }
 @media(max-width:700px) {
+  .noise{display:none}
   .screen{padding:28px;background:linear-gradient(90deg,#10130eee,transparent 140%)}
   h1 span{font-size:90px}.stamp{right:25px;bottom:90px;width:75px;height:75px;font-size:15px}
   .chooser .character b{display:none}.chooser .character{padding:5px}
