@@ -39,7 +39,7 @@ function recordScore(win){
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xb9c98a);
 scene.fog = new THREE.FogExp2(0xa7b886, 0.018);
-const camera = new THREE.PerspectiveCamera(66, innerWidth / innerHeight, .1, 500);
+const camera = new THREE.PerspectiveCamera(66, innerWidth / innerHeight, .1, 900);
 const mobileDevice=matchMedia('(max-width:700px), (pointer:coarse)').matches,lowMemory=Number(navigator.deviceMemory||8)<=4;
 const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, powerPreference:'high-performance' });
 // 手机不再固定在 1.5 倍：高端机使用 2.25 倍，低内存机也保留 1.8 倍，避免微信里发糊。
@@ -277,11 +277,17 @@ for(let z=-65;z>-570;z-=85){
 
 // destination arch
 const gate=new THREE.Group();
-mesh(new THREE.BoxGeometry(4,22,4),flat(0xd9ff43),gate,-10,11,0);
-mesh(new THREE.BoxGeometry(4,22,4),flat(0xd9ff43),gate,10,11,0);
-mesh(new THREE.BoxGeometry(24,4,4),flat(0xd9ff43),gate,0,21,0);
+const gateMat=new THREE.MeshStandardMaterial({color:0xd9ff43,emissive:0x91bb18,emissiveIntensity:2.4,roughness:.35});
+mesh(new THREE.BoxGeometry(5,30,5),gateMat,gate,-12,15,0);
+mesh(new THREE.BoxGeometry(5,30,5),gateMat,gate,12,15,0);
+mesh(new THREE.BoxGeometry(29,5,5),gateMat,gate,0,28,0);
+const gateRing=mesh(new THREE.TorusGeometry(9,1.05,6,20),new THREE.MeshBasicMaterial({color:0xeaff84,transparent:true,opacity:.88,fog:false}),gate,0,15,.1,[1,1,1],[0,0,0]);
 gate.position.z=-620; scene.add(gate);
-const beacon=new THREE.PointLight(0xd9ff43,120,65);beacon.position.set(0,8,-620);scene.add(beacon);
+const beacon=new THREE.PointLight(0xd9ff43,260,115);beacon.position.set(0,14,-618);scene.add(beacon);
+const gateBeam=mesh(new THREE.CylinderGeometry(2.8,8,100,10,1,true),new THREE.MeshBasicMaterial({color:0xd9ff43,transparent:true,opacity:.13,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending,fog:false}),scene,0,50,-620);
+const signCanvas=document.createElement('canvas');signCanvas.width=512;signCanvas.height=256;const signCtx=signCanvas.getContext('2d');signCtx.fillStyle='#11150fe8';signCtx.fillRect(20,28,472,190);signCtx.strokeStyle='#d9ff43';signCtx.lineWidth=12;signCtx.strokeRect(20,28,472,190);signCtx.fillStyle='#d9ff43';signCtx.textAlign='center';signCtx.font='900 112px sans-serif';signCtx.fillText('出口',256,155);signCtx.font='900 54px sans-serif';signCtx.fillText('▼',256,208);
+const gateSign=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(signCanvas),transparent:true,depthTest:false,fog:false}));gateSign.position.set(0,36,-619);gateSign.scale.set(22,11,1);scene.add(gateSign);
+for(let z=-95;z>-595;z-=75)for(const x of [-8,8]){const post=mesh(new THREE.BoxGeometry(.7,4,.7),gateMat,scene,x,2,z);post.castShadow=false;}
 
 // 电影草原里那种光秃、发白、像手臂一样伸向雾里的树。
 const deadTreeMat=flat(0x77717d),trunkGeo=new THREE.ConeGeometry(.56,8,5),branchGeo=new THREE.ConeGeometry(.23,4.5,5);
@@ -443,6 +449,7 @@ function tick(){
     rp[p+3]=rp[p]+.2;rp[p+4]=rp[p+1]-rainLength[i];rp[p+5]=rp[p+2];
   }
   rainGeo.attributes.position.needsUpdate=true;rain.position.set(player.position.x,0,player.position.z);rainMat.opacity=.22+Math.sin(t*.17)*.07;
+  gateRing.rotation.z=t*.42;gateRing.scale.setScalar(1+Math.sin(t*2.1)*.055);gateBeam.material.opacity=.1+Math.sin(t*1.5)*.055;beacon.intensity=230+Math.sin(t*2.4)*70;gateSign.material.opacity=.78+Math.sin(t*2.2)*.22;
   strangeBirds.forEach((b,i)=>{
     b.position.z-=b.userData.speed*dt;b.position.x+=Math.sin(t*.7+b.userData.phase)*dt*1.7;b.position.y+=Math.sin(t*1.1+b.userData.phase)*dt*.18;
     if(b.position.z<player.position.z-68){b.position.z=player.position.z+42+Math.random()*38;b.position.x=player.position.x+(Math.random()-.5)*62;b.position.y=9+Math.random()*15;}
@@ -502,7 +509,7 @@ function tick(){
     if(nearest<18&&!ui.warning.classList.contains('show')){ui.warning.classList.add('show');sound(62,.7,'sawtooth',.08);setTimeout(()=>ui.warning.classList.remove('show'),1200);}
     if(player.position.z<-614)end(true);
     distance=Math.max(0,(player.position.z+620));ui.distance.textContent=Math.floor(distance)+'m';ui.stamina.style.width=stamina+'%';
-    ui.mission.textContent=distance<90?'穿过黄色的门。':nearest<16?'敌人靠近。换个方向！':'穿过雾，别回头。';
+    ui.mission.textContent=distance<180?'发光的出口就在前面！':nearest<16?'敌人靠近。换个方向！':'穿过雾，别回头。';
     lines.forEach((line,i)=>{if(progress>line[0]&&lastLine<i){lastLine=i;say(line[1]);if(i===2||i===5)glitch();}});
     if(Math.random()<dt*.018)glitch();
   }
