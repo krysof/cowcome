@@ -40,8 +40,10 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xb9c98a);
 scene.fog = new THREE.FogExp2(0xa7b886, 0.018);
 const camera = new THREE.PerspectiveCamera(66, innerWidth / innerHeight, .1, 500);
-const renderer = new THREE.WebGLRenderer({ canvas, antialias:false, powerPreference:'high-performance' });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+const mobileDevice=matchMedia('(max-width:700px), (pointer:coarse)').matches,lowMemory=Number(navigator.deviceMemory||8)<=4;
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, powerPreference:'high-performance' });
+// 手机不再固定在 1.5 倍：高端机使用 2.25 倍，低内存机也保留 1.8 倍，避免微信里发糊。
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,mobileDevice?(lowMemory?1.8:2.25):1.75));
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;

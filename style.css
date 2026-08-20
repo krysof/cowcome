@@ -87,6 +87,7 @@ body.glitch #game { filter:blur(1.1px) hue-rotate(80deg) contrast(1.7); transfor
 body.hit { animation:hit .22s linear 2; }
 @keyframes hit { 50%{transform:translateX(7px);filter:brightness(2) saturate(2)} }
 @media(max-width:700px) {
+  #game{filter:blur(.2px) saturate(var(--game-sat,.76)) brightness(var(--game-light,.93)) contrast(var(--game-contrast,1.06))}
   .noise{opacity:.18;animation-duration:.28s}
   .screen{padding:20px 24px}.intro{background:#e8e3d3}
   .intro{overflow-y:auto;align-items:flex-start;padding-top:max(22px,env(safe-area-inset-top))}
