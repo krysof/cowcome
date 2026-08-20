@@ -93,11 +93,56 @@ function makeLeopard(scale=1){
   g.scale.setScalar(scale);g.userData.legs=legs;g.userData.arms=arms;return g;
 }
 
+function makeAlienCow(scale=1,variant=0){
+  const g=new THREE.Group(), skin=flat(variant?0x9a9841:0x9aa64a), dark=flat(0x17131a), snout=flat(0xe8b9a4), eye=flat(0x17131a);
+  mesh(new THREE.SphereGeometry(1.05,7,5),skin,g,0,2.35,0,[.9,1.25,.7]);
+  const head=mesh(new THREE.SphereGeometry(1.08,7,5),skin,g,0,4.05,-.04,[1,.95,.77]);
+  mesh(new THREE.SphereGeometry(.66,7,5),snout,head,0,-.22,-.86,[1.15,.62,.38]);
+  for(const x of [-.42,.42]){
+    mesh(new THREE.SphereGeometry(.14,6,5),eye,head,x,.16,-.78,[1,1,.4]);
+    mesh(new THREE.ConeGeometry(.2,1.35,7),dark,head,x*.9,1.18,0,[1,1,1],[0,0,x>0?-.32:.32]);
+  }
+  const arms=[],legs=[];for(const x of [-.83,.83]){const a=mesh(new THREE.CapsuleGeometry(.19,1.05,2,5),skin,g,x,2.2,0);arms.push(a);}
+  for(const x of [-.38,.38]){const l=mesh(new THREE.CapsuleGeometry(.24,1.25,2,5),skin,g,x,.8,0);legs.push(l);}
+  g.scale.setScalar(scale);g.userData.legs=legs;g.userData.arms=arms;g.userData.enemyName=`外星牛${variant+1}号`;return g;
+}
+
+function makeDarkBeast(scale=1){
+  const g=new THREE.Group(), hide=flat(0x291715), mask=flat(0xd8d5c7), eye=flat(0xff762b);
+  mesh(new THREE.BoxGeometry(2.25,1.5,3.8),hide,g,0,1.7,0);
+  const head=mesh(new THREE.BoxGeometry(2,1.55,1.55),hide,g,0,1.9,-2.45);
+  mesh(new THREE.SphereGeometry(.9,6,5),mask,head,0,-.15,-.85,[1,.65,.28]);
+  for(const x of [-.47,.47]){mesh(new THREE.SphereGeometry(.12,5,4),eye,head,x,.27,-.8);mesh(new THREE.ConeGeometry(.25,.65,4),hide,head,x*1.55,.85,0);}
+  const legs=[];for(const x of [-.7,.7])for(const z of [-1.15,1.15])legs.push(mesh(new THREE.BoxGeometry(.42,1.5,.48),hide,g,x,.65,z));
+  g.scale.setScalar(scale);g.userData.legs=legs;g.userData.arms=[];g.userData.enemyName='黑面兽';return g;
+}
+
+function makeSnake(scale=1){
+  const g=new THREE.Group(), skin=flat(0xd7d0bd), stripe=flat(0x3d3a35), mouth=flat(0xe49aae);
+  const segments=[];
+  for(let i=0;i<14;i++){
+    const s=mesh(new THREE.SphereGeometry(.52-i*.018,6,5),i%3===0?stripe:skin,g,Math.sin(i*.72)*1.4,.48,i*.68,[1,.62,1.25]);segments.push(s);
+  }
+  const head=mesh(new THREE.SphereGeometry(.72,7,5),skin,g,0,.58,-.6,[1.1,.75,1.25]);mesh(new THREE.BoxGeometry(.8,.08,.25),mouth,head,0,-.25,-.66);
+  g.scale.setScalar(scale);g.userData.segments=segments;return g;
+}
+
+function makeTreeEnemy(scale=1){
+  const g=new THREE.Group(), wood=flat(0x32312d);
+  mesh(new THREE.CylinderGeometry(.45,.8,9,5),wood,g,0,4.5,0,[1,1,1],[0,0,-.1]);
+  const arms=[];arms.push(mesh(new THREE.CylinderGeometry(.18,.35,8,5),wood,g,-2,7,0,[1,1,1],[0,0,-1.02]));arms.push(mesh(new THREE.CylinderGeometry(.16,.32,10,5),wood,g,2.6,6.4,0,[1,1,1],[0,0,1.05]));
+  g.scale.setScalar(scale);g.userData.arms=arms;return g;
+}
+
 function createCharacter(kind){return kind==='yellow'?makeYellowBull(.68):kind==='leopard'?makeLeopard(.78):makeNiuLai(.72,false);}
 let selectedCharacter='orange';
 let player=createCharacter(selectedCharacter); player.position.set(0,.05,18); player.rotation.y=Math.PI; scene.add(player);
-const hunter=makeYellowBull(1.48,true); hunter.position.set(0,.05,51); hunter.rotation.y=Math.PI; scene.add(hunter);
+const hunter=makeAlienCow(1.38,0); hunter.position.set(0,.05,51); hunter.rotation.y=Math.PI; scene.add(hunter);
 const hunterGlow=new THREE.PointLight(0xff2b16,22,24); hunterGlow.position.set(0,5,46); scene.add(hunterGlow);
+const enemyConfigs=[[-24,-85,'alien'],[27,-165,'beast'],[-29,-255,'beast'],[25,-340,'alien'],[-24,-450,'beast'],[22,-545,'alien']];
+const stalkers=enemyConfigs.map(([x,z,type],i)=>{const e=type==='alien'?makeAlienCow(.9,i%2):makeDarkBeast(.72);e.position.set(x,.05,z);e.userData.home=new THREE.Vector3(x,.05,z);e.userData.speed=type==='alien'?5.2:6.1;e.userData.type=type;scene.add(e);return e;});
+const snakes=[[-11,-120],[17,-305],[-14,-505]].map(([x,z])=>{const s=makeSnake(.82);s.position.set(x,0,z);s.rotation.y=Math.PI/2;scene.add(s);return s;});
+const treeEnemies=[[-18,-210],[16,-405]].map(([x,z])=>{const t=makeTreeEnemy(1.25);t.position.set(x,0,z);scene.add(t);return t;});
 
 const obstacles=[];
 function addRock(x,z,s=1){const r=mesh(new THREE.DodecahedronGeometry(1.5,0),flat(Math.random()>.5?0x4a4b3b:0x675e49),scene,x,s*.8,z,[s,s,s]);obstacles.push(r);}
@@ -140,7 +185,7 @@ function sound(freq=80,dur=.16,type='sawtooth',vol=.05){
 }
 function start(){
   state='playing'; elapsed=0; stamina=100; hunterSpeed=7.5; lastLine=-1;
-  player.position.set(0,.05,18);player.rotation.set(0,0,0);hunter.position.set(0,.05,51);document.body.classList.add('playing');ui.intro.classList.add('hidden');ui.result.classList.remove('show');
+  player.position.set(0,.05,18);player.rotation.set(0,0,0);hunter.position.set(0,.05,51);stalkers.forEach(e=>e.position.copy(e.userData.home));document.body.classList.add('playing');ui.intro.classList.add('hidden');ui.result.classList.remove('show');
   sound(55,.8,'sawtooth',.08);setTimeout(()=>say('跑，牛来。'),500);
 }
 function end(win){
@@ -183,11 +228,19 @@ function tick(){
     const toP=new THREE.Vector3().subVectors(player.position,hunter.position);toP.y=0;const gap=toP.length();
     hunterSpeed=7.3+elapsed*.018+(player.position.z<-350?1.4:0);hunter.position.addScaledVector(toP.normalize(),hunterSpeed*dt);hunter.rotation.y=Math.atan2(-toP.x,-toP.z);animateCow(hunter,t,10);
     hunterGlow.position.set(hunter.position.x,5,hunter.position.z);
-    if(gap<18&&!ui.warning.classList.contains('show')){ui.warning.classList.add('show');sound(62,.7,'sawtooth',.08);setTimeout(()=>ui.warning.classList.remove('show'),1200);}
+    let nearest=gap;
+    for(const enemy of stalkers){
+      const v=new THREE.Vector3().subVectors(player.position,enemy.position);v.y=0;const d=v.length();nearest=Math.min(nearest,d);
+      if(d<62){enemy.position.addScaledVector(v.normalize(),enemy.userData.speed*dt);enemy.rotation.y=Math.atan2(-v.x,-v.z);animateCow(enemy,t,enemy.userData.type==='beast'?13:8);}
+      if(d<3.3){shake=1;document.body.classList.add('hit');setTimeout(()=>document.body.classList.remove('hit'),400);end(false);}
+    }
+    for(const snake of snakes){snake.userData.segments.forEach((s,i)=>s.position.x=Math.sin(t*2+i*.72)*1.4);const d=Math.hypot(player.position.x-snake.position.x,player.position.z-snake.position.z);nearest=Math.min(nearest,d);if(d<4.2){stamina=Math.max(0,stamina-55*dt);player.position.x+=(player.position.x-snake.position.x)*dt*2.5;shake=.28;if(stamina<=0)end(false);}}
+    for(const tree of treeEnemies){tree.userData.arms.forEach((a,i)=>a.rotation.z+=(i?1:-1)*dt*.45);const d=Math.hypot(player.position.x-tree.position.x,player.position.z-tree.position.z);nearest=Math.min(nearest,d);if(d<5.2){stamina=Math.max(0,stamina-38*dt);shake=.2;if(stamina<=0)end(false);}}
+    if(nearest<18&&!ui.warning.classList.contains('show')){ui.warning.classList.add('show');sound(62,.7,'sawtooth',.08);setTimeout(()=>ui.warning.classList.remove('show'),1200);}
     if(gap<4.2){shake=1;document.body.classList.add('hit');setTimeout(()=>document.body.classList.remove('hit'),400);end(false);}
     if(player.position.z<-614)end(true);
     distance=Math.max(0,(player.position.z+620));ui.distance.textContent=Math.floor(distance)+'m';ui.stamina.style.width=stamina+'%';
-    ui.mission.textContent=distance<90?'穿过黄色的门。':gap<16?'不要回头。它就在后面。':'穿过雾，别回头。';
+    ui.mission.textContent=distance<90?'穿过黄色的门。':nearest<16?'敌人靠近。换个方向！':'穿过雾，别回头。';
     const progress=-player.position.z;lines.forEach((line,i)=>{if(progress>line[0]&&lastLine<i){lastLine=i;say(line[1]);if(i===2||i===5)glitch();}});
     if(Math.random()<dt*.018)glitch();
   } else animateCow(hunter,t,2.5);
