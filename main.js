@@ -276,13 +276,13 @@ function animateCow(cow,t,speed){
 }
 function placeChaser(enemy,xOffset,zOffset,speed){enemy.position.set(player.position.x+xOffset,.05,player.position.z+zOffset);enemy.visible=true;enemy.userData.chaseSpeed=speed;activeChasers.push(enemy);}
 function updateStoryWave(progress){
-  if(storyStage===0&&progress>92){
+  if(storyStage===0&&(progress>18||elapsed>2.5)){
     storyStage=1;placeChaser(wolfPack[0],-7,39,7.15);placeChaser(wolfPack[1],0,45,7.25);placeChaser(wolfPack[2],7,41,7.1);say('三匹狼追上来了！',2200);glitch();
   }
-  if(storyStage===1&&progress>285){
+  if(storyStage===1&&(progress>285||elapsed>24)){
     storyStage=2;const formation=[[-14,48],[14,51],[-23,58],[23,61]];stalkers.slice(0,4).forEach((e,i)=>placeChaser(e,formation[i][0],formation[i][1],e.userData.type==='beast'?7.7:7.35));say('更多猛兽从两侧包围过来。',2600);
   }
-  if(storyStage===2&&progress>465){
+  if(storyStage===2&&(progress>465||elapsed>48)){
     storyStage=3;activeChasers.forEach(e=>e.visible=false);activeChasers=[];placeChaser(monsterCar,0,58,10.4);hunterGlow.visible=true;say('那个声音吓跑了狼群——无人怪车来了。',3200);sound(31,1.6,'sawtooth',.14);glitch();
   }
 }
@@ -290,9 +290,10 @@ function tick(){
   requestAnimationFrame(tick);const dt=Math.min(clock.getDelta(),.04),t=clock.elapsedTime;
   if(state==='playing'){
     elapsed+=dt;
-    // 键盘按直觉映射：A/← 向左，D/→ 向右；触屏摇杆保持屏幕坐标映射。
-    let x=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0)-joystick.x;
-    let z=(keys.KeyS||keys.ArrowUp?1:0)-(keys.KeyW||keys.ArrowDown?1:0)-joystick.y;
+    // 镜头面向世界 +Z：世界 +X 投影到屏幕左侧，世界 +Z 投影到屏幕上方。
+    // 因此键盘与摇杆都严格按屏幕方向换算，W/A/S/D 分别就是上/左/下/右。
+    let x=(keys.KeyA||keys.ArrowLeft?1:0)-(keys.KeyD||keys.ArrowRight?1:0)-joystick.x;
+    let z=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0)-joystick.y;
     const moving=x||z, sprint=(keys.ShiftLeft||keys.ShiftRight)&&stamina>2&&moving;
     let speed=sprint?15:9;if(sprint)stamina-=24*dt;else stamina=Math.min(100,stamina+13*dt);
     if(moving){const len=Math.hypot(x,z);x/=len;z/=len;player.position.x+=x*speed*dt;player.position.z+=z*speed*dt;player.rotation.y=Math.atan2(-x,-z);}
