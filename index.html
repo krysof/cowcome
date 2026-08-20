@@ -18,7 +18,7 @@
         <p>雾里有东西在等你。选好角色以后，不要停下，也不要回头。</p>
         <div class="copyright">版权声明<br><a href="http://www.ff18.com" target="_blank" rel="noopener">www.ff18.com</a>　/　白河愁</div>
         <button id="enterGameBtn"><span>进入</span><small>→</small></button>
-        <div class="gate-version">VERSION <b>20260820.3</b></div>
+        <div class="gate-version">VERSION <b>20260820.4</b></div>
       </div>
     </section>
 
@@ -43,10 +43,16 @@
     <div class="crosshair">⌄</div>
 
     <section class="screen intro" id="intro">
+      <svg class="ink-landscape" viewBox="0 0 900 900" aria-hidden="true">
+        <defs><filter id="wash"><feTurbulence baseFrequency=".012" numOctaves="3" seed="8" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="20"/><feGaussianBlur stdDeviation="2.6"/></filter><linearGradient id="river" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#799e91"/><stop offset=".55" stop-color="#3c7772"/><stop offset="1" stop-color="#bdd1bf" stop-opacity=".2"/></linearGradient></defs>
+        <g filter="url(#wash)" opacity=".78"><path fill="#65716b" d="M360 175 505 45l84 168 71-78 127 192-74 67-257-21-178-94z"/><path fill="#202b29" d="m260 250 113-145 92 161 71-54 95 139-272 55-170-38z"/><path fill="#9aa69b" d="m570 318 101-113 102 122 88 48-86 95-237-35z"/><path fill="url(#river)" d="M618 234c-177 88-9 157-151 229-102 52-179 28-227 105-66 105 186 91 97 209-33 45-155 64-194 123h424c20-92-124-100-37-180 73-67 200-115 99-194-68-53 78-144 97-218z"/></g>
+        <g fill="#171c1a"><path d="m570 250 18-42 12 39 20 15-17 9-6 45h-18l-4-44-24-7z"/><path d="m569 214-14-18 21 8 14-19 1 24z"/></g><path d="M598 239q25-23 50-5" fill="none" stroke="#8c241e" stroke-width="10"/>
+        <g fill="none" stroke="#3b4541" stroke-width="5"><path d="m720 158 12-7 10 7"/><path d="m755 130 10-6 10 6"/><path d="m694 104 9-5 9 5"/></g>
+      </svg>
       <div class="intro-copy">
-        <div class="eyebrow">一款不太对劲的草原寓言</div>
+        <div class="eyebrow">诡异草原 · 生存逃亡</div>
         <h1><span>牛来</span><em>草原大逃亡</em></h1>
-        <p>太阳不会落下。妈妈不会停下。<br />跑到草原尽头，也许那里有出口。</p>
+        <p>太阳不会落下。雾里的它们不会停下。<br />穿过兽群与死树林，活着抵达草原尽头。</p>
         <div class="chooser" aria-label="选择主角">
           <span>选择主角</span>
           <div>
@@ -55,11 +61,22 @@
             <button class="character" data-character="leopard"><i class="leopard">豹</i><b>花豹</b></button>
           </div>
         </div>
-        <button id="startBtn"><span>开始逃亡</span><small>ENTER</small></button>
+        <div class="menu-actions">
+          <button id="startBtn"><span>开始游戏</span><small>ENTER</small></button>
+          <button id="scoreBtn" class="secondary"><span>高分榜</span><small>TOP 5</small></button>
+        </div>
         <div class="controls"><b>WASD / 方向键</b> 移动　<b>按住 SHIFT</b> 加速爬行　松开恢复体力</div>
       </div>
-      <div class="stamp">粗糙<br />但完整</div>
-      <div class="credits">© <a href="http://www.ff18.com" target="_blank" rel="noopener">ff18.com</a> / 白河愁　版本：20260820.3</div>
+      <div class="stamp">生存<br />逃亡</div>
+      <div class="credits">© <a href="http://www.ff18.com" target="_blank" rel="noopener">ff18.com</a> / 白河愁　版本：20260820.4</div>
+    </section>
+
+    <section class="scoreboard" id="scoreboard" aria-hidden="true">
+      <div class="score-card">
+        <div class="eyebrow">逃亡记录</div><h2>高分榜</h2>
+        <ol id="scoreList"></ol>
+        <button id="closeScoreBtn"><span>返回标题</span><small>ESC</small></button>
+      </div>
     </section>
 
     <section class="screen result" id="result">
