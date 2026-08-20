@@ -73,6 +73,11 @@ body.heartbeat #game{transform:scale(1.018);filter:blur(1.2px) saturate(var(--ga
 .screen { position:fixed; inset:0; z-index:10; display:flex; align-items:center; padding:7vw; transition:opacity .8s,visibility .8s; background:linear-gradient(90deg,#10130ee8 0%,#10130eaa 42%,transparent 78%); }
 .screen.hidden { opacity:0; visibility:hidden; pointer-events:none; }
 .intro-copy { position:relative; max-width:650px; }
+.intro-copy:after{content:"妈妈——！";position:absolute;left:50%;top:24%;z-index:4;color:#a50904;font:900 clamp(42px,10vw,120px) STKaiti,"KaiTi",serif;white-space:nowrap;letter-spacing:.12em;text-shadow:4px 4px 0 #050000,0 0 25px #e30000;opacity:0;pointer-events:none}
+body.title-cry .intro-copy:after{animation:titleCryText 1.35s steps(2) both}
+body.title-cry .intro h1{animation:titleCryShake .62s steps(2) both}
+@keyframes titleCryText{0%{opacity:0;transform:translate(-50%,20%) scale(2.4)}8%,48%{opacity:1;transform:translate(-50%,0) scale(1)}64%{opacity:.3;transform:translate(-49%,0) scale(1.06)}100%{opacity:0;transform:translate(-50%,-8%) scale(.92)}}
+@keyframes titleCryShake{0%,100%{transform:none}12%{transform:translate(-10px,5px) rotate(-1deg)}28%{transform:translate(8px,-4px) rotate(1deg)}46%{transform:translate(-5px,2px)}}
 .eyebrow { color:var(--acid); font-size:11px; font-weight:900; letter-spacing:.45em; margin-bottom:20px; }
 h1 { margin:0 0 24px; line-height:.86; }
 h1 span { display:block; font-size:clamp(88px,12vw,170px); font-weight:900; letter-spacing:-.12em; transform:translateX(-.08em); text-shadow:6px 7px 0 #000; }

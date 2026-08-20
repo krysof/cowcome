@@ -14,6 +14,7 @@ fetch(`${import.meta.env.BASE_URL}game-core.wasm`).then(async response=>{
 
 const canvas = document.querySelector('#game');
 const dangerAudio=new Audio(`${import.meta.env.BASE_URL}audio/enemy-near.mp3`);dangerAudio.preload='auto';dangerAudio.volume=.95;dangerAudio.setAttribute('playsinline','');dangerAudio.setAttribute('webkit-playsinline','');
+const titleCryAudio=new Audio(`${import.meta.env.BASE_URL}audio/enemy-near.mp3`);titleCryAudio.preload='auto';titleCryAudio.volume=1;titleCryAudio.setAttribute('playsinline','');titleCryAudio.setAttribute('webkit-playsinline','');
 let dangerLatched=false,audioUnlocked=false;
 const ui = {
   intro: document.querySelector('#intro'), result: document.querySelector('#result'),
@@ -391,10 +392,13 @@ function unlockAudio(){
   dangerAudio.volume=.001;dangerAudio.currentTime=0;
   dangerAudio.play().then(()=>setTimeout(()=>{dangerAudio.pause();dangerAudio.currentTime=0;dangerAudio.volume=.95;},80)).catch(()=>{dangerAudio.volume=.95;});
   document.querySelector('#audioGate').classList.add('hidden');
+  playTitleCry();
 }
+function playTitleCry(){titleCryAudio.pause();titleCryAudio.currentTime=0;titleCryAudio.volume=1;titleCryAudio.play().catch(()=>{});document.body.classList.remove('title-cry');void document.body.offsetWidth;document.body.classList.add('title-cry');setTimeout(()=>document.body.classList.remove('title-cry'),1400);}
 document.querySelector('#enterGameBtn').addEventListener('click',unlockAudio);
-document.addEventListener('WeixinJSBridgeReady',()=>{dangerAudio.load();if(audio)audio.resume().catch(()=>{});},{once:true});
+document.addEventListener('WeixinJSBridgeReady',()=>{dangerAudio.load();titleCryAudio.load();if(audio)audio.resume().catch(()=>{});},{once:true});
 function start(){
+  titleCryAudio.pause();titleCryAudio.currentTime=0;document.body.classList.remove('title-cry');
   const mode=difficulties[selectedCharacter];runLength=mode.length;exitZ=18-runLength;distance=runLength;gate.position.z=exitZ;beacon.position.z=exitZ+2;gateBeam.position.z=exitZ;gateSign.position.z=exitZ+1;guidePosts.forEach(post=>post.visible=post.position.z>exitZ+18);scene.fog.density=mode.fog;scene.background.set(selectedCharacter==='orange'?0xaeba88:selectedCharacter==='yellow'?0x9daa7c:0x77806a);
   state='playing'; elapsed=0; stamina=100;exhausted=false; hunterSpeed=7.5; lastLine=-1;speedLevel=0;nextTerrorFlash=mode.flashMin+Math.random()*mode.flashRange;nextHaunt=5+Math.random()*6;clearTimeout(hauntTimer);watchers.forEach(w=>w.visible=false);document.body.classList.remove('exhausted','enemy-near','terror-flash','flash-negative','apparition','blackout','blood-flash','heartbeat','otherworld','difficulty-easy','difficulty-normal','difficulty-hard');document.body.classList.add(selectedCharacter==='orange'?'difficulty-easy':selectedCharacter==='yellow'?'difficulty-normal':'difficulty-hard');ui.distance.textContent=runLength+'m';
   player.position.set(0,.05,18);player.rotation.set(0,0,0);storyStage=0;activeChasers=[];allEnemies.forEach(e=>e.visible=false);[...snakes,...treeEnemies].forEach(e=>e.visible=true);
@@ -427,6 +431,7 @@ document.querySelector('#changeBtn').onclick=()=>{
   stopMusic();state='intro';document.body.classList.remove('playing');ui.result.classList.remove('show');ui.intro.classList.remove('hidden');
   clearTimeout(hauntTimer);watchers.forEach(w=>w.visible=false);document.body.classList.remove('exhausted','enemy-near','terror-flash','flash-negative','apparition','blackout','blood-flash','heartbeat','otherworld');
   player.position.set(0,.05,18);player.rotation.set(0,0,0);storyStage=0;activeChasers=[];allEnemies.forEach(e=>e.visible=false);hunterGlow.visible=false;
+  playTitleCry();
 };
 document.querySelectorAll('.character').forEach(button=>button.addEventListener('click',()=>{
   if(state!=='intro')return;
