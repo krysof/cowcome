@@ -1,5 +1,17 @@
 import * as THREE from 'three';
 
+// 数值模拟由独立 WebAssembly 核心执行；网络或旧浏览器失败时保留等价回退。
+let gameCore={
+  movement_speed:(sprint,exhausted)=>sprint?15:(exhausted?3.15:9),
+  update_stamina:(value,dt,moving,wants,exhausted,sprint)=>sprint?Math.max(0,value-29*dt):(!exhausted||!wants?Math.min(100,value+(moving?10:18)*dt):value),
+  enemy_time_boost:(time,car)=>Math.min(car?2.4:3.8,time*(car?.032:.052)),
+  rank_score:(escaped,distance,time)=>escaped?1000000000-time:distance*100000+Math.min(time,99999)
+};
+fetch(`${import.meta.env.BASE_URL}game-core.wasm`).then(async response=>{
+  const loaded=await WebAssembly.instantiateStreaming(response.clone()).catch(()=>WebAssembly.instantiate(response.arrayBuffer()));
+  gameCore={...gameCore,...loaded.instance.exports};
+}).catch(()=>{});
+
 const canvas = document.querySelector('#game');
 const dangerAudio=new Audio(`${import.meta.env.BASE_URL}audio/enemy-near.mp3`);dangerAudio.preload='auto';dangerAudio.volume=.95;dangerAudio.setAttribute('playsinline','');dangerAudio.setAttribute('webkit-playsinline','');
 let dangerLatched=false,audioUnlocked=false;
@@ -18,8 +30,9 @@ function renderScores(){
   const scores=readScores();scoreList.innerHTML=scores.length?scores.map(s=>`<li><div><b>${characterNames[s.character]||'牛来'}</b><small>${s.win?'成功逃出':'被它们追上'} · ${s.distance}m</small></div><strong>${formatTime(s.time)}</strong></li>`).join(''):'<li class="empty">还没有逃亡记录</li>';
 }
 function recordScore(win){
-  const entry={win,character:selectedCharacter,distance:Math.max(0,Math.min(638,Math.round(18-player.position.z))),time:Math.max(0,Math.round(elapsed*1000)),date:Date.now()};
-  const scores=[...readScores(),entry].sort((a,b)=>a.win!==b.win?(a.win?-1:1):a.win?(a.time-b.time):(b.distance-a.distance||b.time-a.time)).slice(0,5);
+  const entry={win,character:selectedCharacter,distance:Math.max(0,Math.min(638,Math.round(18-player.position.z))),time:Math.max(0,Math.round(elapsed*1000)),date:Date.now()};entry.score=gameCore.rank_score(win?1:0,entry.distance,entry.time);
+  const scoreOf=s=>Number.isFinite(s.score)?s.score:gameCore.rank_score(s.win?1:0,s.distance,s.time);
+  const scores=[...readScores(),entry].sort((a,b)=>scoreOf(b)-scoreOf(a)).slice(0,5);
   try{localStorage.setItem('niulai-highscores',JSON.stringify(scores))}catch{}renderScores();
 }
 
@@ -53,6 +66,36 @@ function mesh(geo,mat,parent,x,y,z,scale=[1,1,1],rot=[0,0,0]){
   const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.scale.set(...scale);m.rotation.set(...rot);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;
 }
 function tuft(parent,mat,x,y,z,s=.18,rot=0){return mesh(new THREE.ConeGeometry(s,s*2.4,4),mat,parent,x,y,z,[1,1,1],[0,0,rot]);}
+
+// 有实际高度的草层：单一 InstancedMesh 保持手机性能，同时让角色真正穿过草而不是贴图地板。
+function makeGrassGeometry(){const vertices=[];for(let i=0;i<3;i++){const a=i*Math.PI/3,px=Math.cos(a)*.085,pz=Math.sin(a)*.085,lx=Math.cos(a+Math.PI/2)*.12,lz=Math.sin(a+Math.PI/2)*.12;vertices.push(-px,0,-pz,px,0,pz,lx,1,lz);}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));g.computeVertexNormals();return g;}
+const grassCount=innerWidth<700?10000:19000,grassGeo=makeGrassGeometry(),grassMat=new THREE.MeshStandardMaterial({color:0xffffff,flatShading:true,roughness:1,side:THREE.DoubleSide});
+const grassField=new THREE.InstancedMesh(grassGeo,grassMat,grassCount),grassDummy=new THREE.Object3D(),grassColor=new THREE.Color();
+for(let i=0;i<grassCount;i++){
+  const x=(Math.random()-.5)*134,z=24-Math.random()*674,path=Math.abs(x)<7,h=(path?.52:.7)+Math.random()*(path?.62:1.15),w=.65+Math.random()*.85;
+  grassDummy.position.set(x,.015,z);grassDummy.rotation.set((Math.random()-.5)*.16,Math.random()*Math.PI,(Math.random()-.5)*.28);grassDummy.scale.set(w,h,w);grassDummy.updateMatrix();grassField.setMatrixAt(i,grassDummy.matrix);
+  grassColor.setHex(Math.random()>.72?0x78804d:Math.random()>.55?0x425b38:0x566d3d);grassField.setColorAt(i,grassColor);
+}
+grassField.instanceMatrix.setUsage(THREE.StaticDrawUsage);grassField.receiveShadow=true;grassField.castShadow=false;grassField.computeBoundingSphere();scene.add(grassField);
+
+// 低矮起伏、湿地水洼和土色斑块，打破一整张平面的感觉。
+const hillMat=flat(0x52653e),mudMat=flat(0x4b4432),puddleMat=new THREE.MeshStandardMaterial({color:0x273f39,roughness:.28,metalness:.18,transparent:true,opacity:.72});
+for(let i=0;i<22;i++){
+  const side=i%2?1:-1,x=side*(25+Math.random()*35),z=18-i*30-Math.random()*18;
+  mesh(new THREE.SphereGeometry(1,8,5),hillMat,scene,x,-1.1,z,[7+Math.random()*8,2+Math.random()*2.7,9+Math.random()*13]);
+}
+for(let i=0;i<18;i++){
+  const x=(Math.random()-.5)*42,z=-18-i*34-Math.random()*14,rx=1.3+Math.random()*3.2,rz=.7+Math.random()*1.5;
+  mesh(new THREE.CircleGeometry(1,10),i%3?puddleMat:mudMat,scene,x,.035,z,[rx,rz,1],[-Math.PI/2,0,Math.random()*Math.PI]);
+}
+
+function makeRoundTree(scale=1){
+  const g=new THREE.Group(),wood=flat(0x494331),leafA=flat(0x283f31),leafB=flat(0x3d5039),h=4+Math.random()*3;
+  mesh(new THREE.CylinderGeometry(.22,.45,h,5),wood,g,0,h/2,0);
+  const crowns=5+Math.floor(Math.random()*5);for(let i=0;i<crowns;i++){const a=i/crowns*Math.PI*2,r=i?1+Math.random()*1.1:0;mesh(new THREE.DodecahedronGeometry(.85+Math.random()*.55,0),i%2?leafA:leafB,g,Math.cos(a)*r,h+Math.sin(i*1.7)*.65,Math.sin(a)*r,[1,.9+Math.random()*.5,1]);}
+  g.scale.setScalar(scale);return g;
+}
+for(let i=0;i<34;i++){const t=makeRoundTree(.75+Math.random()*.8),side=i%2?1:-1;t.position.set(side*(24+Math.random()*38),0,20-Math.random()*660);t.rotation.y=Math.random()*Math.PI;scene.add(t);}
 function makeNiuLai(scale=1, dark=false){
   const g=new THREE.Group();
   const fur=flat(dark?0x342019:0xe97837), muzzle=flat(dark?0x84624e:0xf2d3a0);
@@ -412,13 +455,11 @@ function tick(){
     let x=(keys.KeyA||keys.ArrowLeft?1:0)-(keys.KeyD||keys.ArrowRight?1:0)-joystick.x;
     let z=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0)-joystick.y;
     const moving=x||z,wantsSprint=(keys.ShiftLeft||keys.ShiftRight)&&moving,sprint=wantsSprint&&!exhausted&&stamina>0;
-    let speed=sprint?15:(exhausted?3.15:9);
+    const speed=gameCore.movement_speed(sprint?1:0,exhausted?1:0);
+    stamina=gameCore.update_stamina(stamina,dt,moving?1:0,wantsSprint?1:0,exhausted?1:0,sprint?1:0);
     if(sprint){
-      stamina=Math.max(0,stamina-29*dt);
       if(stamina<=0){exhausted=true;document.body.classList.add('exhausted');say('没有力气了。松开奔跑，喘口气。',2300);sound(43,.75,'sawtooth',.11);}
     }else{
-      // 力竭后必须松开“奔跑”才会恢复，迫使玩家用一阵、停一阵。
-      const canRecover=!exhausted||!wantsSprint;if(canRecover)stamina=Math.min(100,stamina+(moving?10:18)*dt);
       if(exhausted&&stamina>=32){exhausted=false;document.body.classList.remove('exhausted');say('腿又能动了。',1200);sound(132,.24,'triangle',.045);}
     }
     if(moving){const len=Math.hypot(x,z);x/=len;z/=len;player.position.x+=x*speed*dt;player.position.z+=z*speed*dt;player.rotation.y=Math.atan2(-x,-z);}
@@ -439,7 +480,7 @@ function tick(){
     let nearest=999;
     for(const enemy of activeChasers){
       const v=new THREE.Vector3().subVectors(player.position,enemy.position);v.y=0;const d=v.length();nearest=Math.min(nearest,d);
-      const timeBoost=Math.min(enemy.userData.type==='car'?2.4:3.8,elapsed*(enemy.userData.type==='car'?.032:.052));
+      const timeBoost=gameCore.enemy_time_boost(elapsed,enemy.userData.type==='car'?1:0);
       enemy.position.addScaledVector(v.normalize(),(enemy.userData.chaseSpeed+timeBoost)*dt);
       if(enemy.userData.type!=='car')enemy.position.x+=Math.sin(t*1.8+activeChasers.indexOf(enemy)*1.7)*dt*.65;
       enemy.rotation.y=Math.atan2(-v.x,-v.z);

@@ -1,6 +1,6 @@
-const CACHE='niulai-20260820-5';
+const CACHE='niulai-20260820-6';
 const ROOT=new URL('./',self.location.href);
-const CORE=['./','manifest.webmanifest','icons/niulai-192.png','icons/niulai-512.png','icons/niulai-maskable-512.png','audio/enemy-near.mp3'].map(path=>new URL(path,ROOT).href);
+const CORE=['./','manifest.webmanifest','game-core.wasm','icons/niulai-192.png','icons/niulai-512.png','icons/niulai-maskable-512.png','audio/enemy-near.mp3'].map(path=>new URL(path,ROOT).href);
 
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)).then(()=>self.skipWaiting()));
