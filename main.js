@@ -12,7 +12,7 @@ const ui = {
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xb9c98a);
 scene.fog = new THREE.FogExp2(0xa7b886, 0.018);
-const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, .1, 500);
+const camera = new THREE.PerspectiveCamera(66, innerWidth / innerHeight, .1, 500);
 const renderer = new THREE.WebGLRenderer({ canvas, antialias:false, powerPreference:'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
 renderer.setSize(innerWidth, innerHeight);
@@ -38,19 +38,65 @@ ground.geometry.computeVertexNormals(); scene.add(ground);
 function mesh(geo,mat,parent,x,y,z,scale=[1,1,1],rot=[0,0,0]){
   const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.scale.set(...scale);m.rotation.set(...rot);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;
 }
-function makeCow(scale=1, dark=false){
-  const g=new THREE.Group(), white=flat(dark?0x5a5147:0xe7dfbd), black=flat(dark?0x130d0b:0x29261f), pink=flat(0xc98170), horn=flat(0xe5ce91);
-  mesh(new THREE.BoxGeometry(2.6,1.6,4),white,g,0,1.7,0,[scale,scale,scale]);
-  const head=mesh(new THREE.BoxGeometry(2,1.8,1.8),white,g,0,2.05,-2.55,[scale,scale,scale],[dark?.12:0,0,0]);
-  mesh(new THREE.BoxGeometry(1.65,.8,.65),pink,head,0,-.25,-1,[1,1,1]);
-  for(const x of [-.62,.62]){mesh(new THREE.SphereGeometry(.18,5,4),black,head,x,.35,-.92);mesh(new THREE.ConeGeometry(.17,.8,5),horn,head,x,.85,-.15,[1,1,1],[0,0,x>0?-.35:.35]);}
-  const legs=[]; for(const x of [-.85,.85])for(const z of [-1.25,1.25])legs.push(mesh(new THREE.BoxGeometry(.42,1.7,.45),black,g,x,.65,z,[scale,scale,scale]));
-  mesh(new THREE.BoxGeometry(.9,.12,2),black,g,.75,1.85,.1,[scale,scale,scale],[0,.3,.25]);
-  g.userData.legs=legs; return g;
+function makeNiuLai(scale=1, dark=false){
+  const g=new THREE.Group();
+  const fur=flat(dark?0x342019:0xe97837), muzzle=flat(dark?0x84624e:0xf2d3a0);
+  const hoof=flat(dark?0x0e0b09:0x3a241b), eye=flat(0xf3ead8), pupil=flat(dark?0xff3b21:0x231711), inner=flat(0xeaa181);
+  // 电影中的牛来是橙色、直立、大头宽嘴的拟人小牛。
+  mesh(new THREE.SphereGeometry(1.05,7,5),fur,g,0,2.45,0,[1.04,1.22,.74]);
+  const head=mesh(new THREE.SphereGeometry(1.2,7,6),fur,g,0,4.25,-.08,[1.08,.92,.8]);
+  mesh(new THREE.SphereGeometry(.74,7,5),muzzle,head,0,-.25,-.9,[1.12,.7,.38]);
+  mesh(new THREE.BoxGeometry(.78,.07,.08),hoof,head,0,-.38,-1.25,[1,1,1]);
+  for(const x of [-.48,.48]){
+    mesh(new THREE.SphereGeometry(.25,7,5),eye,head,x,.18,-.78,[1,.82,.34]);
+    mesh(new THREE.SphereGeometry(.105,6,5),pupil,head,x,.16,-.9,[1,1,.5]);
+    mesh(new THREE.ConeGeometry(.24,.75,4),fur,head,x*1.95,.18,-.02,[1,1,1],[0,0,x>0?-1.25:1.25]);
+    mesh(new THREE.ConeGeometry(.11,.42,4),inner,head,x*1.94,.18,-.08,[1,1,1],[0,0,x>0?-1.25:1.25]);
+    mesh(new THREE.BoxGeometry(.38,.07,.06),hoof,head,x,.5,-.77,[1,1,1],[0,0,x>0?.12:-.12]);
+  }
+  const arms=[], legs=[];
+  for(const x of [-1.03,1.03]){
+    const a=mesh(new THREE.CapsuleGeometry(.22,1.15,2,5),fur,g,x,2.45,0,[1,1,1],[0,0,x>0?-.16:.16]);arms.push(a);
+    mesh(new THREE.SphereGeometry(.28,6,5),hoof,a,0,-.78,0,[.9,.8,.9]);
+  }
+  for(const x of [-.48,.48]){
+    const l=mesh(new THREE.CapsuleGeometry(.27,1.25,2,5),fur,g,x,.9,0,[1,1,1]);legs.push(l);
+    mesh(new THREE.SphereGeometry(.36,6,5),hoof,l,0,-.85,-.13,[1,.65,1.35]);
+  }
+  g.scale.setScalar(scale); g.userData.legs=legs; g.userData.arms=arms; return g;
 }
 
-const player=makeCow(.72,false); player.position.set(0,.2,18); scene.add(player);
-const hunter=makeCow(2.15,true); hunter.position.set(0,.2,47); hunter.rotation.y=Math.PI; scene.add(hunter);
+function makeYellowBull(scale=1,dark=false){
+  const g=new THREE.Group(), fur=flat(dark?0x32251a:0xc89c22), muzzle=flat(dark?0x725958:0xa88aa4), hoof=flat(dark?0x130e0b:0x806d83), eye=flat(0xf2e8d5), pupil=flat(dark?0xff3b21:0x231711), horn=flat(0x39363b);
+  mesh(new THREE.SphereGeometry(1.18,7,6),fur,g,0,2.55,0,[1.02,1.34,.78]);
+  const head=mesh(new THREE.SphereGeometry(1.16,7,6),fur,g,0,4.5,-.05,[1.05,1,.8]);
+  mesh(new THREE.SphereGeometry(.68,7,5),muzzle,head,0,-.23,-.9,[1.08,.65,.4]);
+  for(const x of [-.45,.45]){
+    mesh(new THREE.SphereGeometry(.23,7,5),eye,head,x,.17,-.78,[1,.8,.32]);mesh(new THREE.SphereGeometry(.095,6,5),pupil,head,x,.16,-.9,[1,1,.5]);
+    mesh(new THREE.ConeGeometry(.16,.92,6),horn,head,x*1.25,1.02,-.03,[1,1,1],[0,0,x>0?-.22:.22]);
+    mesh(new THREE.ConeGeometry(.22,.62,4),fur,head,x*2.05,.12,0,[1,1,1],[0,0,x>0?-1.25:1.25]);
+  }
+  const arms=[],legs=[];for(const x of [-1.05,1.05]){const a=mesh(new THREE.CapsuleGeometry(.25,1.2,2,5),fur,g,x,2.45,0);arms.push(a);mesh(new THREE.SphereGeometry(.3,6,5),hoof,a,0,-.82,0);}
+  for(const x of [-.5,.5]){const l=mesh(new THREE.CapsuleGeometry(.3,1.35,2,5),fur,g,x,.9,0);legs.push(l);mesh(new THREE.SphereGeometry(.37,6,5),hoof,l,0,-.9,-.12,[1,.65,1.3]);}
+  g.scale.setScalar(scale);g.userData.legs=legs;g.userData.arms=arms;return g;
+}
+
+function makeLeopard(scale=1){
+  const g=new THREE.Group(), fur=flat(0xd6ac2d), white=flat(0xe9dfbf), spot=flat(0x352319), eye=flat(0xf4e9cc);
+  const body=mesh(new THREE.SphereGeometry(1,8,6),fur,g,0,2.35,0,[.8,1.35,.65]);mesh(new THREE.SphereGeometry(.72,7,5),white,body,0,-.05,-.7,[.7,1,.25]);
+  const head=mesh(new THREE.SphereGeometry(1,8,6),fur,g,0,4.05,-.02,[.92,.94,.72]);mesh(new THREE.SphereGeometry(.52,7,5),white,head,0,-.28,-.82,[1,.62,.38]);
+  for(const x of [-.38,.38]){mesh(new THREE.SphereGeometry(.2,6,5),eye,head,x,.15,-.72,[1,.9,.3]);mesh(new THREE.SphereGeometry(.08,6,5),spot,head,x,.15,-.83);mesh(new THREE.ConeGeometry(.28,.55,4),fur,head,x*1.8,.72,-.02,[1,1,1],[0,0,x>0?-.58:.58]);}
+  const arms=[],legs=[];for(const x of [-.82,.82]){const a=mesh(new THREE.CapsuleGeometry(.18,1.05,2,5),fur,g,x,2.35,0);arms.push(a);}
+  for(const x of [-.36,.36]){const l=mesh(new THREE.CapsuleGeometry(.22,1.25,2,5),fur,g,x,.82,0);legs.push(l);}
+  for(let i=0;i<14;i++){const a=i/14*Math.PI*2,r=i<7?.78:.58,y=i<7?2.45:4.07;mesh(new THREE.SphereGeometry(.09+(i%3)*.03,5,4),spot,g,Math.cos(a)*r,y+Math.sin(a)*.65,-.62,[1,.7,.25]);}
+  const tail=mesh(new THREE.CapsuleGeometry(.12,1.7,2,5),fur,g,.62,2.1,.35,[1,1,1],[0,0,-.8]);mesh(new THREE.SphereGeometry(.16,6,5),spot,tail,0,-1,0);
+  g.scale.setScalar(scale);g.userData.legs=legs;g.userData.arms=arms;return g;
+}
+
+function createCharacter(kind){return kind==='yellow'?makeYellowBull(.68):kind==='leopard'?makeLeopard(.78):makeNiuLai(.72,false);}
+let selectedCharacter='orange';
+let player=createCharacter(selectedCharacter); player.position.set(0,.05,18); player.rotation.y=Math.PI; scene.add(player);
+const hunter=makeYellowBull(1.48,true); hunter.position.set(0,.05,51); hunter.rotation.y=Math.PI; scene.add(hunter);
 const hunterGlow=new THREE.PointLight(0xff2b16,22,24); hunterGlow.position.set(0,5,46); scene.add(hunterGlow);
 
 const obstacles=[];
@@ -94,7 +140,7 @@ function sound(freq=80,dur=.16,type='sawtooth',vol=.05){
 }
 function start(){
   state='playing'; elapsed=0; stamina=100; hunterSpeed=7.5; lastLine=-1;
-  player.position.set(0,.2,18);hunter.position.set(0,.2,47);document.body.classList.add('playing');ui.intro.classList.add('hidden');ui.result.classList.remove('show');
+  player.position.set(0,.05,18);player.rotation.set(0,0,0);hunter.position.set(0,.05,51);document.body.classList.add('playing');ui.intro.classList.add('hidden');ui.result.classList.remove('show');
   sound(55,.8,'sawtooth',.08);setTimeout(()=>say('跑，牛来。'),500);
 }
 function end(win){
@@ -104,6 +150,11 @@ function end(win){
   sound(win?220:38,1.5,'sawtooth',.1);
 }
 document.querySelector('#startBtn').onclick=start;document.querySelector('#restartBtn').onclick=start;
+document.querySelectorAll('.character').forEach(button=>button.addEventListener('click',()=>{
+  if(state!=='intro')return;
+  selectedCharacter=button.dataset.character;document.querySelectorAll('.character').forEach(b=>b.classList.toggle('active',b===button));
+  const old=player;player=createCharacter(selectedCharacter);player.position.copy(old.position);player.rotation.y=Math.PI;scene.remove(old);scene.add(player);sound(120,.12,'square',.025);
+}));
 addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='Enter'&&state==='intro')start();if(e.code==='KeyR'&&state!=='playing')start();});
 addEventListener('keyup',e=>keys[e.code]=false);
 document.querySelectorAll('.mobile-controls button').forEach(b=>{
@@ -112,7 +163,11 @@ document.querySelectorAll('.mobile-controls button').forEach(b=>{
 });
 
 function glitch(){document.body.classList.add('glitch');sound(48,.1,'square',.03);setTimeout(()=>document.body.classList.remove('glitch'),80+Math.random()*160);}
-function animateCow(cow,t,speed){const legs=cow.userData.legs;legs.forEach((l,i)=>l.rotation.x=Math.sin(t*speed+(i%2)*Math.PI)*.48);cow.rotation.z=Math.sin(t*speed*.5)*.025;}
+function animateCow(cow,t,speed){
+  cow.userData.legs.forEach((l,i)=>l.rotation.x=Math.sin(t*speed+(i%2)*Math.PI)*.55);
+  cow.userData.arms.forEach((a,i)=>a.rotation.x=Math.sin(t*speed+(i%2)*Math.PI)*.42);
+  cow.rotation.z=Math.sin(t*speed*.5)*.025;
+}
 function tick(){
   requestAnimationFrame(tick);const dt=Math.min(clock.getDelta(),.04),t=clock.elapsedTime;
   if(state==='playing'){
@@ -136,10 +191,10 @@ function tick(){
     const progress=-player.position.z;lines.forEach((line,i)=>{if(progress>line[0]&&lastLine<i){lastLine=i;say(line[1]);if(i===2||i===5)glitch();}});
     if(Math.random()<dt*.018)glitch();
   } else animateCow(hunter,t,2.5);
-  const desired=new THREE.Vector3(player.position.x*.82,7.5,player.position.z+14);
+  const desired=new THREE.Vector3(player.position.x*.72+3.2,10.5,player.position.z+23);
   camera.position.lerp(desired,1-Math.pow(.001,dt));
   if(shake>0){camera.position.x+=(Math.random()-.5)*shake;camera.position.y+=(Math.random()-.5)*shake;shake*=.88;}
-  camera.lookAt(player.position.x,1.5,player.position.z-9);
+  camera.lookAt(player.position.x,2.1,player.position.z-12);
   renderer.render(scene,camera);
 }
 tick();
