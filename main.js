@@ -264,6 +264,7 @@ const treeEnemies=[[-18,-210],[16,-405]].map(([x,z])=>{const t=makeTreeEnemy(1.2
 const monsterCar=makeMonsterCar(.88);monsterCar.position.set(0,0,80);scene.add(monsterCar);
 const herdSpawns=[[-7,-72],[8,-148],[-5,-224],[9,-306],[-8,-392],[6,-478],[-4,-558]];
 const herdCows=herdSpawns.map(([x,z],i)=>{const c=makeHerdCow(.72+(i%2)*.08);c.position.set(x,.05,z);c.userData.start=new THREE.Vector3(x,.05,z);scene.add(c);return c;});
+const superCowIndex=1,superCow=herdCows[superCowIndex];superCow.userData.super=true;superCow.userData.halo=mesh(new THREE.TorusGeometry(1.15,.1,5,18),new THREE.MeshBasicMaterial({color:0xd9ff43,fog:false}),superCow,0,3.25,0,[1,1,1],[Math.PI/2,0,0]);
 const ambushers=herdSpawns.map(([x,z],i)=>{const e=makeDarkBeast(.62+(i%2)*.05);e.position.set(x+(i%2?3:-3),.05,z+14);e.userData.start=e.position.clone();e.userData.type='beast';e.userData.herdIndex=i;scene.add(e);return e;});
 const strangeTravellers=[makeNiuLai(.48,false),makeYellowBull(.43),makeLeopard(.52)];[[-11,-118],[12,-272],[-10,-438]].forEach(([x,z],i)=>{const c=strangeTravellers[i];c.position.set(x,.05,z);c.userData.start=new THREE.Vector3(x,.05,z);scene.add(c);});
 const strangeBirds=Array.from({length:18},(_,i)=>{const b=makeStrangeBird(.42+Math.random()*.22);b.position.set((Math.random()-.5)*55,9+Math.random()*14,10-Math.random()*100);b.userData.phase=Math.random()*Math.PI*2;b.userData.speed=4+Math.random()*5;scene.add(b);return b;});
@@ -325,6 +326,8 @@ const lines=[
   [25,'妈妈说：别招惹草蛇。'],[80,'云雀：狼群正在靠近。'],[145,'豹拉：你们先走，我来引开它们。'],
   [230,'牛群散开了。别停下！'],[330,'妈妈说：过后我就和你会合。'],[440,'云雀：有一个更大的怪物来了。'],[540,'悬崖下面……也许有草场。']
 ];
+const herdFleeLines=['前面的牛发现了兽群，开始拼命逃跑。','那头发光的牛突然加速——它不是普通牛。','另一头牛冲出草丛，黑面兽紧跟在后。','它还在跑。后面的喘息声越来越近。','左边的牛群散了，有一头落在最后。','雨里传来蹄声，又一头牛正在逃命。','最后那头牛也被它们盯上了。'];
+const herdCaughtLines=['第一头牛被扑倒了。它的叫声很快消失。','它们咬住了那头牛的后腿，把它拖进草里。','那头牛差一点甩开它们，却在水洼边被围住。','它还在挣扎。黑面兽已经撕开了牛腹。','落单的牛被撞翻，血顺着雨水流了下来。','蹄声停了。雾里只剩下咀嚼声。','最后那头牛没能跑出去。它们分食了它。'];
 
 function say(text,time=2600){ui.subtitle.textContent=text;ui.subtitle.classList.add('show');clearTimeout(say.t);say.t=setTimeout(()=>ui.subtitle.classList.remove('show'),time);}
 function sound(freq=80,dur=.16,type='sawtooth',vol=.05){
@@ -365,7 +368,7 @@ function start(){
   state='playing'; elapsed=0; stamina=100;exhausted=false; hunterSpeed=7.5; lastLine=-1;speedLevel=0;nextTerrorFlash=mode.flashMin+Math.random()*mode.flashRange;document.body.classList.remove('exhausted','enemy-near','terror-flash','difficulty-easy','difficulty-normal','difficulty-hard');document.body.classList.add(selectedCharacter==='orange'?'difficulty-easy':selectedCharacter==='yellow'?'difficulty-normal':'difficulty-hard');ui.distance.textContent=runLength+'m';
   player.position.set(0,.05,18);player.rotation.set(0,0,0);storyStage=0;activeChasers=[];allEnemies.forEach(e=>e.visible=false);[...snakes,...treeEnemies].forEach(e=>e.visible=true);
   bloodEffects.splice(0).forEach(f=>scene.remove(f.group));
-  herdCows.forEach((c,i)=>{c.position.copy(c.userData.start);c.rotation.set(0,0,0);c.visible=c.position.z>exitZ;c.userData.active=false;c.userData.eaten=false;const e=ambushers[i];e.position.copy(e.userData.start);e.rotation.set(0,0,0);e.visible=false;e.userData.disabled=i>=mode.ambushers;e.userData.feeding=0;e.userData.joined=false;});
+  herdCows.forEach((c,i)=>{c.position.copy(c.userData.start);c.rotation.set(0,0,0);c.visible=c.position.z>exitZ;c.userData.active=false;c.userData.eaten=false;c.userData.escaped=false;c.userData.announced=false;const e=ambushers[i];e.position.copy(e.userData.start);e.rotation.set(0,0,0);e.visible=false;e.userData.disabled=i>=mode.ambushers;e.userData.feeding=0;e.userData.joined=false;});
   strangeTravellers.forEach(c=>{c.position.copy(c.userData.start);c.rotation.set(0,0,0);c.visible=true;c.userData.fleeing=false;});
   hunterGlow.visible=false;document.body.classList.add('playing');ui.intro.classList.add('hidden');ui.result.classList.remove('show');
   dangerAudio.pause();dangerAudio.currentTime=0;dangerAudio.volume=.95;dangerLatched=false;sound(55,.8,'sawtooth',.08);startMusic();setTimeout(()=>say(`${difficulties[selectedCharacter].name}难度。跑，别回头。`),500);
@@ -414,7 +417,7 @@ function terrorFlash(){
   setTimeout(()=>document.body.classList.remove('terror-flash'),620);
 }
 function bloodyAttack(cow,enemy){
-  cow.userData.eaten=true;cow.rotation.z=Math.PI/2;cow.position.y=.42;enemy.userData.feeding=2.8;shake=.8;terrorFlash();say('它们把另一头牛撕碎了。快跑！',2100);
+  const victim=enemy.userData.herdIndex||0;cow.userData.eaten=true;cow.rotation.z=Math.PI/2;cow.position.y=.42;enemy.userData.feeding=2.8;shake=.8;terrorFlash();say(herdCaughtLines[victim%herdCaughtLines.length],2500);
   const group=new THREE.Group(),red=flat(0x7e0906),darkRed=flat(0x330000);
   const pool=mesh(new THREE.CircleGeometry(1.65,9),darkRed,group,0,.025,0,[1,.7,1],[-Math.PI/2,0,Math.random()]);pool.castShadow=false;
   const drops=[];for(let i=0;i<16;i++){const d=mesh(new THREE.DodecahedronGeometry(.08+Math.random()*.13,0),red,group,0,.6,0);d.userData.velocity=new THREE.Vector3((Math.random()-.5)*6,2+Math.random()*5,(Math.random()-.5)*6);drops.push(d);}
@@ -487,11 +490,12 @@ function tick(){
     const progress=-player.position.z;updateStoryWave(progress);
     herdCows.forEach((cow,i)=>{
       const enemy=ambushers[i];if(cow.userData.eaten){if(enemy.userData.feeding>0){enemy.userData.feeding-=dt;enemy.userData.headBob=(enemy.userData.headBob||0)+dt;enemy.position.y=.05+Math.abs(Math.sin(t*12))*.18;}else if(!enemy.userData.joined){enemy.userData.joined=true;enemy.position.y=.05;enemy.userData.chaseSpeed=7.15+(i%3)*.14;activeChasers.push(enemy);}return;}
-      if(!cow.visible)return;if(!cow.userData.active&&Math.abs(player.position.z-cow.position.z)<58){cow.userData.active=true;enemy.visible=!enemy.userData.disabled;}
+      if(!cow.visible)return;if(!cow.userData.active&&Math.abs(player.position.z-cow.position.z)<58){cow.userData.active=true;enemy.visible=!enemy.userData.disabled;if(!cow.userData.announced){cow.userData.announced=true;say(herdFleeLines[i%herdFleeLines.length],2300);}}
       if(!cow.userData.active)return;
-      const cowSpeed=4.2+(i%3)*.35;cow.position.z-=cowSpeed*dt;cow.position.x+=Math.sin(t*1.4+i)*dt*.45;cow.userData.legs.forEach((l,n)=>l.rotation.x=Math.sin(t*10+n*Math.PI)*.48);
+      const cowSpeed=cow.userData.super?11.2:5.35+(i%3)*.32;cow.position.z-=cowSpeed*dt;cow.position.x+=Math.sin(t*1.4+i)*dt*(cow.userData.super?.85:.45);cow.userData.legs.forEach((l,n)=>l.rotation.x=Math.sin(t*(cow.userData.super?17:12)+n*Math.PI)*.58);if(cow.userData.halo){cow.userData.halo.rotation.z+=dt*2.8;cow.userData.halo.scale.setScalar(1+Math.sin(t*5)*.09);}
+      if(cow.userData.super&&cow.position.z<exitZ+5){cow.userData.escaped=true;cow.visible=false;enemy.userData.joined=true;enemy.userData.chaseSpeed=7.15;activeChasers.push(enemy);say('超级牛甩开了怪物，冲进出口，逃之夭夭！',3000);sound(260,.55,'triangle',.09);return;}
       if(enemy.userData.disabled)return;
-      const chase=new THREE.Vector3().subVectors(cow.position,enemy.position),d=chase.length();enemy.position.addScaledVector(chase.normalize(),(6.45+i*.08)*dt);enemy.rotation.y=Math.atan2(-chase.x,-chase.z);animateCow(enemy,t,11);
+      const chase=new THREE.Vector3().subVectors(cow.position,enemy.position),d=chase.length();enemy.position.addScaledVector(chase.normalize(),(cow.userData.super?7.1:7.05+i*.08)*dt);enemy.rotation.y=Math.atan2(-chase.x,-chase.z);animateCow(enemy,t,11);
       if(d<2.05)bloodyAttack(cow,enemy);
     });
     strangeTravellers.forEach((c,i)=>{if(!c.userData.fleeing&&Math.abs(player.position.z-c.position.z)<72)c.userData.fleeing=true;if(c.userData.fleeing){c.position.z-=(5.6+i*.4)*dt;c.position.x+=Math.sin(t*1.2+i)*dt*.35;animateCow(c,t,9+i);}});
