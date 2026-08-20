@@ -265,8 +265,8 @@ function tick(){
   requestAnimationFrame(tick);const dt=Math.min(clock.getDelta(),.04),t=clock.elapsedTime;
   if(state==='playing'){
     elapsed+=dt;
-    // 镜头朝世界 +Z，因此屏幕左右与世界 X 相反；这里按屏幕方向统一映射。
-    let x=(keys.KeyA||keys.ArrowLeft?1:0)-(keys.KeyD||keys.ArrowRight?1:0)-joystick.x;
+    // 键盘按直觉映射：A/← 向左，D/→ 向右；触屏摇杆保持屏幕坐标映射。
+    let x=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0)-joystick.x;
     let z=(keys.KeyS||keys.ArrowUp?1:0)-(keys.KeyW||keys.ArrowDown?1:0)-joystick.y;
     const moving=x||z, sprint=(keys.ShiftLeft||keys.ShiftRight)&&stamina>2&&moving;
     let speed=sprint?15:9;if(sprint)stamina-=24*dt;else stamina=Math.min(100,stamina+13*dt);
