@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#d9ff43" />
+    <title>牛来：草原大逃亡</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+
+    <div class="noise"></div>
+    <header class="hud" id="hud">
+      <div class="brand"><b>牛来</b><span>草原大逃亡</span></div>
+      <div class="hud-right">
+        <div class="distance"><small>距离出口</small><strong id="distance">666m</strong></div>
+        <div class="stamina-wrap"><span>犟劲</span><div class="stamina"><i id="staminaBar"></i></div></div>
+      </div>
+    </header>
+
+    <aside class="mission" id="mission">
+      <span>当前任务</span>
+      <strong id="missionText">穿过雾，别回头。</strong>
+    </aside>
+
+    <div class="subtitle" id="subtitle"></div>
+    <div class="warning" id="warning">它看见你了</div>
+    <div class="crosshair">⌄</div>
+
+    <section class="screen intro" id="intro">
+      <div class="intro-copy">
+        <div class="eyebrow">一款不太对劲的草原寓言</div>
+        <h1><span>牛来</span><em>草原大逃亡</em></h1>
+        <p>太阳不会落下。妈妈不会停下。<br />跑到草原尽头，也许那里有出口。</p>
+        <button id="startBtn"><span>开始逃亡</span><small>ENTER</small></button>
+        <div class="controls"><b>WASD</b> 移动　<b>SHIFT</b> 狂奔　<b>SPACE</b> 撞击</div>
+      </div>
+      <div class="stamp">粗糙<br />但完整</div>
+      <div class="credits">信号源：未知　/　版本：0.0.牛</div>
+    </section>
+
+    <section class="screen result" id="result">
+      <div>
+        <div class="eyebrow" id="resultEyebrow">逃亡终止</div>
+        <h2 id="resultTitle">牛来，回家。</h2>
+        <p id="resultText"></p>
+        <button id="restartBtn"><span>再跑一次</span><small>R</small></button>
+      </div>
+    </section>
+
+    <div class="mobile-controls" aria-label="触屏控制">
+      <button data-key="KeyW">▲</button>
+      <button data-key="KeyA">◀</button>
+      <button data-key="KeyS">▼</button>
+      <button data-key="KeyD">▶</button>
+      <button class="run" data-key="ShiftLeft">奔</button>
+    </div>
+
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>
