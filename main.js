@@ -688,7 +688,7 @@ function start(){
   herdCows.forEach((c,i)=>{c.position.copy(c.userData.start);c.rotation.set(0,0,0);c.visible=c.position.z>exitZ;c.userData.active=false;c.userData.eaten=false;c.userData.escaped=false;c.userData.announced=false;const e=ambushers[i];e.position.copy(e.userData.start);e.rotation.set(0,0,0);e.visible=false;e.userData.disabled=i>=mode.ambushers;e.userData.feeding=0;e.userData.joined=false;});
   const herdCenter=18-runLength*.165;storyHerd.forEach((cow,i)=>{cow.position.set(cow.userData.offsetX,.05,herdCenter+cow.userData.offsetZ);cow.rotation.set(0,Math.PI,0);cow.visible=false;cow.userData.active=false;cow.userData.escaped=false;cow.userData.eaten=false;});
   currentChapter=-1;activeSafeZone=-1;hideNpcBubbles();safeZones.forEach((zone,i)=>{zone.position.set(0,0,18-runLength*((i+1)/5));zone.visible=true;Object.assign(zone.userData,{entered:false,passed:false,broken:false,timer:0,nextTalk:0,talkIndex:0,activeBubble:-1});zone.userData.light.color.set(0xffc66b);zone.userData.light.intensity=190;zone.userData.floorMat.color.set(0xa79861);zone.userData.floorMat.emissive.set(0xffa82f);zone.userData.floorMat.emissiveIntensity=.36;zone.userData.campfire.life=1;zone.userData.campfire.light.intensity=175;zone.userData.residents.forEach(npc=>{npc.position.copy(npc.userData.safeStart);npc.rotation.set(0,Math.PI,0);npc.visible=true;npc.userData.eaten=false;npc.userData.escaped=false;});});showChapter(0);
-  clothCount=0;switchCount=0;sheltered=false;flashlightUntil=0;smokeCharges=0;radioOwned=false;fakeExitTriggered=false;finalWaveStarted=false;rescuedCows=0;npcShoveHintShown=false;
+  clothCount=0;switchCount=0;sheltered=false;flashlightUntil=0;smokeCharges=0;radioOwned=false;fakeExitTriggered=false;finalWaveStarted=false;rescuedCows=0;npcShoveHintShown=false;lastNpcShove=-9;
   [[-23,.26],[21,.31],[-18,.36]].forEach(([x,r],i)=>{const item=clothPieces[i];item.position.set(x,.05,18-runLength*r);item.visible=true;item.rotation.y=Math.random()*Math.PI;});forestGate.position.set(0,0,18-runLength*.395);forestGate.userData.open=false;
   [[-20,.66],[22,.735]].forEach(([x,r],i)=>{const sw=powerSwitches[i];sw.position.set(x,0,18-runLength*r);sw.visible=true;sw.userData.on=false;sw.userData.lever.rotation.x=.45;sw.userData.lamp.color.set(0xff2a14);});powerGate.position.set(0,0,18-runLength*.79);powerGate.userData.open=false;
   [[-15,.47],[16,.54]].forEach(([x,r],i)=>{shelterHuts[i].position.set(x,0,18-runLength*r);shelterHuts[i].visible=true;});falseGate.position.set(0,0,18-runLength*.9);falseGate.visible=true;falseGate.userData.triggered=false;falseGate.userData.mat.color.set(0xb9e83b);
@@ -739,11 +739,11 @@ document.querySelectorAll('.character').forEach(button=>button.addEventListener(
   const old=player;player=createCharacter(selectedCharacter);player.position.copy(old.position);player.rotation.y=0;scene.remove(old);scene.add(player);renderHearts();sound(120,.12,'square',.025);
 }));
 const movementCodes=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowLeft','ArrowDown','ArrowRight','ShiftLeft','ShiftRight']);
-addEventListener('keydown',e=>{if(movementCodes.has(e.code)){e.preventDefault();keys[e.code]=true;}if(e.code==='Escape'){scoreboard.classList.remove('show');scoreboard.setAttribute('aria-hidden','true');}if(e.code==='Enter'&&state==='intro'&&!scoreboard.classList.contains('show'))start();if(e.code==='KeyR'&&state!=='playing'&&!scoreboard.classList.contains('show'))start();});
+addEventListener('keydown',e=>{if(movementCodes.has(e.code)){e.preventDefault();keys[e.code]=true;}if(e.code==='KeyE'&&!e.repeat){e.preventDefault();performNpcShove();}if(e.code==='Escape'){scoreboard.classList.remove('show');scoreboard.setAttribute('aria-hidden','true');}if(e.code==='Enter'&&state==='intro'&&!scoreboard.classList.contains('show'))start();if(e.code==='KeyR'&&state!=='playing'&&!scoreboard.classList.contains('show'))start();});
 addEventListener('keyup',e=>keys[e.code]=false);
 addEventListener('blur',()=>{Object.keys(keys).forEach(key=>delete keys[key]);resetJoystick();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){Object.keys(keys).forEach(key=>delete keys[key]);resetJoystick();}});
-document.querySelectorAll('.mobile-controls button').forEach(b=>{
+document.querySelectorAll('.mobile-controls button[data-key]').forEach(b=>{
   const k=b.dataset.key;b.addEventListener('pointerdown',e=>{e.preventDefault();keys[k]=true});
   ['pointerup','pointercancel','pointerleave'].forEach(ev=>b.addEventListener(ev,()=>keys[k]=false));
   b.addEventListener('touchstart',e=>{e.preventDefault();keys[k]=true},{passive:false});['touchend','touchcancel'].forEach(ev=>b.addEventListener(ev,()=>keys[k]=false,{passive:false}));
@@ -765,22 +765,26 @@ joystickEl.addEventListener('touchmove',e=>{e.preventDefault();const touch=track
 joystickEl.addEventListener('touchend',e=>{if(Array.from(e.changedTouches||[]).some(touch=>touch.identifier===joystickTouch))resetJoystick();},{passive:false});joystickEl.addEventListener('touchcancel',resetJoystick,{passive:false});
 document.addEventListener('touchmove',e=>{if(joystickTouch===null)return;const touch=trackedTouch(e);if(touch&&touch.identifier===joystickTouch){e.preventDefault();moveJoystick(touch);}},{passive:false});document.addEventListener('touchend',e=>{if(Array.from(e.changedTouches||[]).some(touch=>touch.identifier===joystickTouch))resetJoystick();},{passive:false});document.addEventListener('touchcancel',resetJoystick,{passive:false});
 
-// 第二根手指可以直接“搓”开挡路的友方 NPC；它与摇杆使用不同 pointerId，不会令移动方向复位。
-const fingerCursor=document.createElement('div');fingerCursor.className='npc-finger';fingerCursor.textContent='☝️';fingerCursor.setAttribute('aria-hidden','true');document.body.appendChild(fingerCursor);
-const npcRaycaster=new THREE.Raycaster(),npcPointerNdc=new THREE.Vector2();let rubPointer=null,rubbedNpc=null,rubLastX=0,rubLastY=0,npcShoveHintShown=false;
-function friendlyNpcFromObject(object){for(let current=object;current&&current!==scene;current=current.parent)if(animalActors.includes(current)&&current.visible&&!current.userData.eaten&&!current.userData.escaped)return current;return null;}
-function friendlyNpcAt(clientX,clientY){const rect=canvas.getBoundingClientRect();npcPointerNdc.set((clientX-rect.left)/rect.width*2-1,-(clientY-rect.top)/rect.height*2+1);npcRaycaster.setFromCamera(npcPointerNdc,camera);for(const hit of npcRaycaster.intersectObjects(animalActors,true)){const npc=friendlyNpcFromObject(hit.object);if(npc)return npc;}return null;}
+// 独立按钮让牛来伸出一根夸张的手指，把正前方最近的友方 NPC 搓开；敌人和障碍物不在候选集合内。
+const fingerCursor=document.createElement('div');fingerCursor.className='npc-finger';fingerCursor.innerHTML='<span>☝️</span><i></i>';fingerCursor.setAttribute('aria-hidden','true');document.body.appendChild(fingerCursor);
+let npcShoveHintShown=false,lastNpcShove=-9;
 function shoveFriendlyNpc(npc,worldX,worldZ){
   if(!npc||!npc.visible)return;const world=npc.getWorldPosition(new THREE.Vector3());world.x=THREE.MathUtils.clamp(world.x+worldX,-57,57);world.z+=worldZ;if(npc.parent&&npc.parent!==scene){npc.parent.worldToLocal(world);npc.position.x=world.x;npc.position.z=world.z;}else{npc.position.x=world.x;npc.position.z=world.z;}
   if(npc.userData.refugeOffset){npc.userData.refugeOffset.x+=worldX;npc.userData.refugeOffset.z+=worldZ;}
   npc.userData.avoidTimer=.28;npc.rotation.z=THREE.MathUtils.clamp(-worldX*.08,-.35,.35);shake=Math.max(shake,.08);
   if(!npcShoveHintShown){npcShoveHintShown=true;say('event.npcShoved',1800);sound(105,.1,'triangle',.025);}
 }
-function showFinger(e){fingerCursor.style.left=e.clientX+'px';fingerCursor.style.top=e.clientY+'px';fingerCursor.classList.add('show');}
-document.addEventListener('pointerdown',e=>{if(state!=='playing'||rubPointer!==null||e.target.closest?.('.joystick,.run,.language-picker,button'))return;rubPointer=e.pointerId;rubLastX=e.clientX;rubLastY=e.clientY;rubbedNpc=friendlyNpcAt(e.clientX,e.clientY);showFinger(e);});
-document.addEventListener('pointermove',e=>{if(e.pointerId!==rubPointer)return;const dx=e.clientX-rubLastX,dy=e.clientY-rubLastY;rubLastX=e.clientX;rubLastY=e.clientY;showFinger(e);if(!rubbedNpc)rubbedNpc=friendlyNpcAt(e.clientX,e.clientY);if(rubbedNpc&&Math.hypot(dx,dy)>1){fingerCursor.style.setProperty('--finger-angle',Math.atan2(dy,dx)+Math.PI/2+'rad');shoveFriendlyNpc(rubbedNpc,-dx*.075,-dy*.075);}},{passive:false});
-function endNpcRub(e){if(e.pointerId!==rubPointer)return;rubPointer=null;rubbedNpc=null;fingerCursor.classList.remove('show');}
-document.addEventListener('pointerup',endNpcRub);document.addEventListener('pointercancel',endNpcRub);
+function findNpcToShove(){
+  const fx=-Math.sin(player.rotation.y),fz=-Math.cos(player.rotation.y);let best=null,bestDistance=8.2;
+  for(const npc of animalActors){if(!npc.visible||npc.userData.eaten||npc.userData.escaped)continue;npc.getWorldPosition(collisionPoint);const dx=collisionPoint.x-player.position.x,dz=collisionPoint.z-player.position.z,d=Math.hypot(dx,dz);if(d<.15||d>=bestDistance||(dx*fx+dz*fz)/d<.12)continue;best=npc;bestDistance=d;}
+  return best;
+}
+function projectFingerAt(target){const point=target?target.getWorldPosition(new THREE.Vector3()):new THREE.Vector3(player.position.x-Math.sin(player.rotation.y)*5,2.5,player.position.z-Math.cos(player.rotation.y)*5);point.y+=target?2.2:0;point.project(camera);fingerCursor.style.left=((point.x*.5+.5)*innerWidth)+'px';fingerCursor.style.top=((-point.y*.5+.5)*innerHeight)+'px';fingerCursor.classList.remove('jab');void fingerCursor.offsetWidth;fingerCursor.classList.add('jab');}
+function performNpcShove(){
+  if(state!=='playing'||elapsed-lastNpcShove<.55)return false;lastNpcShove=elapsed;const target=findNpcToShove();projectFingerAt(target);sound(82,.14,'triangle',.035);navigator.vibrate?.(18);if(!target)return false;
+  const world=target.getWorldPosition(new THREE.Vector3()),dx=world.x-player.position.x,dz=world.z-player.position.z,d=Math.max(.1,Math.hypot(dx,dz));setTimeout(()=>{if(state==='playing')shoveFriendlyNpc(target,dx/d*5.8,dz/d*5.8);},130);return true;
+}
+document.querySelector('#shoveBtn').addEventListener('pointerdown',e=>{e.preventDefault();performNpcShove();});
 
 function glitch(){document.body.classList.add('glitch');sound(48,.1,'square',.03);setTimeout(()=>document.body.classList.remove('glitch'),80+Math.random()*160);}
 function terrorFlash(){
@@ -1061,6 +1065,8 @@ if(import.meta.env.DEV)window.__NIULAI_TEST__={
   classifyDevice(metrics){return classifyDeviceProfile(metrics);},
   shoveNpcProbe(index=0){const npc=storyHerd[index%storyHerd.length];npc.visible=true;npc.userData.eaten=false;npc.userData.escaped=false;npc.position.set(player.position.x+2,.05,player.position.z);npc.userData.shoveStart=npc.position.clone();shoveFriendlyNpc(npc,5,1);return true;},
   shoveNpcState(index=0){const npc=storyHerd[index%storyHerd.length];return{distance:npc.userData.shoveStart?npc.position.distanceTo(npc.userData.shoveStart):0,sayKey:activeSayKey};},
+  shoveButtonProbe(){animalActors.forEach(npc=>npc.visible=false);player.position.set(0,.05,0);player.rotation.y=0;const npc=storyHerd[0];npc.visible=true;npc.userData.eaten=false;npc.userData.escaped=false;npc.position.set(0,.05,-4);npc.userData.shoveStart=npc.position.clone();hunter.visible=true;hunter.position.set(0,.05,-2);hunter.userData.chaseSpeed=0;hunter.userData.nextPounce=elapsed+99;hunter.userData.shoveStart=hunter.position.clone();activeChasers=[];const obstacle=obstacles[0];obstacle.userData.shoveStart=obstacle.position.clone();lastNpcShove=-9;return true;},
+  shoveButtonState(){const npc=storyHerd[0],obstacle=obstacles[0];return{friendDistance:npc.userData.shoveStart?npc.position.distanceTo(npc.userData.shoveStart):0,enemyDistance:hunter.userData.shoveStart?hunter.position.distanceTo(hunter.userData.shoveStart):0,obstacleDistance:obstacle.userData.shoveStart?obstacle.position.distanceTo(obstacle.userData.shoveStart):0,fingerAnimated:fingerCursor.classList.contains('jab')};},
   safeResidentSpread(index=0){const xs=safeZones[index].userData.residents.map(npc=>npc.position.x);return Math.max(...xs)-Math.min(...xs);},
   roadNpcProbe(index=0){const npc=strangeTravellers[index];player.position.set(npc.position.x+.1,.05,npc.position.z);npc.userData.talked=false;return true;},
   roadNpcState(index=0){const npc=strangeTravellers[index];return{distance:Math.hypot(player.position.x-npc.position.x,player.position.z-npc.position.z),talked:npc.userData.talked,sayKey:activeSayKey};},

@@ -217,5 +217,8 @@
   "passingNpc.3": "别信雾里叫“妈妈”的声音。",
   "passingNpc.4": "省着点体力，后面还有很长的路。",
   "passingNpc.5": "如果我没跟上……别回头。",
-  "event.npcShoved": "你伸出一根手指，把挡路的同伴搓到一边。"
+  "event.npcShoved": "你伸出一根手指，把挡路的同伴搓到一边。",
+  "menu.shove": "伸手搓开友方",
+  "controls.shove": "伸出手指搓开友方",
+  "controls.shoveShort": "搓"
 }

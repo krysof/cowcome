@@ -217,5 +217,8 @@
   "passingNpc.3": "霧の中で「ママ」と呼ぶ声を信じるな。",
   "passingNpc.4": "体力を残しておけ。まだ先は長い。",
   "passingNpc.5": "もし僕が遅れても……振り返るな。",
-  "event.npcShoved": "指一本で、道を塞ぐ仲間を脇へ押しのけた。"
+  "event.npcShoved": "指一本で、道を塞ぐ仲間を脇へ押しのけた。",
+  "menu.shove": "仲間を押しのける",
+  "controls.shove": "指を伸ばして仲間を押しのける",
+  "controls.shoveShort": "押す"
 }

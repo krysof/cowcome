@@ -217,5 +217,8 @@
   "passingNpc.3": "唔好信霧入面嗌「媽媽」嗰把聲。",
   "passingNpc.4": "慳住啲體力，前面仲有好遠。",
   "passingNpc.5": "如果我跟唔上……唔好擰轉頭。",
-  "event.npcShoved": "你伸出一隻手指，將阻住條路嘅同伴捽開。"
+  "event.npcShoved": "你伸出一隻手指，將阻住條路嘅同伴捽開。",
+  "menu.shove": "伸手捽開友方",
+  "controls.shove": "伸出手指捽開友方",
+  "controls.shoveShort": "捽"
 }

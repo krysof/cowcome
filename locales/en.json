@@ -217,5 +217,8 @@
   "passingNpc.3": "Do not trust the voice calling “Mama” in the fog.",
   "passingNpc.4": "Save your strength. There is still a long way to go.",
   "passingNpc.5": "If I fall behind… do not look back.",
-  "event.npcShoved": "You push the blocking survivor aside with one finger."
+  "event.npcShoved": "You push the blocking survivor aside with one finger.",
+  "menu.shove": "Push ally aside",
+  "controls.shove": "Reach out and push an ally aside",
+  "controls.shoveShort": "PUSH"
 }

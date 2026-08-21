@@ -217,5 +217,8 @@
   "passingNpc.3": "안개 속에서 “엄마”라고 부르는 목소리를 믿지 마.",
   "passingNpc.4": "체력을 아껴. 아직 갈 길이 멀어.",
   "passingNpc.5": "내가 뒤처지더라도… 돌아보지 마.",
-  "event.npcShoved": "손가락 하나로 길을 막는 동료를 옆으로 밀어 냈습니다."
+  "event.npcShoved": "손가락 하나로 길을 막는 동료를 옆으로 밀어 냈습니다.",
+  "menu.shove": "동료 밀어내기",
+  "controls.shove": "손가락을 뻗어 동료를 밀어내기",
+  "controls.shoveShort": "밀기"
 }
