@@ -297,15 +297,15 @@ function makeMonsterCar(scale=1){
 function createCharacter(kind){return kind==='yellow'?makeYellowBull(.68):kind==='leopard'?makeLeopard(.78):makeNiuLai(.72,false);}
 let selectedCharacter='orange';
 const difficulties={
-  orange:{nameKey:'character.easy',length:3600,pack:3,stalkers:4,ambushers:2,wave2At:1450,wave2Time:170,carAt:2650,carTime:330,player:1.06,enemy:.86,drain:.78,recovery:1.25,hazard:.72,fog:.014,rain:.75,flashMin:9,flashRange:13},
-  yellow:{nameKey:'character.normal',length:4200,pack:5,stalkers:7,ambushers:4,wave2At:1680,wave2Time:165,carAt:3100,carTime:320,player:1,enemy:1,drain:1,recovery:1,hazard:1,fog:.021,rain:1,flashMin:6,flashRange:10},
-  leopard:{nameKey:'character.hard',length:4800,pack:6,stalkers:10,ambushers:7,wave2At:1920,wave2Time:155,carAt:3500,carTime:300,player:.97,enemy:1.14,drain:1.24,recovery:.82,hazard:1.3,fog:.03,rain:1.35,flashMin:4,flashRange:7}
+  orange:{nameKey:'character.easy',length:3600,pack:3,stalkers:9,ambushers:2,chapterWaves:[3,1,3],player:1.06,enemy:.86,drain:.78,recovery:1.25,hazard:.72,fog:.014,rain:.75,flashMin:9,flashRange:13},
+  yellow:{nameKey:'character.normal',length:4200,pack:5,stalkers:14,ambushers:4,chapterWaves:[4,2,4],player:1,enemy:1,drain:1,recovery:1,hazard:1,fog:.021,rain:1,flashMin:6,flashRange:10},
+  leopard:{nameKey:'character.hard',length:4800,pack:6,stalkers:18,ambushers:7,chapterWaves:[5,2,5],player:.97,enemy:1.14,drain:1.24,recovery:.82,hazard:1.3,fog:.03,rain:1.35,flashMin:4,flashRange:7}
 };
 let player=createCharacter(selectedCharacter); player.position.set(0,.05,18); player.rotation.y=0; scene.add(player);
 const hunter=makeDarkBeast(.78); hunter.position.set(0,.05,51); scene.add(hunter);
-const wolfPack=[hunter,makeTwistedCrawler(.78),makeHollowStalker(.62),makeFleshKnot(.72),makeDarkBeast(.74),makeAlienCow(.72,1)];wolfPack.slice(1).forEach((w,i)=>{w.position.set((i-2)*4,.05,54+i*2);scene.add(w);});
+const wolfPack=[hunter,makeTwistedCrawler(.78),makeHollowStalker(.62),makeFleshKnot(.72),makeDarkBeast(.74),makeAlienCow(.72,1)];['beast','crawler','hollow','knot','beast','alien'].forEach((type,i)=>wolfPack[i].userData.type=type);wolfPack.slice(1).forEach((w,i)=>{w.position.set((i-2)*4,.05,54+i*2);scene.add(w);});
 const hunterGlow=new THREE.PointLight(0xff2b16,22,24); hunterGlow.position.set(0,5,46); scene.add(hunterGlow);
-const enemyConfigs=[[-24,-85,'alien'],[27,-125,'crawler'],[-29,-175,'hollow'],[25,-225,'beast'],[-24,-275,'knot'],[22,-325,'alien'],[-28,-375,'crawler'],[26,-425,'hollow'],[-25,-485,'beast'],[24,-545,'knot']];
+const enemyConfigs=[[-24,-85,'alien'],[27,-125,'crawler'],[-29,-175,'hollow'],[25,-225,'beast'],[-24,-275,'knot'],[22,-325,'alien'],[-28,-375,'crawler'],[26,-425,'hollow'],[-25,-485,'beast'],[24,-545,'knot'],[-22,-605,'crawler'],[28,-665,'alien'],[-26,-725,'hollow'],[24,-785,'knot'],[-28,-845,'beast'],[25,-905,'crawler'],[-23,-965,'alien'],[27,-1025,'hollow']];
 const enemyMakers={alien:i=>makeAlienCow(.9,i%2),beast:()=>makeDarkBeast(.72),crawler:()=>makeTwistedCrawler(.75),hollow:()=>makeHollowStalker(.6),knot:()=>makeFleshKnot(.7)};
 const stalkers=enemyConfigs.map(([x,z,type],i)=>{const e=enemyMakers[type](i);e.position.set(x,.05,z);e.userData.home=new THREE.Vector3(x,.05,z);e.userData.speed=type==='alien'?5.2:type==='hollow'?6.5:type==='knot'?7.1:type==='crawler'?6.8:6.1;e.userData.type=type;scene.add(e);return e;});
 const snakes=Array.from({length:16},(_,i)=>[i%2?-14:16,-180-i*280]).map(([x,z],i)=>{const s=makeSnake(.82);s.position.set(x,0,z);s.rotation.y=Math.PI/2;s.userData.home=new THREE.Vector3(x,0,z);s.userData.phase=i*.91+Math.random()*Math.PI;s.userData.patrolRadius=8+Math.random()*7;s.userData.speed=2.1+Math.random()*.8;scene.add(s);return s;});
@@ -380,7 +380,7 @@ function resolvePlayerAnimalCollision(){
 }
 const strangeBirds=Array.from({length:18},(_,i)=>{const b=makeStrangeBird(.42+Math.random()*.22);b.position.set((Math.random()-.5)*55,9+Math.random()*14,10-Math.random()*100);b.userData.phase=Math.random()*Math.PI*2;b.userData.speed=4+Math.random()*5;scene.add(b);return b;});
 const allEnemies=[...wolfPack,...stalkers,...snakes,...treeEnemies,...ambushers,monsterCar];allEnemies.forEach(e=>e.visible=false);hunterGlow.visible=false;
-const scalableEnemies=[...wolfPack,...stalkers,...ambushers];scalableEnemies.forEach((enemy,i)=>{enemy.userData.baseScale=enemy.scale.clone();enemy.userData.giantRank=1+(i%4);enemy.userData.sizeMultiplier=1;});
+const scalableEnemies=[...wolfPack,...stalkers,...ambushers];scalableEnemies.forEach((enemy,i)=>{enemy.userData.baseScale=enemy.scale.clone();enemy.userData.giantRank=i%3===0?2+(Math.floor(i/3)%3):99;enemy.userData.sizeMultiplier=1;});
 function updateEnemyScale(dt){const chapterGrowth=[1,1.16,1.34,1.56,1.76][Math.max(0,currentChapter)],difficultyGrowth=selectedCharacter==='leopard'?1.1:selectedCharacter==='yellow'?1.04:1;scalableEnemies.forEach(enemy=>{const giant=currentChapter>=enemy.userData.giantRank?1.36:1,target=chapterGrowth*difficultyGrowth*giant,blend=1-Math.pow(.025,dt);enemy.userData.sizeMultiplier=THREE.MathUtils.lerp(enemy.userData.sizeMultiplier||1,target,blend);collisionLocal.copy(enemy.userData.baseScale).multiplyScalar(enemy.userData.sizeMultiplier);enemy.scale.lerp(collisionLocal,blend);});}
 
 function addRock(x,z,s=1){const r=mesh(new THREE.DodecahedronGeometry(1.5,0),flat(Math.random()>.5?0x4a4b3b:0x675e49),scene,x,s*.8,z,[s,s,s]);r.userData.collisionRadius=1.35*s;obstacles.push(r);}
@@ -445,7 +445,7 @@ function makeWatcher(){const g=new THREE.Group(),voidMat=new THREE.MeshBasicMate
 const watchers=Array.from({length:4},makeWatcher);
 
 const keys={}, joystick={x:0,y:0}, clock=new THREE.Clock();
-let state='intro', stamina=100, hearts=3, exhausted=false, runLength=430, exitZ=-412, distance=430, hunterSpeed=7.5, elapsed=0, lastLine=-1, shake=0, audio, musicMaster, radioGain, musicNodes=[], musicTimer, storyStage=0, snowStage=0, snowBlend=0, activeChasers=[], speedLevel=0, nextTerrorFlash=9,nextHaunt=6,hauntTimer,titleCryTimer,deathElapsed=0,deathAttacker=null,deathReason=null,nextDeathBlood=0,lastCollisionSound=-99,invulnerableUntil=0,clothCount=0,switchCount=0,sheltered=false,flashlightUntil=0,smokeCharges=0,radioOwned=false,fakeExitTriggered=false,finalWaveStarted=false,rescuedCows=0,weatherActive=false,nextWeatherChange=0;
+let state='intro', stamina=100, hearts=3, exhausted=false, runLength=430, exitZ=-412, distance=430, hunterSpeed=7.5, elapsed=0, lastLine=-1, shake=0, audio, musicMaster, radioGain, musicNodes=[], musicTimer, storyStage=0, waveWarningStage=0, snowStage=0, snowBlend=0, activeChasers=[], speedLevel=0, nextTerrorFlash=9,nextHaunt=6,hauntTimer,titleCryTimer,deathElapsed=0,deathAttacker=null,deathReason=null,nextDeathBlood=0,lastCollisionSound=-99,invulnerableUntil=0,clothCount=0,switchCount=0,sheltered=false,flashlightUntil=0,smokeCharges=0,radioOwned=false,fakeExitTriggered=false,finalWaveStarted=false,rescuedCows=0,weatherActive=false,nextWeatherChange=0;
 const bloodEffects=[];
 const lines=[
   [.04,'story.0'],[.08,'story.1'],[.12,'story.2'],[.16,'story.3'],[.36,'story.4'],[.66,'story.5'],[.86,'story.6']
@@ -529,7 +529,7 @@ function updateObjectives(progress,dt,t,moving,safeProtected){
 
   if(progress>runLength*.805){
     if(!finalWaveStarted){finalWaveStarted=true;say('task.stampede',3300);terrorFlash();
-      stalkers.forEach((enemy,i)=>{if(!enemy.visible&&i<difficulties[selectedCharacter].stalkers){placeChaser(enemy,(i%2?-1:1)*(15+i*2),46+i*2,7.8+i*.08);}});
+      const mode=difficulties[selectedCharacter],remaining=Math.max(0,mode.stalkers-stalkers.filter(enemy=>enemy.userData.spawned).length);spawnStalkerWave(4,remaining);
     }
     finalHerd.forEach((cow,i)=>{if(cow.userData.escaped||cow.userData.eaten)return;cow.visible=true;cow.position.z-=dt*(i===0?11.8:6.4+(i%4)*.24);cow.position.x+=Math.sin(t*1.8+i)*dt*(i===0?.75:.38);animateCow(cow,t,i===0?17:11);if(cow.userData.halo){cow.userData.halo.rotation.z+=dt*3;cow.userData.halo.scale.setScalar(1+Math.sin(t*5)*.08);}if(cow.position.z<exitZ+4){cow.userData.escaped=true;rescuedCows++;cow.visible=false;}});
   }
@@ -608,7 +608,7 @@ function start(){
   document.body.style.removeProperty('transform');document.body.style.removeProperty('filter');canvas.style.removeProperty('transform');camera.zoom=1;
   const mode=difficulties[selectedCharacter];runLength=mode.length;exitZ=18-runLength;distance=runLength;gate.position.set(22,0,exitZ);beacon.position.set(22,14,exitZ+2);gateBeam.position.set(22,50,exitZ);gateSign.position.set(22,36,exitZ+1);guidePosts.forEach(post=>post.visible=post.position.z>exitZ+18);scene.fog.density=mode.fog;scene.background.set(selectedCharacter==='orange'?0xaeba88:selectedCharacter==='yellow'?0x9daa7c:0x77806a);
   state='playing'; elapsed=0; stamina=100;hearts=3;invulnerableUntil=0;exhausted=false; hunterSpeed=7.5; lastLine=-1;speedLevel=0;deathElapsed=0;deathAttacker=null;deathReason=null;resultSnapshot=null;nextDeathBlood=0;snowStage=0;snowBlend=0;snow.visible=false;snow.material.opacity=0;snowGhost.visible=false;weatherActive=Math.random()<.58;nextWeatherChange=7+Math.random()*12;nextTerrorFlash=mode.flashMin+Math.random()*mode.flashRange;nextHaunt=5+Math.random()*6;watchers.forEach(w=>w.visible=false);document.body.classList.remove('death-maul','exhausted','enemy-near','terror-flash','flash-negative','apparition','blackout','blood-flash','heartbeat','otherworld','snow-haunting','rain-active','safe-warm','safe-cold','safe-broken','sheltered','flashlight-on','smoke-screen','chapter-1','chapter-2','chapter-3','chapter-4','chapter-5','hit','glitch','title-cry','health-3','health-2','health-1','health-0','difficulty-easy','difficulty-normal','difficulty-hard');document.body.classList.add(selectedCharacter==='orange'?'difficulty-easy':selectedCharacter==='yellow'?'difficulty-normal':'difficulty-hard');ui.distance.textContent=runLength+tr('world.m');
-  const oldPlayer=player;player=createCharacter(selectedCharacter);player.position.set(0,.05,18);player.rotation.set(0,0,0);scene.remove(oldPlayer);scene.add(player);renderHearts();storyStage=0;activeChasers=[];allEnemies.forEach(e=>{e.visible=false;e.position.y=e.userData.type==='car'?0:.05;e.userData.feeding=0;e.userData.joined=false;e.userData.headBob=0;});scalableEnemies.forEach(enemy=>{enemy.userData.sizeMultiplier=1;enemy.scale.copy(enemy.userData.baseScale);});stalkers.forEach(e=>e.position.copy(e.userData.home));monsterCar.position.set(0,0,80);snakes.forEach(snake=>{snake.position.copy(snake.userData.home);snake.rotation.set(0,Math.PI/2,0);snake.userData.avoidTimer=0;snake.visible=true;});treeEnemies.forEach(e=>e.visible=true);
+  const oldPlayer=player;player=createCharacter(selectedCharacter);player.position.set(0,.05,18);player.rotation.set(0,0,0);scene.remove(oldPlayer);scene.add(player);renderHearts();storyStage=0;waveWarningStage=0;activeChasers=[];allEnemies.forEach(e=>{e.visible=false;e.position.y=e.userData.type==='car'?0:.05;e.userData.feeding=0;e.userData.joined=false;e.userData.headBob=0;e.userData.spawned=false;});scalableEnemies.forEach(enemy=>{enemy.userData.sizeMultiplier=1;enemy.scale.copy(enemy.userData.baseScale);});stalkers.forEach(e=>e.position.copy(e.userData.home));monsterCar.position.set(0,0,80);snakes.forEach(snake=>{snake.position.copy(snake.userData.home);snake.rotation.set(0,Math.PI/2,0);snake.userData.avoidTimer=0;snake.visible=true;});treeEnemies.forEach(e=>e.visible=true);
   bloodEffects.splice(0).forEach(f=>scene.remove(f.group));
   pickupEffects.splice(0).forEach(effect=>scene.remove(effect.group));
   knockedObstacles.splice(0);obstacles.forEach(obstacle=>{const original=obstacle.userData.originalTransform;if(original){obstacle.position.copy(original.position);obstacle.rotation.copy(original.rotation);obstacle.visible=original.visible;}obstacle.userData.collisionDisabled=false;obstacle.userData.knockVelocity=null;});
@@ -734,17 +734,37 @@ function animatePlayer(cow,t,moving,sprinting){
   }
   const damage=3-hearts;if(damage){cow.rotation.z+=Math.sin(t*(damage===2?7:4.5))*(damage===2?.1:.045);if(!sprinting)cow.rotation.x-=damage*.075;if(cow.userData.head){cow.userData.head.rotation.z=THREE.MathUtils.lerp(cow.userData.head.rotation.z||0,damage*.1,.16);}if(cow.userData.arms?.[0])cow.userData.arms[0].rotation.x-=damage*.18;}
 }
-function placeChaser(enemy,xOffset,zOffset,speed){enemy.position.set(player.position.x+xOffset,.05,player.position.z+zOffset);enemy.visible=true;enemy.userData.chaseSpeed=speed;activeChasers.push(enemy);}
+function placeChaser(enemy,xOffset,zOffset,speed){if(activeChasers.includes(enemy))return;enemy.position.set(player.position.x+xOffset,.05,player.position.z+zOffset);enemy.visible=true;enemy.userData.spawned=true;enemy.userData.chaseSpeed=speed;activeChasers.push(enemy);}
+const chapterRoleOrders=[
+  ['alien','hollow','crawler','beast','knot'],
+  ['beast','hollow','alien','crawler','knot'],
+  ['knot','crawler','alien','hollow','beast'],
+  ['crawler','alien','knot','beast','hollow']
+];
+function spawnStalkerWave(chapter,count){
+  const order=chapterRoleOrders[Math.min(chapterRoleOrders.length-1,Math.max(0,chapter-1))],available=stalkers.filter(enemy=>!enemy.userData.spawned),chosen=[];
+  for(let i=0;i<count&&available.length;i++){const wanted=order[i%order.length],index=available.findIndex(enemy=>enemy.userData.type===wanted),enemy=available.splice(index<0?0:index,1)[0];chosen.push(enemy);}
+  chosen.forEach((enemy,i)=>{const side=i%2?-1:1,rank=Math.floor(i/2),base=enemy.userData.speed||6.3;placeChaser(enemy,side*(13+rank*5),44+rank*5,base+chapter*.32);});
+  if(chosen.length){sound(48+chapter*12,.7,'sawtooth',.06);glitch();}
+}
+function warnNextWave(stage){if(waveWarningStage>=stage)return;waveWarningStage=stage;strangeBirds.forEach(bird=>bird.userData.panicUntil=elapsed+2.8);sound(118-stage*9,.42,'sawtooth',.035);say('event.enemyNear',1400);}
 function updateStoryWave(progress){
   const mode=difficulties[selectedCharacter];
+  if(progress>runLength*.18)warnNextWave(1);if(progress>runLength*.38)warnNextWave(2);if(progress>runLength*.58)warnNextWave(3);if(progress>runLength*.78)warnNextWave(4);
   if(storyStage===0&&(progress>18||elapsed>2.5)){
     storyStage=1;const pack=[[-12,36],[-7,31],[-2,39],[3,33],[8,40],[13,35]];wolfPack.slice(0,mode.pack).forEach((e,i)=>placeChaser(e,pack[i][0],pack[i][1],6.85+(i%3)*.16));say('event.pack',2200,{count:mode.pack});glitch();
   }
-  if(storyStage===1&&(progress>mode.wave2At||elapsed>mode.wave2Time)){
-    storyStage=2;stalkers.slice(0,mode.stalkers).forEach((e,i)=>{const side=i%2?-1:1,rank=Math.floor(i/2);placeChaser(e,side*(12+rank*5),46+rank*4,e.userData.type==='beast'?7.5:7.2);});say('event.more',2600);
+  if(storyStage===1&&progress>runLength*.205){
+    storyStage=2;spawnStalkerWave(1,mode.chapterWaves[0]);say('event.more',2600);
   }
-  if(storyStage===2&&(progress>mode.carAt||elapsed>mode.carTime)){
-    storyStage=3;placeChaser(monsterCar,0,62,10.2);hunterGlow.visible=true;say('event.car',3200);sound(31,1.6,'sawtooth',.14);glitch();
+  if(storyStage===2&&progress>runLength*.405){
+    storyStage=3;spawnStalkerWave(2,mode.chapterWaves[1]);
+  }
+  if(storyStage===3&&progress>runLength*.605){
+    storyStage=4;spawnStalkerWave(3,mode.chapterWaves[2]);placeChaser(monsterCar,0,64,10.2);hunterGlow.visible=true;say('event.car',3200);sound(31,1.6,'sawtooth',.14);glitch();
+  }
+  if(storyStage===4&&progress>runLength*.805){
+    storyStage=5;const remaining=Math.max(0,mode.stalkers-stalkers.filter(enemy=>enemy.userData.spawned).length);spawnStalkerWave(4,remaining);say('event.more',2600);
   }
 }
 function tick(){
@@ -759,7 +779,7 @@ function tick(){
   if(snow.visible){const sp=snowGeo.attributes.position.array;for(let i=0;i<snowCount;i++){const p=i*3;sp[p]+=(Math.sin(t*.8+i)*1.8-3.6)*dt;sp[p+1]-=(5+Math.sin(i)*2)*dt;if(sp[p+1]<-2){sp[p]=(Math.random()-.5)*90;sp[p+1]=38+Math.random()*5;sp[p+2]=(Math.random()-.5)*90;}}snowGeo.attributes.position.needsUpdate=true;snow.position.set(player.position.x,0,player.position.z);snow.material.opacity=.92*snowBlend;}
   gateRing.rotation.z=t*.42;gateRing.scale.setScalar(1+Math.sin(t*2.1)*.055);gateBeam.material.opacity=.1+Math.sin(t*1.5)*.055;beacon.intensity=230+Math.sin(t*2.4)*70;gateSign.material.opacity=.78+Math.sin(t*2.2)*.22;
   strangeBirds.forEach((b,i)=>{
-    b.position.z-=b.userData.speed*dt;b.position.x+=Math.sin(t*.7+b.userData.phase)*dt*1.7;b.position.y+=Math.sin(t*1.1+b.userData.phase)*dt*.18;
+    const panic=elapsed<(b.userData.panicUntil||0),flight=panic?4.2:1;b.position.z-=b.userData.speed*flight*dt;b.position.x+=Math.sin(t*(panic?2.8:.7)+b.userData.phase)*dt*(panic?6:1.7);b.position.y+=(panic?5:Math.sin(t*1.1+b.userData.phase)*.18)*dt;
     if(b.position.z<player.position.z-68){b.position.z=player.position.z+42+Math.random()*38;b.position.x=player.position.x+(Math.random()-.5)*62;b.position.y=9+Math.random()*15;}
     const flap=.5+Math.abs(Math.sin(t*(7+i%4)+b.userData.phase))*1.05;b.userData.wings[0].rotation.z=flap;b.userData.wings[1].rotation.z=-flap;
   });
@@ -827,9 +847,12 @@ function tick(){
       // 追猎者会在路边牛群和逃难动物中挑选更近的猎物；NPC 必须先奔逃，随后才可能被扑倒撕咬。
       for(const npc of animalActors){if(!npcCanBeAttacked(npc))continue;npc.getWorldPosition(collisionPoint);const nd=Math.hypot(collisionPoint.x-enemy.position.x,collisionPoint.z-enemy.position.z);if(nd<24&&nd<targetDistance*.92){target=npc;targetNpc=npc;targetDistance=nd;}}
       const targetPosition=targetNpc?(targetNpc.getWorldPosition(new THREE.Vector3())):player.position,v=new THREE.Vector3().subVectors(targetPosition,enemy.position);v.y=0;const d=v.length();nearest=Math.min(nearest,Math.hypot(player.position.x-enemy.position.x,player.position.z-enemy.position.z));
+      // 不同怪物承担不同职责：外星牛预判路线，空面者被注视时近乎静止，爬行物横向扑袭，肉结眼兽脉冲加速。
+      if(!targetNpc&&enemy.userData.type==='alien'&&moving){v.x+=x*7;v.z+=z*7;}
+      let roleSpeed=1;if(!targetNpc&&enemy.userData.type==='hollow'&&moving&&d>0){const watched=(x*(enemy.position.x-player.position.x)+z*(enemy.position.z-player.position.z))/d>.7;roleSpeed=watched?.09:1.16;}else if(enemy.userData.type==='knot')roleSpeed=1+Math.max(0,Math.sin(t*5+enemy.id))*.34;
       const timeBoost=gameCore.enemy_time_boost(elapsed,enemy.userData.type==='car'?1:0);
-      enemy.position.addScaledVector(v.normalize(),(enemy.userData.chaseSpeed+timeBoost)*difficulty.enemy*dt);
-      if(enemy.userData.type!=='car')enemy.position.x+=Math.sin(t*1.8+activeChasers.indexOf(enemy)*1.7)*dt*.65;
+      enemy.position.addScaledVector(v.normalize(),(enemy.userData.chaseSpeed+timeBoost)*difficulty.enemy*roleSpeed*dt);
+      if(enemy.userData.type!=='car')enemy.position.x+=Math.sin(t*(enemy.userData.type==='crawler'?3.8:1.8)+activeChasers.indexOf(enemy)*1.7)*dt*(enemy.userData.type==='crawler'?1.45:.65);
       enemy.rotation.y=Math.atan2(-v.x,-v.z);
       if(enemy.userData.type==='car')enemy.userData.wheels.forEach(w=>w.rotation.x+=dt*9);else{animateCow(enemy,t,enemy.userData.type==='beast'?13:9);animateDistortion(enemy,t);}
       const enemySize=enemy.userData.sizeMultiplier||1;
@@ -898,7 +921,7 @@ if(import.meta.env.DEV)window.__NIULAI_TEST__={
   snakePosition(){const snake=snakes[0];return{x:snake.position.x,z:snake.position.z};},
   npcAttackProbe(){const npc=storyHerd[0];player.position.set(24,.05,18);npc.position.set(0,.05,8);npc.visible=true;npc.userData.eaten=false;npc.userData.escaped=false;hunter.position.set(0,.05,11);hunter.visible=true;hunter.userData.chaseSpeed=7.4;hunter.userData.feeding=0;activeChasers=[hunter];return true;},
   npcWasEaten(){return Boolean(storyHerd[0].userData.eaten);},
-  snapshot(){return{state,progress:-player.position.z,chapter:currentChapter,safe:activeSafeZone,clothCount,switchCount,sheltered,fakeExitTriggered,finalWaveStarted,rescuedCows,rainOpacity:rainMat.opacity,snowOpacity:snow.material.opacity,mission:activeMissionKey,joystick:{x:joystick.x,y:joystick.y},pickupEffects:pickupEffects.length,enemyScale:scalableEnemies[0].userData.sizeMultiplier,enemyGiantRank:scalableEnemies[0].userData.giantRank,errors:[]};}
+  snapshot(){return{state,progress:-player.position.z,chapter:currentChapter,safe:activeSafeZone,clothCount,switchCount,sheltered,fakeExitTriggered,finalWaveStarted,rescuedCows,rainOpacity:rainMat.opacity,snowOpacity:snow.material.opacity,mission:activeMissionKey,joystick:{x:joystick.x,y:joystick.y},pickupEffects:pickupEffects.length,enemyScale:scalableEnemies[0].userData.sizeMultiplier,enemyGiantRank:scalableEnemies[0].userData.giantRank,storyStage,activeTypes:activeChasers.map(enemy=>enemy.userData.type||'unknown'),spawnedStalkers:stalkers.filter(enemy=>enemy.userData.spawned).length,errors:[]};}
 };
 
 addEventListener('niulai:languagechange',()=>{refreshLanguageMenu();renderScores();drawExitSign();if(activeSayKey){if(activeSayKey==='difficulty.start')activeSayParams={difficulty:tr(difficulties[selectedCharacter].nameKey)};ui.subtitle.textContent=tr(activeSayKey,activeSayParams);}setMission(activeMissionKey,activeMissionParams);if(currentChapter>=0){chapterNumber.textContent=tr(chapters[currentChapter].number);chapterTitle.textContent=tr(chapters[currentChapter].title);chapterDescription.textContent=tr(chapters[currentChapter].description);}if(resultSnapshot)renderResult();installText.textContent=tr(installHintKey);ui.distance.textContent=Math.floor(distance)+tr('world.m');});
