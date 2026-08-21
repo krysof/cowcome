@@ -4,3 +4,6 @@ dist/
 *.log
 screenshots/
 releases/
+
+/icons/
+/native-build/
