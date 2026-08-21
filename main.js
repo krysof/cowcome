@@ -777,12 +777,14 @@ document.addEventListener('touchmove',e=>{if(joystickTouch===null)return;const t
 
 // 独立按钮让角色模型本身伸出手指，把正前方最近的友方 NPC 搓开；敌人和障碍物不在候选集合内。
 let npcShoveHintShown=false,lastNpcShove=-9;
+function moveFriendlyNpcBy(npc,worldX,worldZ){
+  const world=npc.getWorldPosition(new THREE.Vector3());world.x=THREE.MathUtils.clamp(world.x+worldX,-57,57);world.z+=worldZ;if(npc.parent&&npc.parent!==scene){npc.parent.worldToLocal(world);npc.position.x=world.x;npc.position.z=world.z;}else{npc.position.x=world.x;npc.position.z=world.z;}if(npc.userData.refugeOffset){npc.userData.refugeOffset.x+=worldX;npc.userData.refugeOffset.z+=worldZ;}
+}
 function shoveFriendlyNpc(npc,worldX,worldZ){
-  if(!npc||!npc.visible)return;const world=npc.getWorldPosition(new THREE.Vector3());world.x=THREE.MathUtils.clamp(world.x+worldX,-57,57);world.z+=worldZ;if(npc.parent&&npc.parent!==scene){npc.parent.worldToLocal(world);npc.position.x=world.x;npc.position.z=world.z;}else{npc.position.x=world.x;npc.position.z=world.z;}
-  if(npc.userData.refugeOffset){npc.userData.refugeOffset.x+=worldX;npc.userData.refugeOffset.z+=worldZ;}
-  npc.userData.avoidTimer=.28;npc.rotation.z=THREE.MathUtils.clamp(-worldX*.08,-.35,.35);shake=Math.max(shake,.08);
+  if(!npc||!npc.visible)return;npc.userData.shoveMotion={x:worldX,z:worldZ,age:0,duration:.52,applied:0};npc.userData.avoidTimer=.62;shake=Math.max(shake,.08);
   if(!npcShoveHintShown){npcShoveHintShown=true;say('event.npcShoved',1800);sound(105,.1,'triangle',.025);}
 }
+function updateFriendlyNpcShove(npc,dt){const motion=npc.userData.shoveMotion;if(!motion)return false;motion.age=Math.min(motion.duration,motion.age+dt);const progress=motion.age/motion.duration,eased=1-Math.pow(1-progress,3),step=eased-motion.applied;motion.applied=eased;moveFriendlyNpcBy(npc,motion.x*step,motion.z*step);npc.rotation.z=THREE.MathUtils.clamp(-motion.x*.12*(1-progress),-.42,.42);if(progress>=1){npc.userData.shoveMotion=null;npc.rotation.z=0;}return true;}
 function findNpcToShove(){
   const fx=-Math.sin(player.rotation.y),fz=-Math.cos(player.rotation.y);let best=null,bestDistance=8.2;
   for(const npc of animalActors){if(!npc.visible||npc.userData.eaten||npc.userData.escaped)continue;npc.getWorldPosition(collisionPoint);const dx=collisionPoint.x-player.position.x,dz=collisionPoint.z-player.position.z,d=Math.hypot(dx,dz);if(d<.15||d>=bestDistance||(dx*fx+dz*fz)/d<.12)continue;best=npc;bestDistance=d;}
@@ -790,7 +792,7 @@ function findNpcToShove(){
 }
 function performNpcShove(){
   if(state!=='playing'||elapsed-lastNpcShove<.55)return false;lastNpcShove=elapsed;const target=findNpcToShove(),shoveFinger=player.userData.shoveFinger;if(shoveFinger){shoveFinger.until=elapsed+.48;shoveFinger.finger.scale.y=2.27;shoveFinger.rig.visible=true;}sound(82,.14,'triangle',.035);navigator.vibrate?.(18);if(!target)return false;
-  const world=target.getWorldPosition(new THREE.Vector3()),dx=world.x-player.position.x,dz=world.z-player.position.z,d=Math.max(.1,Math.hypot(dx,dz));setTimeout(()=>{if(state==='playing')shoveFriendlyNpc(target,dx/d*5.8,dz/d*5.8);},130);return true;
+  const world=target.getWorldPosition(new THREE.Vector3()),dx=world.x-player.position.x,dz=world.z-player.position.z,d=Math.max(.1,Math.hypot(dx,dz)),rightX=Math.cos(player.rotation.y),rightZ=-Math.sin(player.rotation.y),side=(dx*rightX+dz*rightZ)>=0?1:-1,pushX=rightX*side*3.45+dx/d*.35,pushZ=rightZ*side*3.45+dz/d*.35;setTimeout(()=>{if(state==='playing')shoveFriendlyNpc(target,pushX,pushZ);},130);return true;
 }
 const shoveBtn=document.querySelector('#shoveBtn');
 shoveBtn.addEventListener('pointerdown',event=>{event.preventDefault();shoveBtn.classList.add('pressed');try{shoveBtn.setPointerCapture(event.pointerId)}catch{}performNpcShove();});
@@ -1011,7 +1013,7 @@ function tick(){
     }
     if(!safeProtected)for(const tree of treeEnemies){if(tree.userData.collisionDisabled)continue;tree.userData.arms.forEach((a,i)=>a.rotation.z+=(i?1:-1)*dt*.45);const d=Math.hypot(player.position.x-tree.position.x,player.position.z-tree.position.z);nearest=Math.min(nearest,d);if(d<5.2){stamina=Math.max(0,stamina-18*difficulty.hazard*dt);shake=.2;damageHeart('event.treeHit',tree,'death.tree');}}
     // 所有地面动物都有实体体积：会挡住玩家，也会被树、石块和废墟推开，避免穿模直线跑过障碍。
-    animalActors.forEach(animal=>{const safeParent=safeZones.find(zone=>animal.parent===zone),movingNpc=animal.userData.active||animal.userData.fleeing||(finalWaveStarted&&finalHerd.includes(animal))||Boolean(safeParent?.userData.broken);if(movingNpc)steerNpcAroundObstacles(animal,dt);resolveAnimalWorldCollision(animal,animal.userData.isNpc?1.05:1.25);});
+    animalActors.forEach(animal=>{const beingShoved=updateFriendlyNpcShove(animal,dt),safeParent=safeZones.find(zone=>animal.parent===zone),movingNpc=animal.userData.active||animal.userData.fleeing||(finalWaveStarted&&finalHerd.includes(animal))||Boolean(safeParent?.userData.broken);if(movingNpc&&!beingShoved)steerNpcAroundObstacles(animal,dt);resolveAnimalWorldCollision(animal,animal.userData.isNpc?1.05:1.25);});
     activeChasers.forEach(animal=>{if(!animalActors.includes(animal))resolveAnimalWorldCollision(animal,animal.userData.type==='car'?3.5:1.35*(animal.userData.sizeMultiplier||1));});
     resolvePlayerAnimalCollision();resolveWatcherCollision();resolvePlayerDynamicSolids();
     if(smokeCharges&&nearest<12){smokeCharges=0;activeChasers.forEach(e=>{if(e.visible)e.position.z+=28;});if(snowGhost.visible)snowGhost.position.z+=24;say('item.smokeUsed',2200);document.body.classList.add('smoke-screen');setTimeout(()=>document.body.classList.remove('smoke-screen'),1500);sound(48,.8,'sawtooth',.1);nearest=36;}
@@ -1078,6 +1080,7 @@ if(import.meta.env.DEV)window.__NIULAI_TEST__={
   shoveNpcState(index=0){const npc=storyHerd[index%storyHerd.length];return{distance:npc.userData.shoveStart?npc.position.distanceTo(npc.userData.shoveStart):0,sayKey:activeSayKey};},
   shoveButtonProbe(){animalActors.forEach(npc=>npc.visible=false);player.position.set(0,.05,0);player.rotation.y=0;const npc=storyHerd[0];npc.visible=true;npc.userData.eaten=false;npc.userData.escaped=false;npc.position.set(0,.05,-4);npc.userData.shoveStart=npc.position.clone();hunter.visible=true;hunter.position.set(0,.05,-2);hunter.userData.chaseSpeed=0;hunter.userData.nextPounce=elapsed+99;hunter.userData.shoveStart=hunter.position.clone();activeChasers=[];const obstacle=obstacles[0];obstacle.userData.shoveStart=obstacle.position.clone();lastNpcShove=-9;return true;},
   shoveButtonState(){const npc=storyHerd[0],obstacle=obstacles[0],finger=player.userData.shoveFinger;return{friendDistance:npc.userData.shoveStart?npc.position.distanceTo(npc.userData.shoveStart):0,enemyDistance:hunter.userData.shoveStart?hunter.position.distanceTo(hunter.userData.shoveStart):0,obstacleDistance:obstacle.userData.shoveStart?obstacle.position.distanceTo(obstacle.userData.shoveStart):0,fingerAnimated:Boolean(finger?.rig.visible),fingerLength:finger?.finger.scale.y||0};},
+  advanceShove(steps=1,dt=.08){for(let i=0;i<steps;i++)updateFriendlyNpcShove(storyHerd[0],dt);return true;},
   controlsState(){return{running:Boolean(keys.ShiftLeft),runPressed:document.querySelector('.mobile-controls .run').classList.contains('pressed'),shovePressed:shoveBtn.classList.contains('pressed'),joystickHeld:joystickPointer!==null||joystickTouch!==null};},
   safeResidentSpread(index=0){const xs=safeZones[index].userData.residents.map(npc=>npc.position.x);return Math.max(...xs)-Math.min(...xs);},
   roadNpcProbe(index=0){const npc=strangeTravellers[index];player.position.set(npc.position.x+.1,.05,npc.position.z);npc.userData.talked=false;return true;},
