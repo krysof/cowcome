@@ -161,6 +161,15 @@ const paintedTreeWood=flat(0x211f1c),paintedLeafA=flat(0x172d25),paintedLeafB=fl
 function makePaintedTree(index){const g=new THREE.Group(),lean=(index%2?1:-1)*(1.2+index%3*.35),height=12+(index%4)*1.4,trunkCurve=new THREE.CatmullRomCurve3([new THREE.Vector3(0,0,0),new THREE.Vector3(lean*.25,height*.3,0),new THREE.Vector3(-lean*.18,height*.65,.2),new THREE.Vector3(lean,height,0)]);mesh(new THREE.TubeGeometry(trunkCurve,9,.58,6,false),paintedTreeWood,g,0,0,0);for(let b=0;b<3;b++){const side=b%2?1:-1,y=height*(.52+b*.16),curve=new THREE.CatmullRomCurve3([new THREE.Vector3(lean*(y/height),y,0),new THREE.Vector3(side*(2.2+b*.5),y+1.3,.1),new THREE.Vector3(side*(4.2+b*.7),y+2.1,0)]);mesh(new THREE.TubeGeometry(curve,6,.23,5,false),paintedTreeWood,g,0,0,0);}for(let i=0;i<7;i++){const a=i/7*Math.PI*2,r=i?2.2+(i%2)*.8:0;mesh(new THREE.DodecahedronGeometry(1.35+(i%3)*.25,0),i%2?paintedLeafA:paintedLeafB,g,lean+Math.cos(a)*r,height+1+Math.sin(a)*1.2,Math.sin(a)*r,[1.2,.88,1]);}for(let i=0;i<5;i++){const a=i/5*Math.PI*2,fruit=mesh(artFruitGeo,artFruitMat,g,lean+Math.cos(a)*(2.1+i%2),height+.7+Math.sin(a)*1.7,Math.sin(a)*(2+i%2),[1.25,1.25,1.25]);fruit.userData.phase=index*.7+i;fruit.userData.baseY=fruit.position.y;artFruits.push(fruit);}return g;}
 for(let i=0;i<30;i++){const tree=makePaintedTree(i),side=i%2?1:-1;tree.position.set(side*(16+(i%3)*4),0,-90-i*166);tree.rotation.y=(i%5-2)*.12;tree.userData.collisionRadius=1.85;obstacles.push(tree);paintedTrees.push(tree);scene.add(tree);}
 const paintedMoons=[];[-620,-1580,-2520,-3460,-4380].forEach((z,i)=>{const moon=mesh(new THREE.CircleGeometry(6.5+i%2*2,28),new THREE.MeshBasicMaterial({color:i<2?0xf2ad3b:i===2?0xc7d4c8:0xb95b32,transparent:true,opacity:.76,side:THREE.DoubleSide,fog:false}),scene,(i%2?1:-1)*37,17,z,[1,1,1],[0,0,0]);moon.userData.phase=i*.8;paintedMoons.push(moon);});
+function addShoveFinger(character,skin,x=.9,y=2.55){
+  const rig=new THREE.Group();rig.position.set(x,y,-.55);rig.visible=false;character.add(rig);
+  mesh(new THREE.SphereGeometry(.27,7,5),skin,rig,0,0,0,[1,.82,1]);
+  const geometry=new THREE.CylinderGeometry(.085,.16,1.75,7);geometry.translate(0,.875,0);
+  const finger=mesh(geometry,skin,rig,0,0,-.05,[1,1,1],[-Math.PI/2,0,0]);
+  finger.scale.y=.12;
+  const tip=mesh(new THREE.SphereGeometry(.115,7,5),skin,finger,0,1.73,0,[1,1.05,1]);
+  character.userData.shoveFinger={rig,finger,tip,until:-1};
+}
 function makeNiuLai(scale=1, dark=false){
   const g=new THREE.Group();
   const fur=flat(dark?0x342019:0xe97837), muzzle=flat(dark?0x84624e:0xf2d3a0);
@@ -187,7 +196,7 @@ function makeNiuLai(scale=1, dark=false){
     const l=mesh(new THREE.CapsuleGeometry(.27,1.25,2,5),fur,g,x,.9,0,[1,1,1]);legs.push(l);
     mesh(new THREE.SphereGeometry(.36,6,5),hoof,l,0,-.85,-.13,[1,.65,1.35]);
   }
-  g.scale.setScalar(scale); g.userData.legs=legs; g.userData.arms=arms;g.userData.body=body;g.userData.head=head;g.userData.canCrawl=true; return g;
+  g.scale.setScalar(scale); g.userData.legs=legs; g.userData.arms=arms;g.userData.body=body;g.userData.head=head;g.userData.canCrawl=true;addShoveFinger(g,muzzle,1.02,2.42); return g;
 }
 
 function makeYellowBull(scale=1,dark=false){
@@ -205,7 +214,7 @@ function makeYellowBull(scale=1,dark=false){
   tuft(g,fur,-.28,5.55,0,.17,-.15);tuft(g,fur,.1,5.62,0,.19,.1);
   const arms=[],legs=[];for(const x of [-1.05,1.05]){const a=mesh(new THREE.CapsuleGeometry(.25,1.2,2,5),fur,g,x,2.45,0);arms.push(a);mesh(new THREE.SphereGeometry(.3,6,5),hoof,a,0,-.82,0);}
   for(const x of [-.5,.5]){const l=mesh(new THREE.CapsuleGeometry(.3,1.35,2,5),fur,g,x,.9,0);legs.push(l);mesh(new THREE.SphereGeometry(.37,6,5),hoof,l,0,-.9,-.12,[1,.65,1.3]);}
-  g.scale.setScalar(scale);g.userData.legs=legs;g.userData.arms=arms;return g;
+  g.scale.setScalar(scale);g.userData.legs=legs;g.userData.arms=arms;addShoveFinger(g,muzzle,1.04,2.42);return g;
 }
 
 function makeLeopard(scale=1){
@@ -218,7 +227,7 @@ function makeLeopard(scale=1){
   for(let i=0;i<24;i++){const a=i/12*Math.PI*2,r=i<12?.78:.68,y=i<12?2.45:4.07;mesh(new THREE.SphereGeometry(.075+(i%4)*.025,5,4),spot,g,Math.cos(a)*r,y+Math.sin(a)*.68,-.62,[1,.7,.25]);}
   tuft(g,fur,-.2,4.95,0,.13,-.1);tuft(g,fur,.12,4.99,0,.14,.12);
   const tail=mesh(new THREE.CapsuleGeometry(.12,1.7,2,5),fur,g,.62,2.1,.35,[1,1,1],[0,0,-.8]);mesh(new THREE.SphereGeometry(.16,6,5),spot,tail,0,-1,0);
-  g.scale.setScalar(scale);g.userData.legs=legs;g.userData.arms=arms;return g;
+  g.scale.setScalar(scale);g.userData.legs=legs;g.userData.arms=arms;addShoveFinger(g,white,.82,2.32);return g;
 }
 
 function makeAlienCow(scale=1,variant=0){
@@ -765,8 +774,7 @@ joystickEl.addEventListener('touchmove',e=>{e.preventDefault();const touch=track
 joystickEl.addEventListener('touchend',e=>{if(Array.from(e.changedTouches||[]).some(touch=>touch.identifier===joystickTouch))resetJoystick();},{passive:false});joystickEl.addEventListener('touchcancel',resetJoystick,{passive:false});
 document.addEventListener('touchmove',e=>{if(joystickTouch===null)return;const touch=trackedTouch(e);if(touch&&touch.identifier===joystickTouch){e.preventDefault();moveJoystick(touch);}},{passive:false});document.addEventListener('touchend',e=>{if(Array.from(e.changedTouches||[]).some(touch=>touch.identifier===joystickTouch))resetJoystick();},{passive:false});document.addEventListener('touchcancel',resetJoystick,{passive:false});
 
-// 独立按钮让牛来伸出一根夸张的手指，把正前方最近的友方 NPC 搓开；敌人和障碍物不在候选集合内。
-const fingerCursor=document.createElement('div');fingerCursor.className='npc-finger';fingerCursor.innerHTML='<span>☝️</span><i></i>';fingerCursor.setAttribute('aria-hidden','true');document.body.appendChild(fingerCursor);
+// 独立按钮让角色模型本身伸出手指，把正前方最近的友方 NPC 搓开；敌人和障碍物不在候选集合内。
 let npcShoveHintShown=false,lastNpcShove=-9;
 function shoveFriendlyNpc(npc,worldX,worldZ){
   if(!npc||!npc.visible)return;const world=npc.getWorldPosition(new THREE.Vector3());world.x=THREE.MathUtils.clamp(world.x+worldX,-57,57);world.z+=worldZ;if(npc.parent&&npc.parent!==scene){npc.parent.worldToLocal(world);npc.position.x=world.x;npc.position.z=world.z;}else{npc.position.x=world.x;npc.position.z=world.z;}
@@ -779,9 +787,8 @@ function findNpcToShove(){
   for(const npc of animalActors){if(!npc.visible||npc.userData.eaten||npc.userData.escaped)continue;npc.getWorldPosition(collisionPoint);const dx=collisionPoint.x-player.position.x,dz=collisionPoint.z-player.position.z,d=Math.hypot(dx,dz);if(d<.15||d>=bestDistance||(dx*fx+dz*fz)/d<.12)continue;best=npc;bestDistance=d;}
   return best;
 }
-function projectFingerAt(target){const point=target?target.getWorldPosition(new THREE.Vector3()):new THREE.Vector3(player.position.x-Math.sin(player.rotation.y)*5,2.5,player.position.z-Math.cos(player.rotation.y)*5);point.y+=target?2.2:0;point.project(camera);fingerCursor.style.left=((point.x*.5+.5)*innerWidth)+'px';fingerCursor.style.top=((-point.y*.5+.5)*innerHeight)+'px';fingerCursor.classList.remove('jab');void fingerCursor.offsetWidth;fingerCursor.classList.add('jab');}
 function performNpcShove(){
-  if(state!=='playing'||elapsed-lastNpcShove<.55)return false;lastNpcShove=elapsed;const target=findNpcToShove();projectFingerAt(target);sound(82,.14,'triangle',.035);navigator.vibrate?.(18);if(!target)return false;
+  if(state!=='playing'||elapsed-lastNpcShove<.55)return false;lastNpcShove=elapsed;const target=findNpcToShove(),shoveFinger=player.userData.shoveFinger;if(shoveFinger){shoveFinger.until=elapsed+.48;shoveFinger.finger.scale.y=2.27;shoveFinger.rig.visible=true;}sound(82,.14,'triangle',.035);navigator.vibrate?.(18);if(!target)return false;
   const world=target.getWorldPosition(new THREE.Vector3()),dx=world.x-player.position.x,dz=world.z-player.position.z,d=Math.max(.1,Math.hypot(dx,dz));setTimeout(()=>{if(state==='playing')shoveFriendlyNpc(target,dx/d*5.8,dz/d*5.8);},130);return true;
 }
 document.querySelector('#shoveBtn').addEventListener('pointerdown',e=>{e.preventDefault();performNpcShove();});
@@ -850,6 +857,7 @@ function animatePlayer(cow,t,moving,sprinting){
     cow.rotation.x=THREE.MathUtils.lerp(cow.rotation.x,0,.2);cow.position.y=THREE.MathUtils.lerp(cow.position.y,.05,.18);if(cow.userData.head)cow.userData.head.rotation.x=THREE.MathUtils.lerp(cow.userData.head.rotation.x,0,.2);cow.userData.arms.forEach((a,i)=>a.rotation.z=THREE.MathUtils.lerp(a.rotation.z,i?-.16:.16,.2));cow.userData.legs.forEach(l=>l.rotation.z=THREE.MathUtils.lerp(l.rotation.z,0,.2));animateCow(cow,t,moving?10:1);
   }
   const damage=3-hearts;if(damage){cow.rotation.z+=Math.sin(t*(damage===2?7:4.5))*(damage===2?.1:.045);if(!sprinting)cow.rotation.x-=damage*.075;if(cow.userData.head){cow.userData.head.rotation.z=THREE.MathUtils.lerp(cow.userData.head.rotation.z||0,damage*.1,.16);}if(cow.userData.arms?.[0])cow.userData.arms[0].rotation.x-=damage*.18;}
+  const shove=cow.userData.shoveFinger;if(shove){const remaining=shove.until-elapsed;if(remaining>0){const age=.48-remaining,p=age<.14?age/.14:age<.29?1:Math.max(0,1-(age-.29)/.19),eased=1-Math.pow(1-p,3);shove.rig.visible=true;shove.finger.scale.y=.12+eased*2.15;shove.rig.rotation.x=-.12-eased*.18;shove.rig.rotation.z=-.08-eased*.12;if(cow.userData.arms?.[1])cow.userData.arms[1].rotation.x=THREE.MathUtils.lerp(cow.userData.arms[1].rotation.x,-1.32,.72);}else{shove.rig.visible=false;shove.finger.scale.y=.12;}}
 }
 function placeChaser(enemy,xOffset,zOffset,speed){if(activeChasers.includes(enemy))return;enemy.position.set(player.position.x+xOffset,.05,player.position.z+zOffset);enemy.visible=true;enemy.userData.spawned=true;enemy.userData.chaseSpeed=speed;activeChasers.push(enemy);}
 const chapterRoleOrders=[
@@ -1066,7 +1074,7 @@ if(import.meta.env.DEV)window.__NIULAI_TEST__={
   shoveNpcProbe(index=0){const npc=storyHerd[index%storyHerd.length];npc.visible=true;npc.userData.eaten=false;npc.userData.escaped=false;npc.position.set(player.position.x+2,.05,player.position.z);npc.userData.shoveStart=npc.position.clone();shoveFriendlyNpc(npc,5,1);return true;},
   shoveNpcState(index=0){const npc=storyHerd[index%storyHerd.length];return{distance:npc.userData.shoveStart?npc.position.distanceTo(npc.userData.shoveStart):0,sayKey:activeSayKey};},
   shoveButtonProbe(){animalActors.forEach(npc=>npc.visible=false);player.position.set(0,.05,0);player.rotation.y=0;const npc=storyHerd[0];npc.visible=true;npc.userData.eaten=false;npc.userData.escaped=false;npc.position.set(0,.05,-4);npc.userData.shoveStart=npc.position.clone();hunter.visible=true;hunter.position.set(0,.05,-2);hunter.userData.chaseSpeed=0;hunter.userData.nextPounce=elapsed+99;hunter.userData.shoveStart=hunter.position.clone();activeChasers=[];const obstacle=obstacles[0];obstacle.userData.shoveStart=obstacle.position.clone();lastNpcShove=-9;return true;},
-  shoveButtonState(){const npc=storyHerd[0],obstacle=obstacles[0];return{friendDistance:npc.userData.shoveStart?npc.position.distanceTo(npc.userData.shoveStart):0,enemyDistance:hunter.userData.shoveStart?hunter.position.distanceTo(hunter.userData.shoveStart):0,obstacleDistance:obstacle.userData.shoveStart?obstacle.position.distanceTo(obstacle.userData.shoveStart):0,fingerAnimated:fingerCursor.classList.contains('jab')};},
+  shoveButtonState(){const npc=storyHerd[0],obstacle=obstacles[0],finger=player.userData.shoveFinger;return{friendDistance:npc.userData.shoveStart?npc.position.distanceTo(npc.userData.shoveStart):0,enemyDistance:hunter.userData.shoveStart?hunter.position.distanceTo(hunter.userData.shoveStart):0,obstacleDistance:obstacle.userData.shoveStart?obstacle.position.distanceTo(obstacle.userData.shoveStart):0,fingerAnimated:Boolean(finger?.rig.visible),fingerLength:finger?.finger.scale.y||0};},
   safeResidentSpread(index=0){const xs=safeZones[index].userData.residents.map(npc=>npc.position.x);return Math.max(...xs)-Math.min(...xs);},
   roadNpcProbe(index=0){const npc=strangeTravellers[index];player.position.set(npc.position.x+.1,.05,npc.position.z);npc.userData.talked=false;return true;},
   roadNpcState(index=0){const npc=strangeTravellers[index];return{distance:Math.hypot(player.position.x-npc.position.x,player.position.z-npc.position.z),talked:npc.userData.talked,sayKey:activeSayKey};},
