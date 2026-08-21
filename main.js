@@ -1020,7 +1020,3 @@ if(import.meta.env.DEV)window.__NIULAI_TEST__={
 addEventListener('niulai:languagechange',()=>{refreshLanguageMenu();renderScores();drawExitSign();if(activeSayKey){if(activeSayKey==='difficulty.start')activeSayParams={difficulty:tr(difficulties[selectedCharacter].nameKey)};ui.subtitle.textContent=tr(activeSayKey,activeSayParams);}setMission(activeMissionKey,activeMissionParams);if(currentChapter>=0){chapterNumber.textContent=tr(chapters[currentChapter].number);chapterTitle.textContent=tr(chapters[currentChapter].title);chapterDescription.textContent=tr(chapters[currentChapter].description);}if(resultSnapshot)renderResult();installText.textContent=tr(installHintKey);ui.distance.textContent=Math.floor(distance)+tr('world.m');});
 
 SplashScreen.hide({fadeOutDuration:500}).catch(()=>{});
-
-if('serviceWorker' in navigator&&!isNativeApp){
-  addEventListener('load',()=>navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`,{scope:import.meta.env.BASE_URL}).catch(()=>{}));
-}

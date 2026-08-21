@@ -1,8 +1,8 @@
 {
   "id": "cowcome-pwa",
-  "name": "牛来：草原大逃亡",
+  "name": "牛来：雾中逃亡",
   "short_name": "牛来",
-  "description": "在诡异草原、雨幕与怪物追击中活着逃出去。",
+  "description": "完全离线的诡异草原生存逃亡游戏。穿过雨雪、迷雾与兽群，别让它们追上。",
   "lang": "zh-Hans",
   "start_url": "./",
   "scope": "./",
@@ -11,6 +11,7 @@
   "background_color": "#11150f",
   "theme_color": "#11150f",
   "categories": ["games", "entertainment"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "icons/niulai-v2-192.png",
