@@ -196,5 +196,9 @@
   "ending.herd": "结局：带领牛群归来",
   "ending.fakeMother": "结局：跟随假妈妈",
   "ending.loop": "结局：困在循环草原",
-  "ending.super": "隐藏结局：超级牛逃之夭夭"
+  "ending.super": "隐藏结局：超级牛逃之夭夭",
+  "task.clothHint": "红色光柱在{direction}约 {distance} 米（{count}/{total}）",
+  "direction.left": "左前方",
+  "direction.right": "右前方",
+  "direction.ahead": "正前方"
 }

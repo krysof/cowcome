@@ -319,7 +319,7 @@ function makeSafeZone(index){
 }
 const safeZones=Array.from({length:4},(_,i)=>makeSafeZone(i));
 const bubbleEls=Array.from({length:4},()=>{const el=document.createElement('div');el.className='npc-bubble';el.hidden=true;npcBubbles.appendChild(el);return el;});
-function makeCloth(){const g=new THREE.Group(),cloth=new THREE.MeshBasicMaterial({color:0xd12c1f,side:THREE.DoubleSide,fog:false});mesh(new THREE.PlaneGeometry(1.5,2.2,2,2),cloth,g,0,1.2,0,[1,1,1],[0,.2,.08]);const light=new THREE.PointLight(0xff2c18,16,12);light.position.y=1.3;g.add(light);scene.add(g);return g;}
+function makeCloth(){const g=new THREE.Group(),cloth=new THREE.MeshBasicMaterial({color:0xff2015,side:THREE.DoubleSide,fog:false}),glow=new THREE.MeshBasicMaterial({color:0xff160b,transparent:true,opacity:.3,depthWrite:false,blending:THREE.AdditiveBlending,fog:false});mesh(new THREE.PlaneGeometry(2.2,3.1,2,2),cloth,g,0,1.7,0,[1,1,1],[0,.2,.08]);const beam=mesh(new THREE.CylinderGeometry(.35,2.4,18,8,1,true),glow,g,0,9,0);const ring=mesh(new THREE.TorusGeometry(2.1,.16,5,18),new THREE.MeshBasicMaterial({color:0xff3a22,fog:false}),g,0,.12,0,[1,1,1],[Math.PI/2,0,0]);const light=new THREE.PointLight(0xff2c18,58,30);light.position.y=3.2;g.add(light);g.userData={beam,ring,light};scene.add(g);return g;}
 const clothPieces=Array.from({length:3},makeCloth);
 function makeSwitch(){const g=new THREE.Group();mesh(new THREE.BoxGeometry(1.6,3.4,1.1),rustMat,g,0,1.7,0);const lever=mesh(new THREE.BoxGeometry(.28,1.6,.3),flat(0xc54628),g,0,2.1,-.72,[1,1,1],[.45,0,0]);const lamp=new THREE.PointLight(0xff2a14,28,16);lamp.position.set(0,3.6,0);g.add(lamp);g.userData={lever,lamp,on:false};scene.add(g);return g;}
 const powerSwitches=Array.from({length:2},makeSwitch);
@@ -344,6 +344,16 @@ function resolveAnimalWorldCollision(animal,radius=1.25){
   for(const zone of safeZones){if(!zone.visible)continue;const lx=collisionPoint.x-zone.position.x,lz=collisionPoint.z-zone.position.z,resident=animal.parent===zone;if(Math.abs(Math.abs(lz)-19)<2.1&&Math.abs(lx)>4.4){collisionPoint.z=zone.position.z+(lz>0?(resident?16.8:21.1):(resident?-16.8:-21.1));hit=true;}if(Math.abs(Math.abs(lx)-20)<2.1&&Math.abs(lz)<19){collisionPoint.x=zone.position.x+(lx>0?(resident?17.8:22.1):(resident?-17.8:-22.1));hit=true;}const hx=lx+13,hz=lz-1,houseRadius=6.65,hd2=hx*hx+hz*hz;if(hd2<houseRadius*houseRadius){if(hd2<.0001)collisionPoint.x+=houseRadius;else{const hd=Math.sqrt(hd2),push=houseRadius-hd;collisionPoint.x+=hx/hd*push;collisionPoint.z+=hz/hd*push;}hit=true;}}
   if(hit){if(animal.parent&&animal.parent!==scene){collisionLocal.copy(collisionPoint);animal.parent.worldToLocal(collisionLocal);animal.position.x=collisionLocal.x;animal.position.z=collisionLocal.z;}else{animal.position.x=collisionPoint.x;animal.position.z=collisionPoint.z;}}
   return hit;
+}
+function steerNpcAroundObstacles(animal,dt){
+  if(!animal.visible||animal.userData.eaten||animal.userData.escaped)return;animal.getWorldPosition(collisionPoint);let steer=0,strongest=0;
+  // 预测前方约 9 米内的实体，提前选择同一侧绕行；碰撞推开只作为最后保险。
+  for(const obstacle of obstacles){const ahead=collisionPoint.z-obstacle.position.z;if(ahead<0||ahead>9)continue;const clearance=(obstacle.userData.collisionRadius||2.1)+2.2,sideDistance=collisionPoint.x-obstacle.position.x;if(Math.abs(sideDistance)>=clearance)continue;const weight=(1-ahead/9)*(1-Math.abs(sideDistance)/clearance);if(weight>strongest){strongest=weight;if(Math.abs(sideDistance)>.18)animal.userData.avoidSide=Math.sign(sideDistance);else if(!animal.userData.avoidSide)animal.userData.avoidSide=animal.id%2?1:-1;steer=animal.userData.avoidSide*weight;}}
+  // 木栅栏必须从门洞穿过，逃难动物会主动对准入口和出口。
+  for(const zone of safeZones){const entryZ=zone.position.z+19,exitGateZ=zone.position.z-19;if(collisionPoint.z>entryZ&&collisionPoint.z-entryZ<12&&Math.abs(collisionPoint.x-zone.position.x)>3.2)steer+=Math.sign(zone.position.x-collisionPoint.x)*.9;if(collisionPoint.z<zone.position.z+15&&collisionPoint.z>exitGateZ&&collisionPoint.z-exitGateZ<12&&Math.abs(collisionPoint.x-zone.position.x)>3.2)steer+=Math.sign(zone.position.x-collisionPoint.x)*.9;}
+  // 随机岔路也使用可见缺口，而不是贴着墙持续抖动。
+  for(const fork of forkWalls){const ahead=collisionPoint.z-fork.position.z;if(ahead>=0&&ahead<11&&Math.abs(collisionPoint.x-fork.position.x)>6.2)steer+=Math.sign(fork.position.x-collisionPoint.x)*1.15;}
+  if(Math.abs(steer)>.02){const amount=THREE.MathUtils.clamp(steer,-1,1)*dt*8.5;collisionPoint.x+=amount;if(animal.parent&&animal.parent!==scene){collisionLocal.copy(collisionPoint);animal.parent.worldToLocal(collisionLocal);animal.position.x=collisionLocal.x;}else animal.position.x=collisionPoint.x;animal.rotation.y=THREE.MathUtils.lerp(animal.rotation.y,-amount*.12,.18);}else animal.userData.avoidSide=0;
 }
 function resolvePlayerAnimalCollision(){
   for(const animal of animalActors){if(!animal.visible||animal.userData.eaten||animal.userData.escaped)continue;animal.getWorldPosition(collisionPoint);const radius=(animal.userData.isNpc?1.35:1.5)+1.05,dx=player.position.x-collisionPoint.x,dz=player.position.z-collisionPoint.z,d2=dx*dx+dz*dz;if(d2>=radius*radius)continue;if(d2<.0001){player.position.z+=radius;continue;}const d=Math.sqrt(d2),push=radius-d;player.position.x+=dx/d*push;player.position.z+=dz/d*push;}
@@ -457,11 +467,11 @@ function updateObjectives(progress,dt,t,moving,safeProtected){
   let missionKey='',missionParams={};
   const near=(object,radius=3)=>Math.hypot(player.position.x-object.position.x,player.position.z-object.position.z)<radius;
   clothPieces.forEach(item=>{
-    if(!item.visible)return;item.rotation.y+=dt*1.7;item.position.y=.05+Math.sin(t*3+item.position.x)*.14;
+    if(!item.visible)return;item.rotation.y+=dt*.65;item.position.y=.05+Math.sin(t*3+item.position.x)*.14;item.userData.ring.rotation.z+=dt*2.1;item.userData.beam.material.opacity=.22+Math.sin(t*4+item.position.x)*.14;item.userData.light.intensity=48+Math.sin(t*5)*18;
     if(near(item,3.2)){item.visible=false;clothCount++;say('task.clothFound',2300,{count:clothCount});sound(310,.35,'triangle',.07);}
   });
   const forestOpen=clothCount>=clothPieces.length;forestGate.userData.open=forestOpen;forestGate.position.y=THREE.MathUtils.lerp(forestGate.position.y,forestOpen?-10:0,.08);
-  if(!forestOpen&&progress>runLength*.245&&progress<runLength*.41){missionKey='task.clothMission';missionParams={count:clothCount,total:clothPieces.length};if(player.position.z<forestGate.position.z+3.8)player.position.z=forestGate.position.z+3.8;}
+  if(!forestOpen&&progress>runLength*.245&&progress<runLength*.41){const remaining=clothPieces.filter(item=>item.visible).sort((a,b)=>Math.hypot(player.position.x-a.position.x,player.position.z-a.position.z)-Math.hypot(player.position.x-b.position.x,player.position.z-b.position.z)),nearestCloth=remaining[0],clothDistance=nearestCloth?Math.round(Math.hypot(player.position.x-nearestCloth.position.x,player.position.z-nearestCloth.position.z)):0,direction=nearestCloth?(nearestCloth.position.x-player.position.x>3?'direction.left':nearestCloth.position.x-player.position.x<-3?'direction.right':'direction.ahead'):'direction.ahead';missionKey=nearestCloth&&clothDistance<110?'task.clothHint':'task.clothMission';missionParams={count:clothCount,total:clothPieces.length,distance:clothDistance,direction:tr(direction)};if(player.position.z<forestGate.position.z+3.8)player.position.z=forestGate.position.z+3.8;}
 
   powerSwitches.forEach(sw=>{
     if(!sw.visible)return;sw.userData.lamp.intensity=sw.userData.on?42:18+Math.sin(t*7)*10;
@@ -804,7 +814,7 @@ function tick(){
     if(!safeProtected)for(const snake of snakes){snake.userData.segments.forEach((s,i)=>s.position.x=Math.sin(t*2+i*.72)*1.4);const d=Math.hypot(player.position.x-snake.position.x,player.position.z-snake.position.z);nearest=Math.min(nearest,d);if(d<4.2){stamina=Math.max(0,stamina-25*difficulty.hazard*dt);player.position.x+=(player.position.x-snake.position.x)*dt*2.5;shake=.28;damageHeart('event.snakeHit',snake,'death.snake');}}
     if(!safeProtected)for(const tree of treeEnemies){tree.userData.arms.forEach((a,i)=>a.rotation.z+=(i?1:-1)*dt*.45);const d=Math.hypot(player.position.x-tree.position.x,player.position.z-tree.position.z);nearest=Math.min(nearest,d);if(d<5.2){stamina=Math.max(0,stamina-18*difficulty.hazard*dt);shake=.2;damageHeart('event.treeHit',tree,'death.tree');}}
     // 所有地面动物都有实体体积：会挡住玩家，也会被树、石块和废墟推开，避免穿模直线跑过障碍。
-    animalActors.forEach(animal=>resolveAnimalWorldCollision(animal,animal.userData.isNpc?1.05:1.25));
+    animalActors.forEach(animal=>{const safeParent=safeZones.find(zone=>animal.parent===zone),movingNpc=animal.userData.active||animal.userData.fleeing||(finalWaveStarted&&finalHerd.includes(animal))||Boolean(safeParent?.userData.broken);if(movingNpc)steerNpcAroundObstacles(animal,dt);resolveAnimalWorldCollision(animal,animal.userData.isNpc?1.05:1.25);});
     activeChasers.forEach(animal=>{if(!animalActors.includes(animal))resolveAnimalWorldCollision(animal,animal.userData.type==='car'?3.5:1.35);});
     resolvePlayerAnimalCollision();
     if(smokeCharges&&nearest<12){smokeCharges=0;activeChasers.forEach(e=>{if(e.visible)e.position.z+=28;});if(snowGhost.visible)snowGhost.position.z+=24;say('item.smokeUsed',2200);document.body.classList.add('smoke-screen');setTimeout(()=>document.body.classList.remove('smoke-screen'),1500);sound(48,.8,'sawtooth',.1);nearest=36;}
@@ -847,6 +857,8 @@ if(import.meta.env.DEV)window.__NIULAI_TEST__={
   weather(active){weatherActive=Boolean(active);nextWeatherChange=elapsed+999;},
   collisionProbe(){const animal=storyHerd[0],obstacle=obstacles.find(o=>o.position.z<0);animal.visible=true;animal.userData.escaped=false;animal.position.set(obstacle.position.x,.05,obstacle.position.z);return true;},
   collisionDistance(){const animal=storyHerd[0],obstacle=obstacles.find(o=>o.position.z<0),v=new THREE.Vector3();animal.getWorldPosition(v);return Math.hypot(v.x-obstacle.position.x,v.z-obstacle.position.z);},
+  avoidanceProbe(){const animal=storyHerd[1],obstacle=obstacles.find(o=>o.position.z<-30);animal.visible=true;animal.userData.active=true;animal.userData.eaten=false;animal.userData.escaped=false;animal.position.set(obstacle.position.x,.05,obstacle.position.z+7);return true;},
+  avoidanceOffset(){const animal=storyHerd[1],obstacle=obstacles.find(o=>o.position.z<-30),v=new THREE.Vector3();animal.getWorldPosition(v);return Math.abs(v.x-obstacle.position.x);},
   npcAttackProbe(){const npc=storyHerd[0];player.position.set(24,.05,18);npc.position.set(0,.05,8);npc.visible=true;npc.userData.eaten=false;npc.userData.escaped=false;hunter.position.set(0,.05,11);hunter.visible=true;hunter.userData.chaseSpeed=7.4;hunter.userData.feeding=0;activeChasers=[hunter];return true;},
   npcWasEaten(){return Boolean(storyHerd[0].userData.eaten);},
   snapshot(){return{state,progress:-player.position.z,chapter:currentChapter,safe:activeSafeZone,clothCount,switchCount,sheltered,fakeExitTriggered,finalWaveStarted,rescuedCows,rainOpacity:rainMat.opacity,snowOpacity:snow.material.opacity,mission:activeMissionKey,errors:[]};}
