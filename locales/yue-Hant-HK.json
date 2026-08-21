@@ -145,6 +145,7 @@
   "event.heartLost": "受傷喇。仲有 {count} 個心。",
   "event.snakeHit": "草蛇咬傷你喇！",
   "event.birdHit": "天上跌咗污糟嘢落嚟！",
+  "event.birdNpcKilled": "怪鳥跌落嚟嘅污糟嘢砸死咗一個逃難者。",
   "event.treeHit": "怪樹抓傷你喇！",
   "chapter.1.number": "第一章",
   "chapter.1.title": "草原逃亡",

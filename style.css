@@ -138,6 +138,8 @@ button { border:0; font:inherit; cursor:pointer; }
 .result-actions { display:flex; justify-content:center; gap:12px; flex-wrap:wrap; }
 .result button.secondary { color:#fff; background:#222; box-shadow:7px 7px 0 #000; }
 .mobile-controls { display:none; }
+/* 桌面端为语言按钮保留独立栏位，生命与体力区永远停在它左侧。 */
+@media(min-width:701px) and (pointer:fine){.playing .hud-right{padding-right:190px}.playing .language-picker{top:18px;right:24px}.playing .language-picker>button{min-width:142px;justify-content:center}}
 body.glitch #game { filter:blur(1.1px) hue-rotate(80deg) contrast(1.7); transform:translateX(4px); }
 body.hit #game{animation:hit .22s linear 2}
 @keyframes hit{0%,100%{transform:none}50%{transform:translateX(7px) scale(1.006);filter:brightness(2) saturate(2)}}
