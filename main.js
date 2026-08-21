@@ -663,16 +663,12 @@ let joystickPointer=null,joystickTouch=null,joystickHeldAt=0;
 joystickEl.addEventListener('pointerdown',e=>{e.preventDefault();joystickPointer=e.pointerId;joystickHeldAt=performance.now();joystickEl.classList.add('active');try{joystickEl.setPointerCapture(e.pointerId)}catch{}moveJoystick(e);});
 joystickEl.addEventListener('pointermove',e=>{if(joystickPointer===e.pointerId){e.preventDefault();moveJoystick(e);}},{passive:false});
 function resetJoystick(){joystickPointer=null;joystickTouch=null;joystickHeldAt=0;joystick.x=joystick.y=0;joystickKnob.style.transform='translate(0,0)';joystickEl.classList.remove('active');}
-function resetDirectionInput(){for(const code of ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowLeft','ArrowDown','ArrowRight'])keys[code]=false;resetJoystick();}
 joystickEl.addEventListener('pointerup',resetJoystick);joystickEl.addEventListener('pointercancel',resetJoystick);addEventListener('pointermove',e=>{if(joystickPointer===e.pointerId)moveJoystick(e);},{passive:false});addEventListener('pointerup',e=>{if(joystickPointer===e.pointerId)resetJoystick();});addEventListener('pointercancel',e=>{if(joystickPointer===e.pointerId)resetJoystick();});
 function trackedTouch(event){return [...Array.from(event.changedTouches||[]),...Array.from(event.touches||[])].find(touch=>joystickTouch===null||touch.identifier===joystickTouch);}
 joystickEl.addEventListener('touchstart',e=>{e.preventDefault();const touch=e.changedTouches[0];if(!touch)return;joystickTouch=touch.identifier;joystickHeldAt=performance.now();joystickEl.classList.add('active');moveJoystick(touch);},{passive:false});
 joystickEl.addEventListener('touchmove',e=>{e.preventDefault();const touch=trackedTouch(e);if(touch&&touch.identifier===joystickTouch)moveJoystick(touch);},{passive:false});
 joystickEl.addEventListener('touchend',e=>{if(Array.from(e.changedTouches||[]).some(touch=>touch.identifier===joystickTouch))resetJoystick();},{passive:false});joystickEl.addEventListener('touchcancel',resetJoystick,{passive:false});
 document.addEventListener('touchmove',e=>{if(joystickTouch===null)return;const touch=trackedTouch(e);if(touch&&touch.identifier===joystickTouch){e.preventDefault();moveJoystick(touch);}},{passive:false});document.addEventListener('touchend',e=>{if(Array.from(e.changedTouches||[]).some(touch=>touch.identifier===joystickTouch))resetJoystick();},{passive:false});document.addEventListener('touchcancel',resetJoystick,{passive:false});
-// 点到摇杆以外的空白区域即释放方向，避免 iOS/微信漏发 touchend 后角色持续自行移动；奔跑键仍可与摇杆双指并用。
-document.addEventListener('pointerdown',e=>{if(state==='playing'&&!joystickEl.contains(e.target)&&!e.target.closest?.('.run'))resetDirectionInput();},{capture:true});
-document.addEventListener('touchstart',e=>{if(state==='playing'&&!joystickEl.contains(e.target)&&!e.target.closest?.('.run'))resetDirectionInput();},{capture:true,passive:true});
 
 function glitch(){document.body.classList.add('glitch');sound(48,.1,'square',.03);setTimeout(()=>document.body.classList.remove('glitch'),80+Math.random()*160);}
 function terrorFlash(){
