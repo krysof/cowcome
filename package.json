@@ -11,6 +11,7 @@
     "ios:open": "cap open ios",
     "android:open": "cap open android",
     "ios:build": "./scripts/build-ios-simulator.sh",
+    "ios:archive": "./scripts/build-ios-archive.sh",
     "android:build": "./scripts/build-android.sh"
   },
   "dependencies": {

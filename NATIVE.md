@@ -22,8 +22,15 @@ npm run ios:open
 模拟器构建输出在：
 `native-build/ios/Build/Products/Debug-iphonesimulator/App.app`
 
-真机或 App Store 构建请在 Xcode 打开 `ios/App/App.xcodeproj`，选择自己的 Apple
-Developer Team，确认 Bundle Identifier 可用后执行 Archive。签名证书和描述文件不纳入代码库。
+本机已配置 Apple Developer Team，可直接生成签名的真机开发版：
+
+```bash
+npm run ios:archive
+```
+
+签名归档输出在 `native-build/ios/Cowcome.xcarchive`，开发版 IPA 输出为
+`native-build/ios/export/App.ipa`。该 IPA 仅能安装到当前开发描述文件已登记的设备；App Store
+发布仍需在 Xcode Organizer 选择相应分发方式。签名证书和描述文件不纳入代码库。
 
 ## Android
 
