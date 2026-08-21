@@ -332,6 +332,9 @@ const falseGate=makeFalseGate();
 const finalHerd=Array.from({length:13},(_,i)=>{const cow=i===0?makeHerdCow(.9):makeHerdCow(.5+(i%3)*.08);if(i===0){cow.userData.super=true;cow.userData.halo=mesh(new THREE.TorusGeometry(1.2,.12,5,18),new THREE.MeshBasicMaterial({color:0xf5ff72,fog:false}),cow,0,3.2,0,[1,1,1],[Math.PI/2,0,0]);}cow.visible=false;scene.add(cow);return cow;});
 const itemTypes=['herb','flashlight','radio','smoke'];
 const itemPickups=itemTypes.map((type,i)=>{const colors=[0x65d451,0xffef8a,0x61b6da,0xc7c7c7],g=new THREE.Group();mesh(new THREE.DodecahedronGeometry(.65,0),new THREE.MeshBasicMaterial({color:colors[i],fog:false}),g,0,1,0);const ring=mesh(new THREE.TorusGeometry(1,.09,5,16),new THREE.MeshBasicMaterial({color:colors[i],fog:false}),g,0,1,0,[1,1,1],[Math.PI/2,0,0]);g.userData={type,ring,collected:false};scene.add(g);return g;});
+const pickupEffects=[],itemColors={herb:0x65ff51,flashlight:0xfff27c,radio:0x58cfff,smoke:0xe5e5e5};
+function spawnPickupParticles(item){const group=new THREE.Group(),particles=[],color=itemColors[item.userData.type]||0xffffff,mat=new THREE.MeshBasicMaterial({color,transparent:true,opacity:1,fog:false,blending:THREE.AdditiveBlending});for(let i=0;i<42;i++){const particle=mesh(new THREE.DodecahedronGeometry(.11+Math.random()*.22,0),mat.clone(),group,0,1.2,0);const angle=Math.random()*Math.PI*2,speed=5+Math.random()*11;particle.userData.velocity=new THREE.Vector3(Math.cos(angle)*speed,3+Math.random()*10,Math.sin(angle)*speed);particle.userData.spin=(Math.random()-.5)*14;particles.push(particle);}const ring=mesh(new THREE.RingGeometry(.8,1.18,24),new THREE.MeshBasicMaterial({color,transparent:true,opacity:1,side:THREE.DoubleSide,fog:false,blending:THREE.AdditiveBlending}),group,0,.18,0,[1,1,1],[-Math.PI/2,0,0]),light=new THREE.PointLight(color,95,34);light.position.y=2;group.add(light);group.position.copy(item.position);scene.add(group);pickupEffects.push({group,particles,ring,light,age:0});}
+function playPickupSound(type){const notes=type==='radio'?[330,495,742]:type==='flashlight'?[520,780,1040]:type==='herb'?[392,523,659]:[185,277,415];notes.forEach((note,i)=>setTimeout(()=>sound(note,.24,'triangle',.085),i*75));}
 const forkWalls=Array.from({length:8},(_,i)=>{const g=new THREE.Group(),mat=flat(i%2?0x34352f:0x4d4036);for(const side of [-1,1])mesh(new THREE.BoxGeometry(22,5,2),mat,g,side*18,2.5,0);g.userData.gapSide=i%2?1:-1;scene.add(g);return g;});
 const animalActors=[...herdCows,...storyHerd,...strangeTravellers,...finalHerd,...safeZones.flatMap(zone=>zone.userData.residents)];
 const collisionPoint=new THREE.Vector3(),collisionLocal=new THREE.Vector3();
@@ -485,12 +488,12 @@ function updateObjectives(progress,dt,t,moving,safeProtected){
 
   itemPickups.forEach(item=>{
     if(item.userData.collected)return;item.rotation.y+=dt*1.9;item.userData.ring.rotation.z+=dt*2.2;
-    if(!near(item,3.1))return;item.userData.collected=true;item.visible=false;
+    if(!near(item,3.1))return;item.userData.collected=true;spawnPickupParticles(item);playPickupSound(item.userData.type);item.visible=false;
     if(item.userData.type==='herb'){hearts=Math.min(3,hearts+1);stamina=100;renderHearts();}
     else if(item.userData.type==='flashlight')flashlightUntil=elapsed+32;
     else if(item.userData.type==='radio')radioOwned=true;
     else smokeCharges=1;
-    say(`item.${item.userData.type}`,2600);sound(420,.3,'triangle',.065);
+    say(`item.${item.userData.type}`,2600);shake=Math.max(shake,.16);
   });
   document.body.classList.toggle('flashlight-on',elapsed<flashlightUntil);
 
@@ -585,6 +588,7 @@ function start(){
   state='playing'; elapsed=0; stamina=100;hearts=3;invulnerableUntil=0;exhausted=false; hunterSpeed=7.5; lastLine=-1;speedLevel=0;deathElapsed=0;deathAttacker=null;deathReason=null;resultSnapshot=null;nextDeathBlood=0;snowStage=0;snowBlend=0;snow.visible=false;snow.material.opacity=0;snowGhost.visible=false;weatherActive=Math.random()<.58;nextWeatherChange=7+Math.random()*12;nextTerrorFlash=mode.flashMin+Math.random()*mode.flashRange;nextHaunt=5+Math.random()*6;watchers.forEach(w=>w.visible=false);document.body.classList.remove('death-maul','exhausted','enemy-near','terror-flash','flash-negative','apparition','blackout','blood-flash','heartbeat','otherworld','snow-haunting','rain-active','safe-warm','safe-cold','safe-broken','sheltered','flashlight-on','smoke-screen','chapter-1','chapter-2','chapter-3','chapter-4','chapter-5','hit','glitch','title-cry','health-3','health-2','health-1','health-0','difficulty-easy','difficulty-normal','difficulty-hard');document.body.classList.add(selectedCharacter==='orange'?'difficulty-easy':selectedCharacter==='yellow'?'difficulty-normal':'difficulty-hard');ui.distance.textContent=runLength+tr('world.m');
   const oldPlayer=player;player=createCharacter(selectedCharacter);player.position.set(0,.05,18);player.rotation.set(0,0,0);scene.remove(oldPlayer);scene.add(player);renderHearts();storyStage=0;activeChasers=[];allEnemies.forEach(e=>{e.visible=false;e.position.y=e.userData.type==='car'?0:.05;e.userData.feeding=0;e.userData.joined=false;e.userData.headBob=0;});stalkers.forEach(e=>e.position.copy(e.userData.home));monsterCar.position.set(0,0,80);[...snakes,...treeEnemies].forEach(e=>e.visible=true);
   bloodEffects.splice(0).forEach(f=>scene.remove(f.group));
+  pickupEffects.splice(0).forEach(effect=>scene.remove(effect.group));
   knockedObstacles.splice(0);obstacles.forEach(obstacle=>{const original=obstacle.userData.originalTransform;if(original){obstacle.position.copy(original.position);obstacle.rotation.copy(original.rotation);obstacle.visible=original.visible;}obstacle.userData.collisionDisabled=false;obstacle.userData.knockVelocity=null;});
   herdCows.forEach((c,i)=>{c.position.copy(c.userData.start);c.rotation.set(0,0,0);c.visible=c.position.z>exitZ;c.userData.active=false;c.userData.eaten=false;c.userData.escaped=false;c.userData.announced=false;const e=ambushers[i];e.position.copy(e.userData.start);e.rotation.set(0,0,0);e.visible=false;e.userData.disabled=i>=mode.ambushers;e.userData.feeding=0;e.userData.joined=false;});
   const herdCenter=18-runLength*.165;storyHerd.forEach((cow,i)=>{cow.position.set(cow.userData.offsetX,.05,herdCenter+cow.userData.offsetZ);cow.rotation.set(0,Math.PI,0);cow.visible=false;cow.userData.active=false;cow.userData.escaped=false;cow.userData.eaten=false;});
@@ -659,12 +663,16 @@ let joystickPointer=null,joystickTouch=null,joystickHeldAt=0;
 joystickEl.addEventListener('pointerdown',e=>{e.preventDefault();joystickPointer=e.pointerId;joystickHeldAt=performance.now();joystickEl.classList.add('active');try{joystickEl.setPointerCapture(e.pointerId)}catch{}moveJoystick(e);});
 joystickEl.addEventListener('pointermove',e=>{if(joystickPointer===e.pointerId){e.preventDefault();moveJoystick(e);}},{passive:false});
 function resetJoystick(){joystickPointer=null;joystickTouch=null;joystickHeldAt=0;joystick.x=joystick.y=0;joystickKnob.style.transform='translate(0,0)';joystickEl.classList.remove('active');}
-joystickEl.addEventListener('pointerup',resetJoystick);joystickEl.addEventListener('pointercancel',resetJoystick);addEventListener('pointermove',e=>{if(joystickPointer===e.pointerId)moveJoystick(e);},{passive:false});addEventListener('pointerup',resetJoystick);addEventListener('pointercancel',resetJoystick);
+function resetDirectionInput(){for(const code of ['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowLeft','ArrowDown','ArrowRight'])keys[code]=false;resetJoystick();}
+joystickEl.addEventListener('pointerup',resetJoystick);joystickEl.addEventListener('pointercancel',resetJoystick);addEventListener('pointermove',e=>{if(joystickPointer===e.pointerId)moveJoystick(e);},{passive:false});addEventListener('pointerup',e=>{if(joystickPointer===e.pointerId)resetJoystick();});addEventListener('pointercancel',e=>{if(joystickPointer===e.pointerId)resetJoystick();});
 function trackedTouch(event){return [...Array.from(event.changedTouches||[]),...Array.from(event.touches||[])].find(touch=>joystickTouch===null||touch.identifier===joystickTouch);}
 joystickEl.addEventListener('touchstart',e=>{e.preventDefault();const touch=e.changedTouches[0];if(!touch)return;joystickTouch=touch.identifier;joystickHeldAt=performance.now();joystickEl.classList.add('active');moveJoystick(touch);},{passive:false});
 joystickEl.addEventListener('touchmove',e=>{e.preventDefault();const touch=trackedTouch(e);if(touch&&touch.identifier===joystickTouch)moveJoystick(touch);},{passive:false});
 joystickEl.addEventListener('touchend',e=>{if(Array.from(e.changedTouches||[]).some(touch=>touch.identifier===joystickTouch))resetJoystick();},{passive:false});joystickEl.addEventListener('touchcancel',resetJoystick,{passive:false});
 document.addEventListener('touchmove',e=>{if(joystickTouch===null)return;const touch=trackedTouch(e);if(touch&&touch.identifier===joystickTouch){e.preventDefault();moveJoystick(touch);}},{passive:false});document.addEventListener('touchend',e=>{if(Array.from(e.changedTouches||[]).some(touch=>touch.identifier===joystickTouch))resetJoystick();},{passive:false});document.addEventListener('touchcancel',resetJoystick,{passive:false});
+// 点到摇杆以外的空白区域即释放方向，避免 iOS/微信漏发 touchend 后角色持续自行移动；奔跑键仍可与摇杆双指并用。
+document.addEventListener('pointerdown',e=>{if(state==='playing'&&!joystickEl.contains(e.target)&&!e.target.closest?.('.run'))resetDirectionInput();},{capture:true});
+document.addEventListener('touchstart',e=>{if(state==='playing'&&!joystickEl.contains(e.target)&&!e.target.closest?.('.run'))resetDirectionInput();},{capture:true,passive:true});
 
 function glitch(){document.body.classList.add('glitch');sound(48,.1,'square',.03);setTimeout(()=>document.body.classList.remove('glitch'),80+Math.random()*160);}
 function terrorFlash(){
@@ -737,6 +745,7 @@ function tick(){
     const flap=.5+Math.abs(Math.sin(t*(7+i%4)+b.userData.phase))*1.05;b.userData.wings[0].rotation.z=flap;b.userData.wings[1].rotation.z=-flap;
   });
   bloodEffects.forEach(f=>{f.age+=dt;f.drops.forEach(d=>{if(d.position.y>.06||d.userData.velocity.y>0){d.position.addScaledVector(d.userData.velocity,dt);d.userData.velocity.y-=12*dt;if(d.position.y<.05){d.position.y=.05;d.userData.velocity.set(0,0,0);}}});});
+  for(let i=pickupEffects.length-1;i>=0;i--){const effect=pickupEffects[i];effect.age+=dt;const fade=Math.max(0,1-effect.age/1.8);effect.particles.forEach(particle=>{particle.position.addScaledVector(particle.userData.velocity,dt);particle.userData.velocity.y-=10*dt;particle.rotation.x+=particle.userData.spin*dt;particle.rotation.z+=particle.userData.spin*dt*.7;particle.material.opacity=fade;});effect.ring.scale.setScalar(1+effect.age*5.6);effect.ring.material.opacity=fade*.9;effect.light.intensity=95*fade;if(effect.age>1.85){scene.remove(effect.group);pickupEffects.splice(i,1);}}
   knockedObstacles.forEach(obstacle=>{const velocity=obstacle.userData.knockVelocity;if(!velocity)return;obstacle.position.addScaledVector(velocity,dt);velocity.y-=18*dt;obstacle.rotation.x+=dt*4.2;obstacle.rotation.z+=dt*3.1;if(obstacle.position.y<-8){obstacle.visible=false;obstacle.userData.knockVelocity=null;}});
   if(state==='dying'){
     deathElapsed+=dt;player.rotation.z=THREE.MathUtils.lerp(player.rotation.z,Math.PI/2,.16);player.position.y=THREE.MathUtils.lerp(player.position.y,.48,.12);shake=Math.max(shake,.35+Math.abs(Math.sin(t*15))*.45);
@@ -862,7 +871,7 @@ if(import.meta.env.DEV)window.__NIULAI_TEST__={
   superObstacleWasHit(){return Boolean(superCow.userData.testObstacle?.userData.collisionDisabled);},
   npcAttackProbe(){const npc=storyHerd[0];player.position.set(24,.05,18);npc.position.set(0,.05,8);npc.visible=true;npc.userData.eaten=false;npc.userData.escaped=false;hunter.position.set(0,.05,11);hunter.visible=true;hunter.userData.chaseSpeed=7.4;hunter.userData.feeding=0;activeChasers=[hunter];return true;},
   npcWasEaten(){return Boolean(storyHerd[0].userData.eaten);},
-  snapshot(){return{state,progress:-player.position.z,chapter:currentChapter,safe:activeSafeZone,clothCount,switchCount,sheltered,fakeExitTriggered,finalWaveStarted,rescuedCows,rainOpacity:rainMat.opacity,snowOpacity:snow.material.opacity,mission:activeMissionKey,errors:[]};}
+  snapshot(){return{state,progress:-player.position.z,chapter:currentChapter,safe:activeSafeZone,clothCount,switchCount,sheltered,fakeExitTriggered,finalWaveStarted,rescuedCows,rainOpacity:rainMat.opacity,snowOpacity:snow.material.opacity,mission:activeMissionKey,joystick:{x:joystick.x,y:joystick.y},pickupEffects:pickupEffects.length,errors:[]};}
 };
 
 addEventListener('niulai:languagechange',()=>{refreshLanguageMenu();renderScores();drawExitSign();if(activeSayKey){if(activeSayKey==='difficulty.start')activeSayParams={difficulty:tr(difficulties[selectedCharacter].nameKey)};ui.subtitle.textContent=tr(activeSayKey,activeSayParams);}setMission(activeMissionKey,activeMissionParams);if(currentChapter>=0){chapterNumber.textContent=tr(chapters[currentChapter].number);chapterTitle.textContent=tr(chapters[currentChapter].title);chapterDescription.textContent=tr(chapters[currentChapter].description);}if(resultSnapshot)renderResult();installText.textContent=tr(installHintKey);ui.distance.textContent=Math.floor(distance)+tr('world.m');});
