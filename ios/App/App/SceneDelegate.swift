@@ -1,6 +1,23 @@
 import UIKit
 import Capacitor
 
+final class GameViewController: CAPBridgeViewController {
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        configureTouchDelivery()
+        DispatchQueue.main.async { [weak self] in self?.configureTouchDelivery() }
+    }
+
+    private func configureTouchDelivery() {
+        view.isMultipleTouchEnabled = true
+        guard let webView else { return }
+        webView.isMultipleTouchEnabled = true
+        webView.scrollView.isMultipleTouchEnabled = true
+        webView.scrollView.delaysContentTouches = false
+        webView.scrollView.canCancelContentTouches = false
+    }
+}
+
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
 
@@ -8,7 +25,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = scene as? UIWindowScene else { return }
 
         window = UIWindow(windowScene: windowScene)
-        window?.rootViewController = CAPBridgeViewController()
+        window?.rootViewController = GameViewController()
         window?.makeKeyAndVisible()
 
         SceneDelegateProxy.shared.scene(scene, willConnectTo: session, options: connectionOptions)

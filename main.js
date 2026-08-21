@@ -801,8 +801,11 @@ const releaseShove=()=>shoveBtn.classList.remove('pressed');
 ['pointerup','pointercancel','pointerleave'].forEach(type=>shoveBtn.addEventListener(type,event=>{if(touchControls&&event.pointerType!=='mouse')return;releaseShove()}));
 const runBtn=document.querySelector('.mobile-controls .run'),shoveTouchIds=new Set();
 function touchInside(touch,element,padding=16){const rect=element.getBoundingClientRect();return touch.clientX>=rect.left-padding&&touch.clientX<=rect.right+padding&&touch.clientY>=rect.top-padding&&touch.clientY<=rect.bottom+padding;}
+const activeActionTouches=new Map();
 function syncActionTouches(event){
-  if(!touchControls)return;const touches=Array.from(event.touches||[]),runHeld=state==='playing'&&touches.some(touch=>touchInside(touch,runBtn));keys.ShiftLeft=runHeld;runBtn.classList.toggle('pressed',runHeld);
+  if(!touchControls)return;const changed=Array.from(event.changedTouches||[]),ending=event.type==='touchend'||event.type==='touchcancel';for(const touch of changed){if(ending)activeActionTouches.delete(touch.identifier);else activeActionTouches.set(touch.identifier,{identifier:touch.identifier,clientX:touch.clientX,clientY:touch.clientY});}
+  if(event.type==='touchmove')for(const touch of Array.from(event.touches||[]))activeActionTouches.set(touch.identifier,{identifier:touch.identifier,clientX:touch.clientX,clientY:touch.clientY});
+  const touches=Array.from(activeActionTouches.values()),runHeld=state==='playing'&&touches.some(touch=>touchInside(touch,runBtn));keys.ShiftLeft=runHeld;runBtn.classList.toggle('pressed',runHeld);
   const currentShoveIds=new Set();if(state==='playing')for(const touch of touches)if(touchInside(touch,shoveBtn)){currentShoveIds.add(touch.identifier);if(!shoveTouchIds.has(touch.identifier))performNpcShove();}
   shoveTouchIds.clear();currentShoveIds.forEach(id=>shoveTouchIds.add(id));shoveBtn.classList.toggle('pressed',shoveTouchIds.size>0);
   if(runHeld||shoveTouchIds.size)event.preventDefault();
