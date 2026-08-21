@@ -1,8 +1,11 @@
 import * as THREE from 'three';
+import { Capacitor } from '@capacitor/core';
 import { SplashScreen } from '@capacitor/splash-screen';
 import {t as tr,initI18n,setLanguage,currentLanguage,locales,languageOrder} from './i18n.js';
 
 initI18n();
+const isNativeApp=Capacitor.isNativePlatform();
+document.documentElement.classList.toggle('native-app',isNativeApp);
 
 // 数值模拟由独立 WebAssembly 核心执行；网络或旧浏览器失败时保留等价回退。
 let gameCore={
@@ -38,7 +41,7 @@ function toggleLanguageMenu(force){const open=force??languageMenu.hidden;languag
 languageBtn.onclick=()=>toggleLanguageMenu();languageMenu.querySelectorAll('[data-language]').forEach(button=>button.onclick=()=>{setLanguage(button.dataset.language);refreshLanguageMenu();toggleLanguageMenu(false);languageBtn.focus();});
 languageMenu.addEventListener('keydown',event=>{const buttons=[...languageMenu.querySelectorAll('[data-language]')],index=buttons.indexOf(document.activeElement);if(event.key==='Escape'){toggleLanguageMenu(false);languageBtn.focus();}if(event.key==='ArrowDown'||event.key==='ArrowUp'){event.preventDefault();buttons[(index+(event.key==='ArrowDown'?1:-1)+buttons.length)%buttons.length].focus();}});
 document.addEventListener('pointerdown',event=>{if(!languagePicker.contains(event.target))toggleLanguageMenu(false);});refreshLanguageMenu();
-addEventListener('beforeinstallprompt',event=>{event.preventDefault();deferredInstallPrompt=event;installBtn.classList.add('available');});
+if(!isNativeApp)addEventListener('beforeinstallprompt',event=>{event.preventDefault();deferredInstallPrompt=event;installBtn.classList.add('available');});
 const characterKeys={orange:'character.orangeFull',yellow:'character.yellowFull',leopard:'character.leopardFull'};
 const difficultyKeys={orange:'character.easy',yellow:'character.normal',leopard:'character.hard'};
 function formatTime(ms){const min=Math.floor(ms/60000),sec=Math.floor((ms%60000)/1000),milli=ms%1000;return `${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')}.${String(milli).padStart(3,'0')}`;}
@@ -1018,6 +1021,6 @@ addEventListener('niulai:languagechange',()=>{refreshLanguageMenu();renderScores
 
 SplashScreen.hide({fadeOutDuration:500}).catch(()=>{});
 
-if('serviceWorker' in navigator&&!window.Capacitor?.isNativePlatform?.()){
+if('serviceWorker' in navigator&&!isNativeApp){
   addEventListener('load',()=>navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`,{scope:import.meta.env.BASE_URL}).catch(()=>{}));
 }
