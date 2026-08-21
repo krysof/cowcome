@@ -754,9 +754,9 @@ addEventListener('blur',()=>{Object.keys(keys).forEach(key=>delete keys[key]);re
 document.addEventListener('visibilitychange',()=>{if(document.hidden){Object.keys(keys).forEach(key=>delete keys[key]);resetJoystick();}});
 const touchControls=isNativeApp||('ontouchstart' in window)||(navigator.maxTouchPoints||0)>0;
 document.querySelectorAll('.mobile-controls button[data-key]').forEach(button=>{
-  const key=button.dataset.key;
-  button.addEventListener('pointerdown',event=>{if(touchControls&&event.pointerType!=='mouse')return;event.preventDefault();keys[key]=true;button.classList.add('pressed')});
-  const release=()=>{keys[key]=false;button.classList.remove('pressed')};
+  const key=button.dataset.key,visual=document.querySelector(button.dataset.visual)||button;
+  button.addEventListener('pointerdown',event=>{if(touchControls&&event.pointerType!=='mouse')return;event.preventDefault();keys[key]=true;visual.classList.add('pressed')});
+  const release=()=>{keys[key]=false;visual.classList.remove('pressed')};
   ['pointerup','pointercancel','pointerleave'].forEach(type=>button.addEventListener(type,event=>{if(touchControls&&event.pointerType!=='mouse')return;release()}));
 });
 const joystickEl=document.querySelector('#joystick'),joystickKnob=document.querySelector('#joystickKnob');
@@ -796,18 +796,19 @@ function performNpcShove(){
   const world=target.getWorldPosition(new THREE.Vector3()),dx=world.x-player.position.x,dz=world.z-player.position.z,d=Math.max(.1,Math.hypot(dx,dz)),rightX=Math.cos(player.rotation.y),rightZ=-Math.sin(player.rotation.y),side=(dx*rightX+dz*rightZ)>=0?1:-1,pushX=rightX*side*3.45+dx/d*.35,pushZ=rightZ*side*3.45+dz/d*.35;setTimeout(()=>{if(state==='playing')shoveFriendlyNpc(target,pushX,pushZ);},130);return true;
 }
 const shoveBtn=document.querySelector('#shoveBtn');
-shoveBtn.addEventListener('pointerdown',event=>{if(touchControls&&event.pointerType!=='mouse')return;event.preventDefault();shoveBtn.classList.add('pressed');performNpcShove();});
-const releaseShove=()=>shoveBtn.classList.remove('pressed');
+const shoveVisual=document.querySelector('#shoveVisual');
+shoveBtn.addEventListener('pointerdown',event=>{if(touchControls&&event.pointerType!=='mouse')return;event.preventDefault();shoveVisual.classList.add('pressed');performNpcShove();});
+const releaseShove=()=>shoveVisual.classList.remove('pressed');
 ['pointerup','pointercancel','pointerleave'].forEach(type=>shoveBtn.addEventListener(type,event=>{if(touchControls&&event.pointerType!=='mouse')return;releaseShove()}));
-const runBtn=document.querySelector('.mobile-controls .run'),shoveTouchIds=new Set();
+const runBtn=document.querySelector('#runHit'),runVisual=document.querySelector('#runVisual'),shoveTouchIds=new Set();
 function touchInside(touch,element,padding=16){const rect=element.getBoundingClientRect();return touch.clientX>=rect.left-padding&&touch.clientX<=rect.right+padding&&touch.clientY>=rect.top-padding&&touch.clientY<=rect.bottom+padding;}
 const activeActionTouches=new Map();
 function syncActionTouches(event){
   if(!touchControls)return;const changed=Array.from(event.changedTouches||[]),ending=event.type==='touchend'||event.type==='touchcancel';for(const touch of changed){if(ending)activeActionTouches.delete(touch.identifier);else activeActionTouches.set(touch.identifier,{identifier:touch.identifier,clientX:touch.clientX,clientY:touch.clientY});}
   if(event.type==='touchmove')for(const touch of Array.from(event.touches||[]))activeActionTouches.set(touch.identifier,{identifier:touch.identifier,clientX:touch.clientX,clientY:touch.clientY});
-  const touches=Array.from(activeActionTouches.values()),runHeld=state==='playing'&&touches.some(touch=>touchInside(touch,runBtn));keys.ShiftLeft=runHeld;runBtn.classList.toggle('pressed',runHeld);
-  const currentShoveIds=new Set();if(state==='playing')for(const touch of touches)if(touchInside(touch,shoveBtn)){currentShoveIds.add(touch.identifier);if(!shoveTouchIds.has(touch.identifier))performNpcShove();}
-  shoveTouchIds.clear();currentShoveIds.forEach(id=>shoveTouchIds.add(id));shoveBtn.classList.toggle('pressed',shoveTouchIds.size>0);
+  const touches=Array.from(activeActionTouches.values()),runHeld=state==='playing'&&touches.some(touch=>touchInside(touch,runBtn,0));keys.ShiftLeft=runHeld;runVisual.classList.toggle('pressed',runHeld);
+  const currentShoveIds=new Set();if(state==='playing')for(const touch of touches)if(touchInside(touch,shoveBtn,0)){currentShoveIds.add(touch.identifier);if(!shoveTouchIds.has(touch.identifier))performNpcShove();}
+  shoveTouchIds.clear();currentShoveIds.forEach(id=>shoveTouchIds.add(id));shoveVisual.classList.toggle('pressed',shoveTouchIds.size>0);
   if(runHeld||shoveTouchIds.size)event.preventDefault();
 }
 ['touchstart','touchmove','touchend','touchcancel'].forEach(type=>document.addEventListener(type,syncActionTouches,{passive:false,capture:true}));
@@ -1095,7 +1096,7 @@ if(import.meta.env.DEV)window.__NIULAI_TEST__={
   shoveButtonProbe(){animalActors.forEach(npc=>npc.visible=false);player.position.set(0,.05,0);player.rotation.y=0;const npc=storyHerd[0];npc.visible=true;npc.userData.eaten=false;npc.userData.escaped=false;npc.position.set(0,.05,-4);npc.userData.shoveStart=npc.position.clone();hunter.visible=true;hunter.position.set(0,.05,-2);hunter.userData.chaseSpeed=0;hunter.userData.nextPounce=elapsed+99;hunter.userData.shoveStart=hunter.position.clone();activeChasers=[];const obstacle=obstacles[0];obstacle.userData.shoveStart=obstacle.position.clone();lastNpcShove=-9;return true;},
   shoveButtonState(){const npc=storyHerd[0],obstacle=obstacles[0],finger=player.userData.shoveFinger;return{friendDistance:npc.userData.shoveStart?npc.position.distanceTo(npc.userData.shoveStart):0,enemyDistance:hunter.userData.shoveStart?hunter.position.distanceTo(hunter.userData.shoveStart):0,obstacleDistance:obstacle.userData.shoveStart?obstacle.position.distanceTo(obstacle.userData.shoveStart):0,fingerAnimated:Boolean(finger?.rig.visible),fingerLength:finger?.finger.scale.y||0};},
   advanceShove(steps=1,dt=.08){for(let i=0;i<steps;i++)updateFriendlyNpcShove(storyHerd[0],dt);return true;},
-  controlsState(){return{running:Boolean(keys.ShiftLeft),runPressed:document.querySelector('.mobile-controls .run').classList.contains('pressed'),shovePressed:shoveBtn.classList.contains('pressed'),joystickHeld:joystickPointer!==null||joystickTouch!==null};},
+  controlsState(){return{running:Boolean(keys.ShiftLeft),runPressed:runVisual.classList.contains('pressed'),shovePressed:shoveVisual.classList.contains('pressed'),joystickHeld:joystickPointer!==null||joystickTouch!==null};},
   safeResidentSpread(index=0){const xs=safeZones[index].userData.residents.map(npc=>npc.position.x);return Math.max(...xs)-Math.min(...xs);},
   roadNpcProbe(index=0){const npc=strangeTravellers[index];player.position.set(npc.position.x+.1,.05,npc.position.z);npc.userData.talked=false;return true;},
   roadNpcState(index=0){const npc=strangeTravellers[index];return{distance:Math.hypot(player.position.x-npc.position.x,player.position.z-npc.position.z),talked:npc.userData.talked,sayKey:activeSayKey};},
