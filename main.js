@@ -752,11 +752,12 @@ addEventListener('keydown',e=>{if(movementCodes.has(e.code)){e.preventDefault();
 addEventListener('keyup',e=>keys[e.code]=false);
 addEventListener('blur',()=>{Object.keys(keys).forEach(key=>delete keys[key]);resetJoystick();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){Object.keys(keys).forEach(key=>delete keys[key]);resetJoystick();}});
+const touchControls=('ontouchstart' in window)||(navigator.maxTouchPoints||0)>0;
 document.querySelectorAll('.mobile-controls button[data-key]').forEach(button=>{
   const key=button.dataset.key;
-  button.addEventListener('pointerdown',event=>{event.preventDefault();keys[key]=true;button.classList.add('pressed')});
+  button.addEventListener('pointerdown',event=>{if(touchControls&&event.pointerType!=='mouse')return;event.preventDefault();keys[key]=true;button.classList.add('pressed')});
   const release=()=>{keys[key]=false;button.classList.remove('pressed')};
-  ['pointerup','pointercancel','pointerleave'].forEach(type=>button.addEventListener(type,release));
+  ['pointerup','pointercancel','pointerleave'].forEach(type=>button.addEventListener(type,event=>{if(touchControls&&event.pointerType!=='mouse')return;release()}));
   button.addEventListener('touchstart',event=>{event.preventDefault();keys[key]=true;button.classList.add('pressed')},{passive:false});
   ['touchend','touchcancel'].forEach(type=>button.addEventListener(type,release,{passive:false}));
 });
@@ -767,10 +768,10 @@ function moveJoystick(e){
   joystick.x=dx/limit;joystick.y=dy/limit;joystickKnob.style.transform=`translate(${dx}px,${dy}px)`;
 }
 let joystickPointer=null,joystickTouch=null,joystickHeldAt=0;
-joystickEl.addEventListener('pointerdown',e=>{e.preventDefault();joystickPointer=e.pointerId;joystickHeldAt=performance.now();joystickEl.classList.add('active');try{joystickEl.setPointerCapture(e.pointerId)}catch{}moveJoystick(e);});
-joystickEl.addEventListener('pointermove',e=>{if(joystickPointer===e.pointerId){e.preventDefault();moveJoystick(e);}},{passive:false});
+joystickEl.addEventListener('pointerdown',e=>{if(touchControls&&e.pointerType!=='mouse')return;e.preventDefault();joystickPointer=e.pointerId;joystickHeldAt=performance.now();joystickEl.classList.add('active');try{joystickEl.setPointerCapture(e.pointerId)}catch{}moveJoystick(e);});
+joystickEl.addEventListener('pointermove',e=>{if(touchControls&&e.pointerType!=='mouse')return;if(joystickPointer===e.pointerId){e.preventDefault();moveJoystick(e);}},{passive:false});
 function resetJoystick(){joystickPointer=null;joystickTouch=null;joystickHeldAt=0;joystick.x=joystick.y=0;joystickKnob.style.transform='translate(0,0)';joystickEl.classList.remove('active');}
-joystickEl.addEventListener('pointerup',resetJoystick);joystickEl.addEventListener('pointercancel',resetJoystick);addEventListener('pointermove',e=>{if(joystickPointer===e.pointerId)moveJoystick(e);},{passive:false});addEventListener('pointerup',e=>{if(joystickPointer===e.pointerId)resetJoystick();});addEventListener('pointercancel',e=>{if(joystickPointer===e.pointerId)resetJoystick();});
+joystickEl.addEventListener('pointerup',e=>{if(!touchControls||e.pointerType==='mouse')resetJoystick();});joystickEl.addEventListener('pointercancel',e=>{if(!touchControls||e.pointerType==='mouse')resetJoystick();});addEventListener('pointermove',e=>{if((!touchControls||e.pointerType==='mouse')&&joystickPointer===e.pointerId)moveJoystick(e);},{passive:false});addEventListener('pointerup',e=>{if((!touchControls||e.pointerType==='mouse')&&joystickPointer===e.pointerId)resetJoystick();});addEventListener('pointercancel',e=>{if((!touchControls||e.pointerType==='mouse')&&joystickPointer===e.pointerId)resetJoystick();});
 function trackedTouch(event){return [...Array.from(event.changedTouches||[]),...Array.from(event.touches||[])].find(touch=>joystickTouch===null||touch.identifier===joystickTouch);}
 joystickEl.addEventListener('touchstart',e=>{e.preventDefault();const touch=e.changedTouches[0];if(!touch)return;joystickTouch=touch.identifier;joystickHeldAt=performance.now();joystickEl.classList.add('active');moveJoystick(touch);},{passive:false});
 joystickEl.addEventListener('touchmove',e=>{e.preventDefault();const touch=trackedTouch(e);if(touch&&touch.identifier===joystickTouch)moveJoystick(touch);},{passive:false});
@@ -797,9 +798,9 @@ function performNpcShove(){
   const world=target.getWorldPosition(new THREE.Vector3()),dx=world.x-player.position.x,dz=world.z-player.position.z,d=Math.max(.1,Math.hypot(dx,dz)),rightX=Math.cos(player.rotation.y),rightZ=-Math.sin(player.rotation.y),side=(dx*rightX+dz*rightZ)>=0?1:-1,pushX=rightX*side*3.45+dx/d*.35,pushZ=rightZ*side*3.45+dz/d*.35;setTimeout(()=>{if(state==='playing')shoveFriendlyNpc(target,pushX,pushZ);},130);return true;
 }
 const shoveBtn=document.querySelector('#shoveBtn');
-shoveBtn.addEventListener('pointerdown',event=>{event.preventDefault();shoveBtn.classList.add('pressed');performNpcShove();});
+shoveBtn.addEventListener('pointerdown',event=>{if(touchControls&&event.pointerType!=='mouse')return;event.preventDefault();shoveBtn.classList.add('pressed');performNpcShove();});
 const releaseShove=()=>shoveBtn.classList.remove('pressed');
-['pointerup','pointercancel','pointerleave'].forEach(type=>shoveBtn.addEventListener(type,releaseShove));
+['pointerup','pointercancel','pointerleave'].forEach(type=>shoveBtn.addEventListener(type,event=>{if(touchControls&&event.pointerType!=='mouse')return;releaseShove()}));
 shoveBtn.addEventListener('touchstart',event=>{event.preventDefault();shoveBtn.classList.add('pressed');performNpcShove();},{passive:false});
 ['touchend','touchcancel'].forEach(type=>shoveBtn.addEventListener(type,releaseShove,{passive:false}));
 
