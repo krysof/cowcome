@@ -227,6 +227,25 @@ function makeDarkBeast(scale=1){
   g.scale.setScalar(scale);g.userData.legs=legs;g.userData.arms=arms;g.userData.enemyKey='enemy.beast';return g;
 }
 
+function makeTwistedCrawler(scale=1){
+  const g=new THREE.Group(),flesh=flat(0x5b4038),bone=flat(0xb9ad91),voidMat=flat(0x090706),eye=flat(0xe63a18),arms=[],legs=[],twistParts=[];
+  const torso=mesh(new THREE.CapsuleGeometry(.78,2.5,3,6),flesh,g,0,1.45,0,[1.75,.62,1.05],[0,0,Math.PI/2]);twistParts.push(torso);
+  for(const side of [-1,1]){const head=mesh(new THREE.SphereGeometry(.72,6,5),bone,g,side*.78,2.25,-.62,[1,.78,.72],[0,side*.22,side*.16]);mesh(new THREE.SphereGeometry(.34,6,4),voidMat,head,0,-.02,-.67,[1.35,.72,.3]);for(const x of [-.16,.16])mesh(new THREE.SphereGeometry(.05,5,4),eye,head,x,.16,-.69);twistParts.push(head);}
+  for(let i=0;i<6;i++){const side=i%2?-1:1,x=side*(.45+Math.floor(i/2)*.46),limb=mesh(new THREE.CapsuleGeometry(.13,1.8+(i%3)*.32,2,5),i%3===0?bone:flesh,g,x,.65,(i%3-.8)*.62,[1,1,1],[side*.38,0,side*.58]);(i<2?arms:legs).push(limb);}
+  g.scale.setScalar(scale);g.userData={arms,legs,twistParts,type:'crawler',enemyKey:'enemy.crawler'};return g;
+}
+function makeHollowStalker(scale=1){
+  const g=new THREE.Group(),skin=flat(0x777c70),cloth=flat(0x292823),voidMat=flat(0x030303),teeth=flat(0xd0c7a8),arms=[],legs=[],twistParts=[];
+  mesh(new THREE.ConeGeometry(.88,5.5,6),cloth,g,0,3,0,[1,.92,1]);const head=mesh(new THREE.TorusGeometry(.72,.27,5,9),skin,g,0,6.15,-.08,[1,1,.72],[Math.PI/2,0,0]);mesh(new THREE.SphereGeometry(.56,7,5),voidMat,g,0,6.14,-.35,[1,.92,.25]);for(let i=0;i<7;i++)mesh(new THREE.ConeGeometry(.07,.32,4),teeth,g,(i-3)*.13,6.1,-.69,[1,1,1],[i%2?Math.PI:0,0,0]);twistParts.push(head);
+  for(const side of [-1,1]){const arm=mesh(new THREE.CapsuleGeometry(.12,4.5,2,5),skin,g,side*1.08,3.35,0,[1,1,1],[0,0,side*.18]);arms.push(arm);const leg=mesh(new THREE.CapsuleGeometry(.16,3.2,2,5),cloth,g,side*.37,.5,0);legs.push(leg);}
+  g.scale.setScalar(scale);g.userData={arms,legs,twistParts,type:'hollow',enemyKey:'enemy.hollow'};return g;
+}
+function makeFleshKnot(scale=1){
+  const g=new THREE.Group(),hide=flat(0x49302f),raw=flat(0x8c4a42),eye=flat(0xffb22d),voidMat=flat(0x120605),arms=[],legs=[],twistParts=[];
+  for(let i=0;i<7;i++){const a=i/7*Math.PI*2,r=i?1.05:0,orb=mesh(new THREE.DodecahedronGeometry(.75+(i%3)*.15,0),i%2?hide:raw,g,Math.cos(a)*r,1.8+Math.sin(a)*.7,Math.sin(a)*r,[1,1.15,.9]);twistParts.push(orb);}const socket=mesh(new THREE.SphereGeometry(.52,7,5),voidMat,g,0,2.1,-1.05,[1,1,.32]);mesh(new THREE.SphereGeometry(.19,6,5),eye,socket,0,0,-.45,[1,1,.35]);
+  for(let i=0;i<5;i++){const a=i/5*Math.PI*2,limb=mesh(new THREE.CapsuleGeometry(.13,1.7,2,5),hide,g,Math.cos(a)*1.05,.62,Math.sin(a)*.8,[1,1,1],[Math.sin(a)*.5,0,-Math.cos(a)*.65]);legs.push(limb);}g.scale.setScalar(scale);g.userData={arms,legs,twistParts,type:'knot',enemyKey:'enemy.knot'};return g;
+}
+
 function makeHerdCow(scale=1){
   const g=new THREE.Group(),fur=flat(0xb75c32),muzzle=flat(0xe8b19d),hoof=flat(0x38231e),horn=flat(0xe8dfcf),eye=flat(0x17110f);
   mesh(new THREE.CapsuleGeometry(.72,1.75,3,6),fur,g,0,1.62,0,[1,1,1],[Math.PI/2,0,0]);
@@ -284,10 +303,11 @@ const difficulties={
 };
 let player=createCharacter(selectedCharacter); player.position.set(0,.05,18); player.rotation.y=0; scene.add(player);
 const hunter=makeDarkBeast(.78); hunter.position.set(0,.05,51); scene.add(hunter);
-const wolfPack=[hunter,...Array.from({length:5},(_,i)=>makeDarkBeast(.7+(i%3)*.05))];wolfPack.slice(1).forEach((w,i)=>{w.position.set((i-2)*4,.05,54+i*2);scene.add(w);});
+const wolfPack=[hunter,makeTwistedCrawler(.78),makeHollowStalker(.62),makeFleshKnot(.72),makeDarkBeast(.74),makeAlienCow(.72,1)];wolfPack.slice(1).forEach((w,i)=>{w.position.set((i-2)*4,.05,54+i*2);scene.add(w);});
 const hunterGlow=new THREE.PointLight(0xff2b16,22,24); hunterGlow.position.set(0,5,46); scene.add(hunterGlow);
-const enemyConfigs=[[-24,-85,'alien'],[27,-125,'beast'],[-29,-175,'beast'],[25,-225,'alien'],[-24,-275,'beast'],[22,-325,'alien'],[-28,-375,'beast'],[26,-425,'alien'],[-25,-485,'beast'],[24,-545,'alien']];
-const stalkers=enemyConfigs.map(([x,z,type],i)=>{const e=type==='alien'?makeAlienCow(.9,i%2):makeDarkBeast(.72);e.position.set(x,.05,z);e.userData.home=new THREE.Vector3(x,.05,z);e.userData.speed=type==='alien'?5.2:6.1;e.userData.type=type;scene.add(e);return e;});
+const enemyConfigs=[[-24,-85,'alien'],[27,-125,'crawler'],[-29,-175,'hollow'],[25,-225,'beast'],[-24,-275,'knot'],[22,-325,'alien'],[-28,-375,'crawler'],[26,-425,'hollow'],[-25,-485,'beast'],[24,-545,'knot']];
+const enemyMakers={alien:i=>makeAlienCow(.9,i%2),beast:()=>makeDarkBeast(.72),crawler:()=>makeTwistedCrawler(.75),hollow:()=>makeHollowStalker(.6),knot:()=>makeFleshKnot(.7)};
+const stalkers=enemyConfigs.map(([x,z,type],i)=>{const e=enemyMakers[type](i);e.position.set(x,.05,z);e.userData.home=new THREE.Vector3(x,.05,z);e.userData.speed=type==='alien'?5.2:type==='hollow'?6.5:type==='knot'?7.1:type==='crawler'?6.8:6.1;e.userData.type=type;scene.add(e);return e;});
 const snakes=Array.from({length:16},(_,i)=>[i%2?-14:16,-180-i*280]).map(([x,z],i)=>{const s=makeSnake(.82);s.position.set(x,0,z);s.rotation.y=Math.PI/2;s.userData.home=new THREE.Vector3(x,0,z);s.userData.phase=i*.91+Math.random()*Math.PI;s.userData.patrolRadius=8+Math.random()*7;s.userData.speed=2.1+Math.random()*.8;scene.add(s);return s;});
 const treeEnemies=Array.from({length:12},(_,i)=>[i%2?-18:17,-520-i*350]).map(([x,z])=>{const t=makeTreeEnemy(1.25);t.position.set(x,0,z);t.userData.collisionRadius=3.15;obstacles.push(t);scene.add(t);return t;});
 const monsterCar=makeMonsterCar(.88);monsterCar.position.set(0,0,80);scene.add(monsterCar);
@@ -700,6 +720,7 @@ function animateCow(cow,t,speed){
   cow.userData.arms.forEach((a,i)=>a.rotation.x=Math.sin(t*speed+(i%2)*Math.PI)*.42);
   cow.rotation.z=Math.sin(t*speed*.5)*.025;
 }
+function animateDistortion(enemy,t){if(!enemy.userData.twistParts)return;enemy.userData.twistParts.forEach((part,i)=>{part.rotation.y+=.018+(i%3)*.006;part.rotation.z=Math.sin(t*(2.8+i*.17)+i)*(.1+(i%2)*.08);part.scale.y=1+Math.sin(t*4+i)*.07;});if(enemy.userData.type==='crawler')enemy.position.y=.12+Math.abs(Math.sin(t*7))*.2;if(enemy.userData.type==='hollow')enemy.rotation.z=Math.sin(t*2.2)*.09;if(enemy.userData.type==='knot')enemy.rotation.y+=.025;}
 function animatePlayer(cow,t,moving,sprinting){
   if(cow.userData.canCrawl&&sprinting){
     cow.rotation.x=THREE.MathUtils.lerp(cow.rotation.x,-1.02,.18);cow.position.y=THREE.MathUtils.lerp(cow.position.y,.64,.18);cow.rotation.z=Math.sin(t*18)*.04;
@@ -808,7 +829,7 @@ function tick(){
       enemy.position.addScaledVector(v.normalize(),(enemy.userData.chaseSpeed+timeBoost)*difficulty.enemy*dt);
       if(enemy.userData.type!=='car')enemy.position.x+=Math.sin(t*1.8+activeChasers.indexOf(enemy)*1.7)*dt*.65;
       enemy.rotation.y=Math.atan2(-v.x,-v.z);
-      if(enemy.userData.type==='car')enemy.userData.wheels.forEach(w=>w.rotation.x+=dt*9);else animateCow(enemy,t,enemy.userData.type==='beast'?13:9);
+      if(enemy.userData.type==='car')enemy.userData.wheels.forEach(w=>w.rotation.x+=dt*9);else{animateCow(enemy,t,enemy.userData.type==='beast'?13:9);animateDistortion(enemy,t);}
       if(targetNpc&&d<(enemy.userData.type==='car'?5.4:2.65)){bloodyAttack(targetNpc,enemy);continue;}
       if(!targetNpc&&d<(enemy.userData.type==='car'?6.2:3.3)){shake=1;document.body.classList.add('hit');setTimeout(()=>document.body.classList.remove('hit'),400);damageHeart('event.heartLost',enemy,'death.enemy',{enemyKey:enemy.userData.enemyKey||'enemy.them',enemyParams:enemy.userData.enemyParams});}
     }

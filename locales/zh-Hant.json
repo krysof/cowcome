@@ -200,5 +200,8 @@
   "task.clothHint": "紅色光柱在{direction}約 {distance} 米（{count}/{total}）",
   "direction.left": "左前方",
   "direction.right": "右前方",
-  "direction.ahead": "正前方"
+  "direction.ahead": "正前方",
+  "enemy.crawler": "雙頭爬行物",
+  "enemy.hollow": "空面長肢者",
+  "enemy.knot": "肉結眼獸"
 }
