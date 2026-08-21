@@ -796,11 +796,11 @@ function performNpcShove(){
   const world=target.getWorldPosition(new THREE.Vector3()),dx=world.x-player.position.x,dz=world.z-player.position.z,d=Math.max(.1,Math.hypot(dx,dz)),rightX=Math.cos(player.rotation.y),rightZ=-Math.sin(player.rotation.y),side=(dx*rightX+dz*rightZ)>=0?1:-1,pushX=rightX*side*3.45+dx/d*.35,pushZ=rightZ*side*3.45+dz/d*.35;setTimeout(()=>{if(state==='playing')shoveFriendlyNpc(target,pushX,pushZ);},130);return true;
 }
 const shoveBtn=document.querySelector('#shoveBtn');
-const shoveVisual=document.querySelector('#shoveVisual');
+const shoveVisual=shoveBtn;
 shoveBtn.addEventListener('pointerdown',event=>{if(touchControls&&event.pointerType!=='mouse')return;event.preventDefault();shoveVisual.classList.add('pressed');performNpcShove();});
 const releaseShove=()=>shoveVisual.classList.remove('pressed');
 ['pointerup','pointercancel','pointerleave'].forEach(type=>shoveBtn.addEventListener(type,event=>{if(touchControls&&event.pointerType!=='mouse')return;releaseShove()}));
-const runBtn=document.querySelector('#runHit'),runVisual=document.querySelector('#runVisual'),shoveTouchIds=new Set();
+const runBtn=document.querySelector('#runBtn'),runVisual=runBtn,shoveTouchIds=new Set();
 function touchInside(touch,element,padding=16){const rect=element.getBoundingClientRect();return touch.clientX>=rect.left-padding&&touch.clientX<=rect.right+padding&&touch.clientY>=rect.top-padding&&touch.clientY<=rect.bottom+padding;}
 const activeActionTouches=new Map();
 function syncActionTouches(event){
