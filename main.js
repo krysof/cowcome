@@ -97,18 +97,17 @@ for(let i=0;i<grassCount;i++){
 }
 grassField.instanceMatrix.setUsage(THREE.StaticDrawUsage);grassField.receiveShadow=true;grassField.castShadow=false;grassField.computeBoundingSphere();scene.add(grassField);
 
+const obstacles=[];
 // 低矮起伏、湿地水洼和土色斑块，打破一整张平面的感觉。
 const hillMat=flat(0x52653e),mudMat=flat(0x4b4432),puddleMat=new THREE.MeshStandardMaterial({color:0x273f39,roughness:.28,metalness:.18,transparent:true,opacity:.72});
 for(let i=0;i<110;i++){
-  const side=i%2?1:-1,x=side*(25+Math.random()*35),z=18-i*44-Math.random()*22;
-  mesh(new THREE.SphereGeometry(1,8,5),hillMat,scene,x,-1.1,z,[7+Math.random()*8,2+Math.random()*2.7,9+Math.random()*13]);
+  const side=i%2?1:-1,x=side*(25+Math.random()*35),z=18-i*44-Math.random()*22,sx=7+Math.random()*8,sz=9+Math.random()*13,hill=mesh(new THREE.SphereGeometry(1,8,5),hillMat,scene,x,-1.1,z,[sx,2+Math.random()*2.7,sz]);hill.userData.collisionRadius=Math.min(sx,sz)*.72;obstacles.push(hill);
 }
 for(let i=0;i<95;i++){
   const x=(Math.random()-.5)*42,z=-18-i*51-Math.random()*18,rx=1.3+Math.random()*3.2,rz=.7+Math.random()*1.5;
   mesh(new THREE.CircleGeometry(1,10),i%3?puddleMat:mudMat,scene,x,.035,z,[rx,rz,1],[-Math.PI/2,0,Math.random()*Math.PI]);
 }
 
-const obstacles=[];
 // 废弃隔离区：锈蚀铁网、路障和忽明忽暗的红色警示灯，让草原逐渐变成“里世界”。
 const rustMat=flat(0x4b2d24),wireMat=new THREE.MeshBasicMaterial({color:0x31251f,transparent:true,opacity:.78}),industrialLights=[];
 for(let i=0;i<22;i++){
@@ -121,13 +120,20 @@ for(let i=0;i<22;i++){
 }
 for(let i=0;i<12;i++){const z=-2700-i*92,barrier=new THREE.Group();mesh(new THREE.BoxGeometry(6,.55,.65),rustMat,barrier,0,.7,0,[1,1,1],[0,0,i%2?.08:-.08]);for(const x of [-2.3,2.3])mesh(new THREE.BoxGeometry(.35,1.7,.5),rustMat,barrier,x,.7,0);barrier.position.set((i%2?1:-1)*(9+Math.random()*5),0,z);barrier.rotation.y=(Math.random()-.5)*.5;barrier.userData.collisionRadius=3.3;obstacles.push(barrier);scene.add(barrier);}
 
+const artFruitGeo=new THREE.DodecahedronGeometry(.24,0),artFruitMat=new THREE.MeshBasicMaterial({color:0xf1a62c,fog:false}),artFruits=[];
 function makeRoundTree(scale=1){
   const g=new THREE.Group(),wood=flat(0x494331),leafA=flat(0x283f31),leafB=flat(0x3d5039),h=4+Math.random()*3;
   mesh(new THREE.CylinderGeometry(.22,.45,h,5),wood,g,0,h/2,0);
   const crowns=5+Math.floor(Math.random()*5);for(let i=0;i<crowns;i++){const a=i/crowns*Math.PI*2,r=i?1+Math.random()*1.1:0;mesh(new THREE.DodecahedronGeometry(.85+Math.random()*.55,0),i%2?leafA:leafB,g,Math.cos(a)*r,h+Math.sin(i*1.7)*.65,Math.sin(a)*r,[1,.9+Math.random()*.5,1]);}
+  if(Math.random()>.55)for(let i=0;i<3;i++){const a=i/3*Math.PI*2+Math.random()*.5,fruit=mesh(artFruitGeo,artFruitMat,g,Math.cos(a)*(1.1+Math.random()),h-.15+Math.random()*1.5,Math.sin(a)*(1.1+Math.random()),[.8+Math.random()*.7,.8+Math.random()*.7,.8+Math.random()*.7]);fruit.userData.phase=Math.random()*Math.PI*2;fruit.userData.baseY=fruit.position.y;artFruits.push(fruit);}
   g.scale.setScalar(scale);return g;
 }
 for(let i=0;i<190;i++){const scale=.75+Math.random()*.8,t=makeRoundTree(scale),side=i%2?1:-1;t.position.set(side*(24+Math.random()*38),0,20-Math.random()*WORLD_DEPTH);t.rotation.y=Math.random()*Math.PI;t.userData.collisionRadius=1.2*scale;obstacles.push(t);scene.add(t);}
+// 参考影片拼贴画的黑色盘根树、墨绿色云冠和金色果实，作为每段路上的视觉地标。
+const paintedTreeWood=flat(0x211f1c),paintedLeafA=flat(0x172d25),paintedLeafB=flat(0x324535),paintedTrees=[];
+function makePaintedTree(index){const g=new THREE.Group(),lean=(index%2?1:-1)*(1.2+index%3*.35),height=12+(index%4)*1.4,trunkCurve=new THREE.CatmullRomCurve3([new THREE.Vector3(0,0,0),new THREE.Vector3(lean*.25,height*.3,0),new THREE.Vector3(-lean*.18,height*.65,.2),new THREE.Vector3(lean,height,0)]);mesh(new THREE.TubeGeometry(trunkCurve,9,.58,6,false),paintedTreeWood,g,0,0,0);for(let b=0;b<3;b++){const side=b%2?1:-1,y=height*(.52+b*.16),curve=new THREE.CatmullRomCurve3([new THREE.Vector3(lean*(y/height),y,0),new THREE.Vector3(side*(2.2+b*.5),y+1.3,.1),new THREE.Vector3(side*(4.2+b*.7),y+2.1,0)]);mesh(new THREE.TubeGeometry(curve,6,.23,5,false),paintedTreeWood,g,0,0,0);}for(let i=0;i<7;i++){const a=i/7*Math.PI*2,r=i?2.2+(i%2)*.8:0;mesh(new THREE.DodecahedronGeometry(1.35+(i%3)*.25,0),i%2?paintedLeafA:paintedLeafB,g,lean+Math.cos(a)*r,height+1+Math.sin(a)*1.2,Math.sin(a)*r,[1.2,.88,1]);}for(let i=0;i<5;i++){const a=i/5*Math.PI*2,fruit=mesh(artFruitGeo,artFruitMat,g,lean+Math.cos(a)*(2.1+i%2),height+.7+Math.sin(a)*1.7,Math.sin(a)*(2+i%2),[1.25,1.25,1.25]);fruit.userData.phase=index*.7+i;fruit.userData.baseY=fruit.position.y;artFruits.push(fruit);}return g;}
+for(let i=0;i<30;i++){const tree=makePaintedTree(i),side=i%2?1:-1;tree.position.set(side*(16+(i%3)*4),0,-90-i*166);tree.rotation.y=(i%5-2)*.12;tree.userData.collisionRadius=1.85;obstacles.push(tree);paintedTrees.push(tree);scene.add(tree);}
+const paintedMoons=[];[-620,-1580,-2520,-3460,-4380].forEach((z,i)=>{const moon=mesh(new THREE.CircleGeometry(6.5+i%2*2,28),new THREE.MeshBasicMaterial({color:i<2?0xf2ad3b:i===2?0xc7d4c8:0xb95b32,transparent:true,opacity:.76,side:THREE.DoubleSide,fog:false}),scene,(i%2?1:-1)*37,17,z,[1,1,1],[0,0,0]);moon.userData.phase=i*.8;paintedMoons.push(moon);});
 function makeNiuLai(scale=1, dark=false){
   const g=new THREE.Group();
   const fur=flat(dark?0x342019:0xe97837), muzzle=flat(dark?0x84624e:0xf2d3a0);
@@ -804,6 +810,7 @@ function tick(){
   rainGeo.attributes.position.needsUpdate=true;rain.position.set(player.position.x,0,player.position.z);rainMat.opacity=(.22+Math.sin(t*.17)*.07)*difficulties[selectedCharacter].rain;
   if(snow.visible){const sp=snowGeo.attributes.position.array;for(let i=0;i<snowCount;i++){const p=i*3;sp[p]+=(Math.sin(t*.8+i)*1.8-3.6)*dt;sp[p+1]-=(5+Math.sin(i)*2)*dt;if(sp[p+1]<-2){sp[p]=(Math.random()-.5)*90;sp[p+1]=38+Math.random()*5;sp[p+2]=(Math.random()-.5)*90;}}snowGeo.attributes.position.needsUpdate=true;snow.position.set(player.position.x,0,player.position.z);snow.material.opacity=.92*snowBlend;}
   gateRing.rotation.z=t*.42;gateRing.scale.setScalar(1+Math.sin(t*2.1)*.055);gateBeam.material.opacity=.1+Math.sin(t*1.5)*.055;beacon.intensity=230+Math.sin(t*2.4)*70;gateSign.material.opacity=.78+Math.sin(t*2.2)*.22;
+  artFruits.forEach((fruit,i)=>{fruit.position.y=fruit.userData.baseY+Math.sin(t*1.35+fruit.userData.phase)*.08;fruit.rotation.y=t*.25+i;});paintedMoons.forEach(moon=>{moon.lookAt(camera.position);moon.material.opacity=.68+Math.sin(t*.45+moon.userData.phase)*.1;});
   strangeBirds.forEach((b,i)=>{
     const panic=elapsed<(b.userData.panicUntil||0),flight=panic?4.2:1;b.position.z-=b.userData.speed*flight*dt;b.position.x+=Math.sin(t*(panic?2.8:.7)+b.userData.phase)*dt*(panic?6:1.7);b.position.y+=(panic?5:Math.sin(t*1.1+b.userData.phase)*.18)*dt;
     if(b.position.z<player.position.z-68){b.position.z=player.position.z+42+Math.random()*38;b.position.x=player.position.x+(Math.random()-.5)*62;b.position.y=9+Math.random()*15;}
@@ -849,7 +856,7 @@ function tick(){
     if(progress>runLength*.145)storyHerd.forEach((cow,i)=>{if(cow.userData.escaped||cow.userData.eaten)return;cow.visible=true;cow.userData.active=true;if(holdNpcInSafeZone(cow,t))return;cow.position.z-=dt*(4.7+(i%3)*.16);cow.position.x+=(cow.userData.escapeX||0)*dt+Math.sin(t*1.7+i)*dt*.34;animateCow(cow,t,9+i%3);if(cow.position.z<exitZ-20){cow.userData.escaped=true;cow.visible=false;}});
     const snowStart=runLength*.4,snowEnd=runLength*.6,snowChapter=progress>snowStart&&progress<snowEnd,snowActive=snowChapter&&weatherActive,rainActive=weatherActive&&!snowChapter;
     snowBlend=THREE.MathUtils.lerp(snowBlend,snowActive?1:0,1-Math.pow(.0005,dt));snow.visible=snowBlend>.015;document.body.classList.toggle('snow-haunting',snowBlend>.28);document.body.classList.toggle('rain-active',rainActive);
-    let baseBg=selectedCharacter==='orange'?0x93a07a:selectedCharacter==='yellow'?0x84926c:0x626a59,groundBase=0x59683d;if(currentChapter===1){baseBg=0x526158;groundBase=0x334737;}else if(currentChapter===3){baseBg=0x433831;groundBase=0x382f29;}else if(currentChapter===4){baseBg=0x3c2522;groundBase=0x2c201e;}scene.background.set(baseBg).lerp(snowBgColor,snowBlend*.86);scene.fog.color.set(baseBg).lerp(snowFogColor,snowBlend*.8);scene.fog.density=difficulty.fog*(1.08+snowBlend*1.45+(currentChapter===1?.42:currentChapter>=3?.3:0));ground.material.color.set(groundBase).lerp(snowGroundColor,snowBlend*.82);rainMat.opacity=rainActive?(currentChapter===2?.12:.5)*(1-snowBlend*.78):0;
+    let baseBg=selectedCharacter==='orange'?0xa49368:selectedCharacter==='yellow'?0x837e61:0x5f6255,groundBase=0x59683d;if(currentChapter===1){baseBg=0x42666a;groundBase=0x304a3d;}else if(currentChapter===2){baseBg=0x7b7180;groundBase=0x4a5548;}else if(currentChapter===3){baseBg=0x583b31;groundBase=0x3b302a;}else if(currentChapter===4){baseBg=0x39211f;groundBase=0x281b1a;}scene.background.set(baseBg).lerp(snowBgColor,snowBlend*.86);scene.fog.color.set(baseBg).lerp(snowFogColor,snowBlend*.8);scene.fog.density=difficulty.fog*(1.08+snowBlend*1.45+(currentChapter===1?.42:currentChapter>=3?.3:0));ground.material.color.set(groundBase).lerp(snowGroundColor,snowBlend*.82);rainMat.opacity=rainActive?(currentChapter===2?.12:.5)*(1-snowBlend*.78):0;
     if(snowStage===0&&snowChapter){snowStage=1;snowGhost.position.set(player.position.x+(Math.random()<.5?-1:1)*9,.1,player.position.z+35);snowGhost.visible=true;terrorFlash();say('event.snowStart',3600);}
     if(snowStage===1&&progress>snowStart+(snowEnd-snowStart)*.48){snowStage=2;snowGhost.position.set(player.position.x+(Math.random()<.5?-1:1)*5,.1,player.position.z+19);terrorFlash();say('event.snowNear',3000);}
     if(snowStage<3&&progress>=snowEnd){snowStage=3;snowGhost.visible=false;terrorFlash();say('event.snowEnd',3200);}
