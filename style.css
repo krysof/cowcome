@@ -139,11 +139,18 @@ button { border:0; font:inherit; cursor:pointer; }
 .result-actions { display:flex; justify-content:center; gap:12px; flex-wrap:wrap; }
 .result button.secondary { color:#fff; background:#222; box-shadow:7px 7px 0 #000; }
 .mobile-controls { display:none; }
+.npc-finger{position:fixed;z-index:18;left:0;top:0;pointer-events:none;opacity:0;font-size:64px;line-height:1;filter:drop-shadow(0 9px 6px #0009);transform:translate(-50%,-78%) rotate(var(--finger-angle,0rad)) scale(.72);transform-origin:50% 82%;transition:opacity .12s,transform .08s;will-change:left,top,transform;user-select:none}.npc-finger.show{opacity:.94;transform:translate(-50%,-78%) rotate(var(--finger-angle,0rad)) scale(1)}
 /* 桌面端为语言按钮保留独立栏位，生命与体力区永远停在它左侧。 */
 @media(min-width:701px) and (pointer:fine){.playing .hud-right{padding-right:190px}.playing .language-picker{top:18px;right:24px}.playing .language-picker>button{min-width:142px;justify-content:center}}
 body.glitch #game { filter:blur(1.1px) hue-rotate(80deg) contrast(1.7); transform:translateX(4px); }
 body.hit #game{animation:hit .22s linear 2}
 @keyframes hit{0%,100%{transform:none}50%{transform:translateX(7px) scale(1.006);filter:brightness(2) saturate(2)}}
+/* iPhone/低内存设备避免整屏实时模糊和高频噪点重绘；闪屏、变色和血色效果仍完整保留。 */
+.performance-mode #game{filter:saturate(var(--game-sat,.68)) brightness(var(--game-light,.86)) contrast(var(--game-contrast,1.12))}
+.performance-mode .noise{animation-duration:1.1s;opacity:.13}
+.performance-mode .language-picker>button,.performance-mode .language-menu{backdrop-filter:none}
+.performance-mode body.heartbeat #game{filter:saturate(var(--game-sat,.68)) brightness(calc(var(--game-light,.86) * .74)) contrast(1.42)}
+.performance-mode body.glitch #game{filter:hue-rotate(80deg) contrast(1.7)}
 @media(max-width:700px), (pointer:coarse) {
   .language-picker{right:max(12px,calc(env(safe-area-inset-right) + 8px));top:max(32px,calc(env(safe-area-inset-top) + 26px))}.language-picker>button{width:42px;padding:0;justify-content:center}.language-picker>button b{display:none}.language-menu{right:0;top:47px}
   #game{filter:blur(.32px) saturate(var(--game-sat,.68)) brightness(var(--game-light,.86)) contrast(var(--game-contrast,1.12))}

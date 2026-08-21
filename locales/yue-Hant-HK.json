@@ -135,7 +135,7 @@
   "death.enemy": "{enemy}撲低牛來，咬開啲毛，鮮血溝埋落雨水。",
   "death.snake": "草蛇纏住牛來四隻腳，後面啲怪物追到嚟將佢撲低撕咬。",
   "death.tree": "怪樹卡住牛來。佢哋追到上嚟撲埋去，直到雨水完全變紅。",
-  "death.bird": "怪鳥啲污糟嘢由霧入面跌落嚟，直頭砸穿咗牛來個身。",
+  "death.bird": "怪鳥喺霧入面屙落嚟嘅鳥糞，狠狠噉砸中牛來。",
   "title.cry": "媽媽——！",
   "alt.niulaiPortrait": "牛來頭像",
   "alt.bullPortrait": "大角頭像",
@@ -144,8 +144,8 @@
   "alt.appIcon": "牛來應用程式圖示",
   "event.heartLost": "受傷喇。仲有 {count} 個心。",
   "event.snakeHit": "草蛇咬傷你喇！",
-  "event.birdHit": "天上跌咗污糟嘢落嚟！",
-  "event.birdNpcKilled": "怪鳥跌落嚟嘅污糟嘢砸死咗一個逃難者。",
+  "event.birdHit": "怪鳥屙落嚟嘅鳥糞砸中你！",
+  "event.birdNpcKilled": "怪鳥屙落嚟嘅鳥糞砸死咗一個逃難者。",
   "event.treeHit": "怪樹抓傷你喇！",
   "chapter.1.number": "第一章",
   "chapter.1.title": "草原逃亡",
@@ -210,5 +210,12 @@
   "roadNpc.0": "唔好跟住我跑。前面個圍欄入面仲有牛未死。",
   "roadNpc.1": "我聽到媽媽喺霧入面叫，但把聲係地下傳上嚟。",
   "roadNpc.2": "火一熄就好走。安全區從來都唔係真係安全。",
-  "roadNpc.watcher": "黑影冇擘嘴，把聲卻由你身後傳嚟：繼續行。"
+  "roadNpc.watcher": "黑影冇擘嘴，把聲卻由你身後傳嚟：繼續行。",
+  "passingNpc.0": "唔好停！佢哋專食包尾嗰個。",
+  "passingNpc.1": "前面個圍欄可以抖吓，但千祈唔好留太耐。",
+  "passingNpc.2": "我啱啱見到有隻牛俾人拖咗入霧。",
+  "passingNpc.3": "唔好信霧入面嗌「媽媽」嗰把聲。",
+  "passingNpc.4": "慳住啲體力，前面仲有好遠。",
+  "passingNpc.5": "如果我跟唔上……唔好擰轉頭。",
+  "event.npcShoved": "你伸出一隻手指，將阻住條路嘅同伴捽開。"
 }

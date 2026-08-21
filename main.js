@@ -60,20 +60,34 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xb9c98a);
 scene.fog = new THREE.FogExp2(0xa7b886, 0.018);
 const camera = new THREE.PerspectiveCamera(66, innerWidth / innerHeight, .1, 900);
-const mobileDevice=matchMedia('(max-width:700px), (pointer:coarse)').matches,lowMemory=Number(navigator.deviceMemory||8)<=4;
-const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, powerPreference:'high-performance' });
-// 手机不再固定在 1.5 倍：高端机使用 2.25 倍，低内存机也保留 1.8 倍，避免微信里发糊。
-renderer.setPixelRatio(Math.min(devicePixelRatio||1,mobileDevice?(lowMemory?1.8:2.25):1.75));
+const mobileDevice=matchMedia('(max-width:700px), (pointer:coarse)').matches,
+  lowMemory=Number(navigator.deviceMemory||8)<=4,
+  appleMobile=/iPhone|iPad|iPod/i.test(navigator.userAgent),
+  cpuCores=Number(navigator.hardwareConcurrency||4),
+  performanceMode=mobileDevice&&(appleMobile||lowMemory||cpuCores<=6);
+// iOS Safari 不提供 deviceMemory，旧逻辑会把 iPhone 12 Pro Max 错当成高端机并以 2.25x 渲染。
+// 自动性能档保留关键玩法与怪物，只降低不可见的 GPU/CPU 开销；分辨率还会按实际帧耗微调。
+document.documentElement.classList.toggle('performance-mode',performanceMode);
+const quality={
+  hills:performanceMode?70:110,puddles:performanceMode?58:95,roundTrees:performanceMode?112:190,
+  deadTrees:performanceMode?165:280,grass:performanceMode?15000:(mobileDevice?26000:56000),
+  rain:performanceMode?300:(mobileDevice?480:850),snow:performanceMode?330:(mobileDevice?520:900),
+  birds:performanceMode?12:18,particles:performanceMode?20:42
+};
+const maxRenderDpr=Math.min(devicePixelRatio||1,performanceMode?1.42:(mobileDevice?1.8:1.75)),minRenderDpr=performanceMode?1.08:maxRenderDpr;
+let renderDpr=maxRenderDpr,qualitySampleStart=performance.now(),qualityFrameTime=0,qualityFrames=0;
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:!performanceMode, powerPreference:'high-performance',precision:performanceMode?'mediump':'highp' });
+renderer.setPixelRatio(renderDpr);
 renderer.setSize(innerWidth, innerHeight);
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.enabled = !performanceMode;
+renderer.shadowMap.type = mobileDevice?THREE.PCFShadowMap:THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 scene.add(new THREE.HemisphereLight(0xf5f0cf, 0x343b26, 2.1));
 const sun = new THREE.DirectionalLight(0xffe9a8, 3.2);
-sun.position.set(-30, 55, 25); sun.castShadow = true;
+sun.position.set(-30, 55, 25); sun.castShadow = !performanceMode;
 sun.shadow.camera.left=-30; sun.shadow.camera.right=30; sun.shadow.camera.top=30; sun.shadow.camera.bottom=-30;
-sun.shadow.mapSize.set(1024,1024); scene.add(sun);
+sun.shadow.mapSize.set(mobileDevice?512:1024,mobileDevice?512:1024); scene.add(sun);
 const sunBall = new THREE.Mesh(new THREE.SphereGeometry(6,10,8),new THREE.MeshBasicMaterial({color:0xff5835}));
 sunBall.position.set(-48,30,-100); scene.add(sunBall);
 
@@ -86,13 +100,13 @@ for(let i=0;i<pos.count;i++){ const x=pos.getX(i),y=pos.getY(i); pos.setZ(i,Math
 ground.geometry.computeVertexNormals(); scene.add(ground);
 
 function mesh(geo,mat,parent,x,y,z,scale=[1,1,1],rot=[0,0,0]){
-  const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.scale.set(...scale);m.rotation.set(...rot);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;
+  const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);m.scale.set(...scale);m.rotation.set(...rot);m.castShadow=!performanceMode;m.receiveShadow=!performanceMode;parent.add(m);return m;
 }
 function tuft(parent,mat,x,y,z,s=.18,rot=0){return mesh(new THREE.ConeGeometry(s,s*2.4,4),mat,parent,x,y,z,[1,1,1],[0,0,rot]);}
 
 // 有实际高度的草层：单一 InstancedMesh 保持手机性能，同时让角色真正穿过草而不是贴图地板。
 function makeGrassGeometry(){const vertices=[];for(let i=0;i<3;i++){const a=i*Math.PI/3,px=Math.cos(a)*.085,pz=Math.sin(a)*.085,lx=Math.cos(a+Math.PI/2)*.12,lz=Math.sin(a+Math.PI/2)*.12;vertices.push(-px,0,-pz,px,0,pz,lx,1,lz);}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));g.computeVertexNormals();return g;}
-const grassCount=innerWidth<700?32000:56000,grassGeo=makeGrassGeometry(),grassMat=new THREE.MeshStandardMaterial({color:0xffffff,flatShading:true,roughness:1,side:THREE.DoubleSide});
+const grassCount=quality.grass,grassGeo=makeGrassGeometry(),grassMat=new THREE.MeshStandardMaterial({color:0xffffff,flatShading:true,roughness:1,side:THREE.DoubleSide});
 const grassField=new THREE.InstancedMesh(grassGeo,grassMat,grassCount),grassDummy=new THREE.Object3D(),grassColor=new THREE.Color();
 for(let i=0;i<grassCount;i++){
   const x=(Math.random()-.5)*134,z=24-Math.random()*WORLD_DEPTH,path=Math.abs(x)<7,h=(path?.52:.7)+Math.random()*(path?.62:1.15),w=.65+Math.random()*.85;
@@ -104,10 +118,10 @@ grassField.instanceMatrix.setUsage(THREE.StaticDrawUsage);grassField.receiveShad
 const obstacles=[];
 // 低矮起伏、湿地水洼和土色斑块，打破一整张平面的感觉。
 const hillMat=flat(0x52653e),mudMat=flat(0x4b4432),puddleMat=new THREE.MeshStandardMaterial({color:0x273f39,roughness:.28,metalness:.18,transparent:true,opacity:.72});
-for(let i=0;i<110;i++){
+for(let i=0;i<quality.hills;i++){
   const side=i%2?1:-1,x=side*(25+Math.random()*35),z=18-i*44-Math.random()*22,sx=7+Math.random()*8,sz=9+Math.random()*13,hill=mesh(new THREE.SphereGeometry(1,8,5),hillMat,scene,x,-1.1,z,[sx,2+Math.random()*2.7,sz]);hill.userData.collisionRadius=Math.min(sx,sz)*.72;obstacles.push(hill);
 }
-for(let i=0;i<95;i++){
+for(let i=0;i<quality.puddles;i++){
   const x=(Math.random()-.5)*42,z=-18-i*51-Math.random()*18,rx=1.3+Math.random()*3.2,rz=.7+Math.random()*1.5;
   mesh(new THREE.CircleGeometry(1,10),i%3?puddleMat:mudMat,scene,x,.035,z,[rx,rz,1],[-Math.PI/2,0,Math.random()*Math.PI]);
 }
@@ -132,7 +146,7 @@ function makeRoundTree(scale=1){
   if(Math.random()>.55)for(let i=0;i<3;i++){const a=i/3*Math.PI*2+Math.random()*.5,fruit=mesh(artFruitGeo,artFruitMat,g,Math.cos(a)*(1.1+Math.random()),h-.15+Math.random()*1.5,Math.sin(a)*(1.1+Math.random()),[.8+Math.random()*.7,.8+Math.random()*.7,.8+Math.random()*.7]);fruit.userData.phase=Math.random()*Math.PI*2;fruit.userData.baseY=fruit.position.y;artFruits.push(fruit);}
   g.scale.setScalar(scale);return g;
 }
-for(let i=0;i<190;i++){const scale=.75+Math.random()*.8,t=makeRoundTree(scale),side=i%2?1:-1;t.position.set(side*(24+Math.random()*38),0,20-Math.random()*WORLD_DEPTH);t.rotation.y=Math.random()*Math.PI;t.userData.collisionRadius=1.2*scale;obstacles.push(t);scene.add(t);}
+for(let i=0;i<quality.roundTrees;i++){const scale=.75+Math.random()*.8,t=makeRoundTree(scale),side=i%2?1:-1;t.position.set(side*(24+Math.random()*38),0,20-Math.random()*WORLD_DEPTH);t.rotation.y=Math.random()*Math.PI;t.userData.collisionRadius=1.2*scale;obstacles.push(t);scene.add(t);}
 // 参考影片拼贴画的黑色盘根树、墨绿色云冠和金色果实，作为每段路上的视觉地标。
 const paintedTreeWood=flat(0x211f1c),paintedLeafA=flat(0x172d25),paintedLeafB=flat(0x324535),paintedTrees=[];
 function makePaintedTree(index){const g=new THREE.Group(),lean=(index%2?1:-1)*(1.2+index%3*.35),height=12+(index%4)*1.4,trunkCurve=new THREE.CatmullRomCurve3([new THREE.Vector3(0,0,0),new THREE.Vector3(lean*.25,height*.3,0),new THREE.Vector3(-lean*.18,height*.65,.2),new THREE.Vector3(lean,height,0)]);mesh(new THREE.TubeGeometry(trunkCurve,9,.58,6,false),paintedTreeWood,g,0,0,0);for(let b=0;b<3;b++){const side=b%2?1:-1,y=height*(.52+b*.16),curve=new THREE.CatmullRomCurve3([new THREE.Vector3(lean*(y/height),y,0),new THREE.Vector3(side*(2.2+b*.5),y+1.3,.1),new THREE.Vector3(side*(4.2+b*.7),y+2.1,0)]);mesh(new THREE.TubeGeometry(curve,6,.23,5,false),paintedTreeWood,g,0,0,0);}for(let i=0;i<7;i++){const a=i/7*Math.PI*2,r=i?2.2+(i%2)*.8:0;mesh(new THREE.DodecahedronGeometry(1.35+(i%3)*.25,0),i%2?paintedLeafA:paintedLeafB,g,lean+Math.cos(a)*r,height+1+Math.sin(a)*1.2,Math.sin(a)*r,[1.2,.88,1]);}for(let i=0;i<5;i++){const a=i/5*Math.PI*2,fruit=mesh(artFruitGeo,artFruitMat,g,lean+Math.cos(a)*(2.1+i%2),height+.7+Math.sin(a)*1.7,Math.sin(a)*(2+i%2),[1.25,1.25,1.25]);fruit.userData.phase=index*.7+i;fruit.userData.baseY=fruit.position.y;artFruits.push(fruit);}return g;}
@@ -368,7 +382,7 @@ const finalHerd=Array.from({length:13},(_,i)=>{const cow=i===0?makeHerdCow(.9):m
 const itemTypes=['herb','flashlight','radio','smoke'];
 const itemPickups=itemTypes.map((type,i)=>{const colors=[0x65d451,0xffef8a,0x61b6da,0xc7c7c7],g=new THREE.Group();mesh(new THREE.DodecahedronGeometry(.65,0),new THREE.MeshBasicMaterial({color:colors[i],fog:false}),g,0,1,0);const ring=mesh(new THREE.TorusGeometry(1,.09,5,16),new THREE.MeshBasicMaterial({color:colors[i],fog:false}),g,0,1,0,[1,1,1],[Math.PI/2,0,0]);g.userData={type,ring,collected:false};scene.add(g);return g;});
 const pickupEffects=[],itemColors={herb:0x65ff51,flashlight:0xfff27c,radio:0x58cfff,smoke:0xe5e5e5};
-function spawnPickupParticles(item){const group=new THREE.Group(),particles=[],color=itemColors[item.userData.type]||0xffffff,mat=new THREE.MeshBasicMaterial({color,transparent:true,opacity:1,fog:false,blending:THREE.AdditiveBlending});for(let i=0;i<42;i++){const particle=mesh(new THREE.DodecahedronGeometry(.11+Math.random()*.22,0),mat.clone(),group,0,1.2,0);const angle=Math.random()*Math.PI*2,speed=5+Math.random()*11;particle.userData.velocity=new THREE.Vector3(Math.cos(angle)*speed,3+Math.random()*10,Math.sin(angle)*speed);particle.userData.spin=(Math.random()-.5)*14;particles.push(particle);}const ring=mesh(new THREE.RingGeometry(.8,1.18,24),new THREE.MeshBasicMaterial({color,transparent:true,opacity:1,side:THREE.DoubleSide,fog:false,blending:THREE.AdditiveBlending}),group,0,.18,0,[1,1,1],[-Math.PI/2,0,0]),light=new THREE.PointLight(color,95,34);light.position.y=2;group.add(light);group.position.copy(item.position);scene.add(group);pickupEffects.push({group,particles,ring,light,age:0});}
+function spawnPickupParticles(item){const group=new THREE.Group(),particles=[],color=itemColors[item.userData.type]||0xffffff,mat=new THREE.MeshBasicMaterial({color,transparent:true,opacity:1,fog:false,blending:THREE.AdditiveBlending});for(let i=0;i<quality.particles;i++){const particle=mesh(new THREE.DodecahedronGeometry(.11+Math.random()*.22,0),mat.clone(),group,0,1.2,0);const angle=Math.random()*Math.PI*2,speed=5+Math.random()*11;particle.userData.velocity=new THREE.Vector3(Math.cos(angle)*speed,3+Math.random()*10,Math.sin(angle)*speed);particle.userData.spin=(Math.random()-.5)*14;particles.push(particle);}const ring=mesh(new THREE.RingGeometry(.8,1.18,24),new THREE.MeshBasicMaterial({color,transparent:true,opacity:1,side:THREE.DoubleSide,fog:false,blending:THREE.AdditiveBlending}),group,0,.18,0,[1,1,1],[-Math.PI/2,0,0]),light=new THREE.PointLight(color,95,34);light.position.y=2;group.add(light);group.position.copy(item.position);scene.add(group);pickupEffects.push({group,particles,ring,light,age:0});}
 function playPickupSound(type){const notes=type==='radio'?[330,495,742]:type==='flashlight'?[520,780,1040]:type==='herb'?[392,523,659]:[185,277,415];notes.forEach((note,i)=>setTimeout(()=>sound(note,.24,'triangle',.085),i*75));}
 const forkWalls=Array.from({length:8},(_,i)=>{const g=new THREE.Group(),mat=flat(i%2?0x34352f:0x4d4036);for(const side of [-1,1])mesh(new THREE.BoxGeometry(22,5,2),mat,g,side*18,2.5,0);g.userData.gapSide=i%2?1:-1;scene.add(g);return g;});
 const animalActors=[...herdCows,...storyHerd,...strangeTravellers,...finalHerd,...safeZones.flatMap(zone=>zone.userData.residents)];
@@ -382,11 +396,15 @@ function resolvePlayerDynamicSolids(){
   for(const zone of safeZones){if(!zone.visible)continue;const lx=player.position.x-zone.position.x,lz=player.position.z-zone.position.z;if(Math.abs(Math.abs(lz)-19)<2.05&&Math.abs(lx)>4.4)player.position.z=zone.position.z+(lz>0?21.05:-21.05);if(Math.abs(Math.abs(lx)-20)<2.05&&Math.abs(lz)<19)player.position.x=zone.position.x+(lx>0?22.05:-22.05);pushPlayerFromPoint(zone.position.x-13,zone.position.z+1,6.55);pushPlayerFromPoint(zone.position.x+5,zone.position.z+1,3.2);}
   if(falseGate.visible){pushPlayerFromPoint(falseGate.position.x-8,falseGate.position.z,2.35);pushPlayerFromPoint(falseGate.position.x+8,falseGate.position.z,2.35);const dz=player.position.z-falseGate.position.z;if(falseGate.userData.triggered&&Math.abs(player.position.x-falseGate.position.x)<7&&Math.abs(dz)<2.4)player.position.z=falseGate.position.z+(dz>=0?2.4:-2.4);}pushPlayerFromPoint(gate.position.x-12,gate.position.z,3.55);pushPlayerFromPoint(gate.position.x+12,gate.position.z,3.55);
 }
-function releaseSafeRefugees(zoneIndex){animalActors.forEach(animal=>{if(animal.userData.refugeZone!==zoneIndex)return;animal.userData.refugeZone=-1;animal.userData.escapeX=(animal.id%2?1:-1)*(2.8+animal.id%4);animal.userData.fleeing=true;animal.userData.active=true;});}
-function holdNpcInSafeZone(animal,t){
+function releaseSafeRefugees(zoneIndex){animalActors.forEach(animal=>{if(animal.userData.refugeZone!==zoneIndex)return;animal.userData.refugeZone=-1;animal.userData.refugeParked=false;animal.userData.refugeOffset=null;animal.userData.escapeX=(animal.id%2?1:-1)*(2.8+animal.id%4);animal.userData.fleeing=true;animal.userData.active=true;});}
+function holdNpcInSafeZone(animal,t,dt=.016){
   if(!animal.visible||animal.userData.eaten||animal.userData.escaped||safeZones.some(zone=>animal.parent===zone))return false;
-  const current=animal.userData.refugeZone;if(Number.isInteger(current)&&current>=0){const zone=safeZones[current];if(!zone.userData.broken&&!zone.userData.passed){animateCow(animal,t,1.2);return true;}animal.userData.refugeZone=-1;animal.userData.escapeX=(animal.id%2?1:-1)*(2.8+animal.id%4);animal.userData.fleeing=true;animal.userData.active=true;}
-  animal.getWorldPosition(collisionPoint);for(let i=0;i<safeZones.length;i++){const zone=safeZones[i],dx=collisionPoint.x-zone.position.x,dz=collisionPoint.z-zone.position.z;if(zone.visible&&!zone.userData.broken&&!zone.userData.passed&&Math.abs(dx)<16.5&&Math.abs(dz)<16.5){animal.userData.refugeZone=i;animal.userData.escapeX=0;animateCow(animal,t,1.2);return true;}}
+  const current=animal.userData.refugeZone;if(Number.isInteger(current)&&current>=0){const zone=safeZones[current];if(!zone.userData.broken&&!zone.userData.passed){
+    // 进入后继续走到围栏两侧的候场位，绝不在中央门洞原地停下堵住玩家和后续牛群。
+    const offset=animal.userData.refugeOffset||{x:(animal.id%2?1:-1)*(9+(animal.id%3)*2.4),z:-10+(animal.id%5)*5},tx=zone.position.x+offset.x,tz=zone.position.z+offset.z,dx=tx-animal.position.x,dz=tz-animal.position.z,d=Math.hypot(dx,dz);
+    if(d>.7){const speed=6.2;animal.position.x+=dx/d*speed*dt;animal.position.z+=dz/d*speed*dt;animal.rotation.y=Math.atan2(-dx,-dz);animateCow(animal,t,7);animal.userData.refugeParked=false;}else{animal.userData.refugeParked=true;animateCow(animal,t,1.2);}return true;
+  }animal.userData.refugeZone=-1;animal.userData.refugeParked=false;animal.userData.refugeOffset=null;animal.userData.escapeX=(animal.id%2?1:-1)*(2.8+animal.id%4);animal.userData.fleeing=true;animal.userData.active=true;}
+  animal.getWorldPosition(collisionPoint);for(let i=0;i<safeZones.length;i++){const zone=safeZones[i],dx=collisionPoint.x-zone.position.x,dz=collisionPoint.z-zone.position.z;if(zone.visible&&!zone.userData.broken&&!zone.userData.passed&&Math.abs(dx)<16.5&&Math.abs(dz)<16.5){animal.userData.refugeZone=i;animal.userData.refugeParked=false;animal.userData.refugeOffset={x:(animal.id%2?1:-1)*(9+(animal.id%3)*2.4),z:-10+(animal.id%5)*5};animal.userData.escapeX=0;animateCow(animal,t,7);return true;}}
   return false;
 }
 function knockObstacle(obstacle,animal){
@@ -406,10 +424,10 @@ function steerNpcAroundObstacles(animal,dt){
   if(!animal.visible||animal.userData.eaten||animal.userData.escaped||!animal.userData.avoidTimer)return;animal.userData.avoidTimer=Math.max(0,animal.userData.avoidTimer-dt);animal.getWorldPosition(collisionPoint);const amount=(animal.userData.avoidSide||1)*dt*9.5;collisionPoint.x+=amount;if(animal.parent&&animal.parent!==scene){collisionLocal.copy(collisionPoint);animal.parent.worldToLocal(collisionLocal);animal.position.x=collisionLocal.x;}else animal.position.x=collisionPoint.x;animal.rotation.y=THREE.MathUtils.lerp(animal.rotation.y,-amount*.14,.22);if(!animal.userData.avoidTimer)animal.userData.avoidSide=0;
 }
 function resolvePlayerAnimalCollision(){
-  for(const animal of animalActors){if(!animal.visible||animal.userData.eaten||animal.userData.escaped)continue;animal.getWorldPosition(collisionPoint);const radius=(animal.userData.collisionRadius??(animal.userData.isNpc?1.35:1.5))+1.05,dx=player.position.x-collisionPoint.x,dz=player.position.z-collisionPoint.z,d2=dx*dx+dz*dz;if(d2>=radius*radius)continue;if(d2<.0001){player.position.z+=radius;continue;}const d=Math.sqrt(d2),push=radius-d;player.position.x+=dx/d*push;player.position.z+=dz/d*push;}
+  for(const animal of animalActors){if(!animal.visible||animal.userData.eaten||animal.userData.escaped||Number.isInteger(animal.userData.refugeZone)&&animal.userData.refugeZone>=0&&!animal.userData.refugeParked)continue;animal.getWorldPosition(collisionPoint);const radius=(animal.userData.collisionRadius??(animal.userData.isNpc?1.35:1.5))+1.05,dx=player.position.x-collisionPoint.x,dz=player.position.z-collisionPoint.z,d2=dx*dx+dz*dz;if(d2>=radius*radius)continue;if(d2<.0001){player.position.z+=radius;continue;}const d=Math.sqrt(d2),push=radius-d;player.position.x+=dx/d*push;player.position.z+=dz/d*push;}
 }
 function resolveWatcherCollision(){for(const watcher of watchers){if(!watcher.visible)continue;const radius=2.3,dx=player.position.x-watcher.position.x,dz=player.position.z-watcher.position.z,d2=dx*dx+dz*dz;if(d2>=radius*radius)continue;const d=Math.max(.001,Math.sqrt(d2)),push=radius-d;if(d2<.0001)player.position.z+=radius;else{player.position.x+=dx/d*push;player.position.z+=dz/d*push;}if(!watcher.userData.spoken){watcher.userData.spoken=true;say('roadNpc.watcher',2600);shake=Math.max(shake,.35);horrorSound(0);}}}
-const strangeBirds=Array.from({length:18},(_,i)=>{const b=makeStrangeBird(.42+Math.random()*.22);b.position.set((Math.random()-.5)*55,9+Math.random()*14,10-Math.random()*100);b.userData.phase=Math.random()*Math.PI*2;b.userData.speed=4+Math.random()*5;b.userData.nextDrop=4+Math.random()*14;scene.add(b);return b;});
+const strangeBirds=Array.from({length:quality.birds},(_,i)=>{const b=makeStrangeBird(.42+Math.random()*.22);b.position.set((Math.random()-.5)*55,9+Math.random()*14,10-Math.random()*100);b.userData.phase=Math.random()*Math.PI*2;b.userData.speed=4+Math.random()*5;b.userData.nextDrop=4+Math.random()*14;scene.add(b);return b;});
 const birdDroppings=[];
 function spawnBirdDropping(bird){
   const candidates=animalActors.filter(npc=>{if(!npcCanBeAttacked(npc))return false;npc.getWorldPosition(collisionPoint);return Math.hypot(collisionPoint.x-bird.position.x,collisionPoint.z-bird.position.z)<52;}),enemies=[...activeChasers,...snakes,snowGhost].filter(enemy=>enemy.visible&&Math.hypot(enemy.position.x-bird.position.x,enemy.position.z-bird.position.z)<52);let target=player,targetType='player';const roll=Math.random();if(roll>.82&&enemies.length){target=enemies[Math.floor(Math.random()*enemies.length)];targetType='enemy';}else if(roll>.48&&candidates.length){target=candidates[Math.floor(Math.random()*candidates.length)];targetType='npc';}
@@ -448,7 +466,7 @@ const guidePosts=[];for(let z=-120;z>-WORLD_DEPTH;z-=120)for(const x of [-8,8]){
 
 // 电影草原里那种光秃、发白、像手臂一样伸向雾里的树。
 const deadTreeMat=flat(0x77717d),trunkGeo=new THREE.ConeGeometry(.56,8,5),branchGeo=new THREE.ConeGeometry(.23,4.5,5);
-for(let i=0;i<280;i++){
+for(let i=0;i<quality.deadTrees;i++){
   const t=new THREE.Group(),h=5+Math.random()*10,lean=(Math.random()-.5)*.22;
   mesh(trunkGeo,deadTreeMat,t,0,h*.5,0,[.7+Math.random()*.55,h/8,.7+Math.random()*.4],[0,0,lean]);
   const branches=2+Math.floor(Math.random()*3);
@@ -460,7 +478,7 @@ for(let i=0;i<280;i++){
 }
 
 // 雨幕跟随玩家移动，避免跑远后雨点变稀；用线段保持低端手机也能流畅。
-const rainCount=innerWidth<700?480:850,rainPositions=new Float32Array(rainCount*6),rainSpeed=new Float32Array(rainCount),rainLength=new Float32Array(rainCount);
+const rainCount=quality.rain,rainPositions=new Float32Array(rainCount*6),rainSpeed=new Float32Array(rainCount),rainLength=new Float32Array(rainCount);
 for(let i=0;i<rainCount;i++){
   const p=i*6,x=(Math.random()-.5)*100,y=Math.random()*48,z=(Math.random()-.5)*100,len=.7+Math.random()*1.9;
   rainPositions[p]=x;rainPositions[p+1]=y;rainPositions[p+2]=z;rainPositions[p+3]=x+.2;rainPositions[p+4]=y-len;rainPositions[p+5]=z;rainSpeed[i]=18+Math.random()*20;rainLength[i]=len;
@@ -470,7 +488,7 @@ const rainMat=new THREE.LineBasicMaterial({color:0xc9d1cd,transparent:true,opaci
 const rain=new THREE.LineSegments(rainGeo,rainMat);rain.frustumCulled=false;scene.add(rain);
 
 // “无归”雪夜段落：暴雪会在中途吞掉草原，白衣女鬼没有脚印，也不会真正离开。
-const snowCount=mobileDevice?520:900,snowPos=new Float32Array(snowCount*3);
+const snowCount=quality.snow,snowPos=new Float32Array(snowCount*3);
 for(let i=0;i<snowCount;i++){snowPos[i*3]=(Math.random()-.5)*90;snowPos[i*3+1]=Math.random()*40;snowPos[i*3+2]=(Math.random()-.5)*90;}
 const snowGeo=new THREE.BufferGeometry();snowGeo.setAttribute('position',new THREE.BufferAttribute(snowPos,3));
 const snow=new THREE.Points(snowGeo,new THREE.PointsMaterial({color:0xe8f3f2,size:mobileDevice?.24:.18,transparent:true,opacity:0,depthWrite:false,fog:false}));snow.frustumCulled=false;scene.add(snow);
@@ -505,7 +523,8 @@ function updateSafeZone(progress,dt,t,moving){
   let protectedZone=false;activeSafeZone=-1;
   safeZones.forEach((zone,index)=>{
     const data=zone.userData,dz=player.position.z-zone.position.z;
-    const fire=data.campfire,fireLife=data.passed||data.broken?0:data.entered?THREE.MathUtils.clamp(1-data.timer/30,0,1):1,flicker=.84+Math.sin(t*17+index)*.1+Math.sin(t*29+index*2)*.06;fire.life=THREE.MathUtils.lerp(fire.life,fireLife,1-Math.pow(.001,dt));fire.light.intensity=175*Math.pow(fire.life,.72)*flicker;fire.light.distance=18+25*fire.life;fire.light.color.setRGB(.47+.53*fire.life,.075+.529*fire.life,.043+.177*fire.life);fire.glow.material.opacity=.26*fire.life*flicker;fire.glow.scale.setScalar(.55+fire.life*.55);fire.flames.forEach((flame,i)=>{const pulse=.78+Math.sin(t*(8+i*.7)+i)*.2;flame.material.opacity=fire.life*(.58+(i%3)*.12);flame.scale.set(.55+fire.life*.45,.08+fire.life*pulse,.55+fire.life*.45);flame.position.y=.38+fire.life*(.72+(i%2)*.25);});fire.embers.forEach((ember,i)=>{const rise=(t*(.45+(i%4)*.07)+ember.userData.phase)%1;ember.position.y=.55+rise*(1.2+fire.life*3.4);ember.position.x=Math.sin(t*2.2+i)*(.25+rise*.75);ember.position.z=Math.cos(t*1.8+i*1.7)*(.22+rise*.66);ember.material.opacity=fire.life*(1-rise)*.9;});
+    const fire=data.campfire,nearZone=!performanceMode||Math.abs(dz)<90;data.light.visible=nearZone;fire.light.visible=nearZone;
+    const fireLife=data.passed||data.broken?0:data.entered?THREE.MathUtils.clamp(1-data.timer/30,0,1):1,flicker=.84+Math.sin(t*17+index)*.1+Math.sin(t*29+index*2)*.06;fire.life=THREE.MathUtils.lerp(fire.life,fireLife,1-Math.pow(.001,dt));fire.light.intensity=175*Math.pow(fire.life,.72)*flicker;fire.light.distance=18+25*fire.life;fire.light.color.setRGB(.47+.53*fire.life,.075+.529*fire.life,.043+.177*fire.life);fire.glow.material.opacity=.26*fire.life*flicker;fire.glow.scale.setScalar(.55+fire.life*.55);fire.flames.forEach((flame,i)=>{const pulse=.78+Math.sin(t*(8+i*.7)+i)*.2;flame.material.opacity=fire.life*(.58+(i%3)*.12);flame.scale.set(.55+fire.life*.45,.08+fire.life*pulse,.55+fire.life*.45);flame.position.y=.38+fire.life*(.72+(i%2)*.25);});fire.embers.forEach((ember,i)=>{const rise=(t*(.45+(i%4)*.07)+ember.userData.phase)%1;ember.position.y=.55+rise*(1.2+fire.life*3.4);ember.position.x=Math.sin(t*2.2+i)*(.25+rise*.75);ember.position.z=Math.cos(t*1.8+i*1.7)*(.22+rise*.66);ember.material.opacity=fire.life*(1-rise)*.9;});
     if(data.passed){if(data.broken)data.residents.forEach((npc,i)=>{if(npc.userData.eaten)return;npc.position.z-=dt*(5.2+i*.17);npc.position.x+=(npc.userData.escapeX||0)*dt;animateCow(npc,t,9+i%3);});return;}
     if(!data.entered&&Math.abs(dz)<20){data.entered=true;data.timer=0;data.nextTalk=.8;data.talkIndex=0;data.activeBubble=-1;terrorFlash();say('safe.enter',3000);}
     if(!data.entered)return;
@@ -527,21 +546,21 @@ function updateObjectives(progress,dt,t,moving,safeProtected){
   let missionKey='',missionParams={};
   const near=(object,radius=3)=>Math.hypot(player.position.x-object.position.x,player.position.z-object.position.z)<radius;
   clothPieces.forEach(item=>{
-    if(!item.visible)return;item.rotation.y+=dt*.65;item.position.y=.05+Math.sin(t*3+item.position.x)*.14;item.userData.ring.rotation.z+=dt*2.1;item.userData.beam.material.opacity=.22+Math.sin(t*4+item.position.x)*.14;item.userData.light.intensity=48+Math.sin(t*5)*18;
+    if(!item.visible)return;item.userData.light.visible=!performanceMode||Math.abs(player.position.z-item.position.z)<90;item.rotation.y+=dt*.65;item.position.y=.05+Math.sin(t*3+item.position.x)*.14;item.userData.ring.rotation.z+=dt*2.1;item.userData.beam.material.opacity=.22+Math.sin(t*4+item.position.x)*.14;item.userData.light.intensity=48+Math.sin(t*5)*18;
     if(near(item,3.2)){item.visible=false;clothCount++;say('task.clothFound',2300,{count:clothCount});sound(310,.35,'triangle',.07);}
   });
   const forestOpen=clothCount>=clothPieces.length;forestGate.userData.open=forestOpen;forestGate.position.y=THREE.MathUtils.lerp(forestGate.position.y,forestOpen?-10:0,.08);
   if(!forestOpen&&progress>runLength*.245&&progress<runLength*.41){const remaining=clothPieces.filter(item=>item.visible).sort((a,b)=>Math.hypot(player.position.x-a.position.x,player.position.z-a.position.z)-Math.hypot(player.position.x-b.position.x,player.position.z-b.position.z)),nearestCloth=remaining[0],clothDistance=nearestCloth?Math.round(Math.hypot(player.position.x-nearestCloth.position.x,player.position.z-nearestCloth.position.z)):0,direction=nearestCloth?(nearestCloth.position.x-player.position.x>3?'direction.left':nearestCloth.position.x-player.position.x<-3?'direction.right':'direction.ahead'):'direction.ahead';missionKey=nearestCloth&&clothDistance<110?'task.clothHint':'task.clothMission';missionParams={count:clothCount,total:clothPieces.length,distance:clothDistance,direction:tr(direction)};if(player.position.z<forestGate.position.z+3.8)player.position.z=forestGate.position.z+3.8;}
 
   powerSwitches.forEach(sw=>{
-    if(!sw.visible)return;sw.userData.lamp.intensity=sw.userData.on?42:18+Math.sin(t*7)*10;
+    if(!sw.visible)return;sw.userData.lamp.visible=!performanceMode||Math.abs(player.position.z-sw.position.z)<90;sw.userData.lamp.intensity=sw.userData.on?42:18+Math.sin(t*7)*10;
     if(!sw.userData.on&&near(sw,4)){sw.userData.on=true;switchCount++;sw.userData.lever.rotation.x=-.75;sw.userData.lamp.color.set(0x76ff55);say('task.switchOn',2200,{count:switchCount});sound(92,.65,'square',.09);terrorFlash();}
   });
   const powerOpen=switchCount>=powerSwitches.length;powerGate.userData.open=powerOpen;powerGate.position.y=THREE.MathUtils.lerp(powerGate.position.y,powerOpen?-10:0,.08);
   if(!powerOpen&&progress>runLength*.645&&progress<runLength*.805){missionKey='task.switchMission';missionParams={count:switchCount,total:powerSwitches.length};if(player.position.z<powerGate.position.z+3.8)player.position.z=powerGate.position.z+3.8;}
 
   sheltered=false;
-  shelterHuts.forEach(hut=>{if(near(hut,6.2)&&!moving){sheltered=true;stamina=Math.min(100,stamina+dt*30);}});
+  shelterHuts.forEach(hut=>{hut.userData.warm.visible=!performanceMode||Math.abs(player.position.z-hut.position.z)<90;if(near(hut,6.2)&&!moving){sheltered=true;stamina=Math.min(100,stamina+dt*30);}});
   document.body.classList.toggle('sheltered',sheltered);
   if(currentChapter===2&&!sheltered&&progress>runLength*.43&&progress<runLength*.58){missionKey='task.shelterMission';}
   if(sheltered){missionKey='task.sheltered';}
@@ -569,11 +588,17 @@ function updateObjectives(progress,dt,t,moving,safeProtected){
     if(!finalWaveStarted){finalWaveStarted=true;say('task.stampede',3300);terrorFlash();
       const mode=difficulties[selectedCharacter],remaining=Math.max(0,mode.stalkers-stalkers.filter(enemy=>enemy.userData.spawned).length);spawnStalkerWave(4,remaining);
     }
-    finalHerd.forEach((cow,i)=>{if(cow.userData.escaped||cow.userData.eaten)return;cow.visible=true;if(holdNpcInSafeZone(cow,t))return;cow.position.z-=dt*(i===0?11.8:6.4+(i%4)*.24);cow.position.x+=(cow.userData.escapeX||0)*dt+Math.sin(t*1.8+i)*dt*(i===0?.75:.38);animateCow(cow,t,i===0?17:11);if(cow.userData.halo){cow.userData.halo.rotation.z+=dt*3;cow.userData.halo.scale.setScalar(1+Math.sin(t*5)*.08);}if(cow.position.z<exitZ+4){cow.userData.escaped=true;rescuedCows++;cow.visible=false;}});
+    finalHerd.forEach((cow,i)=>{if(cow.userData.escaped||cow.userData.eaten)return;cow.visible=true;talkToPassingNpc(cow,i+12);if(holdNpcInSafeZone(cow,t,dt))return;cow.position.z-=dt*(i===0?11.8:6.4+(i%4)*.24);cow.position.x+=(cow.userData.escapeX||0)*dt+Math.sin(t*1.8+i)*dt*(i===0?.75:.38);animateCow(cow,t,i===0?17:11);if(cow.userData.halo){cow.userData.halo.rotation.z+=dt*3;cow.userData.halo.scale.setScalar(1+Math.sin(t*5)*.08);}if(cow.position.z<exitZ+4){cow.userData.escaped=true;rescuedCows++;cow.visible=false;}});
   }
   return {protectedZone:safeProtected||sheltered,missionKey,missionParams};
 }
 const herdFleeLines=Array.from({length:7},(_,i)=>`herd.flee.${i}`),herdCaughtLines=Array.from({length:7},(_,i)=>`herd.caught.${i}`);
+const passingNpcLines=Array.from({length:6},(_,i)=>`passingNpc.${i}`);let lastPassingNpcTalk=-99;
+function talkToPassingNpc(npc,index){
+  if(npc.userData.passingTalked||npc.userData.eaten||npc.userData.escaped||elapsed-lastPassingNpcTalk<2.4)return;
+  npc.getWorldPosition(collisionPoint);if(Math.hypot(player.position.x-collisionPoint.x,player.position.z-collisionPoint.z)>13)return;
+  npc.userData.passingTalked=true;lastPassingNpcTalk=elapsed;say(passingNpcLines[index%passingNpcLines.length],3000);
+}
 
 let activeSayKey='',activeSayParams={},activeMissionKey='hud.defaultMission',activeMissionParams={};
 function say(key,time=2600,params={}){activeSayKey=key;activeSayParams=params;ui.subtitle.textContent=tr(key,params);ui.subtitle.classList.add('show');clearTimeout(say.t);say.t=setTimeout(()=>{ui.subtitle.classList.remove('show');activeSayKey='';},time);}
@@ -654,14 +679,14 @@ function start(){
   herdCows.forEach((c,i)=>{c.position.copy(c.userData.start);c.rotation.set(0,0,0);c.visible=c.position.z>exitZ;c.userData.active=false;c.userData.eaten=false;c.userData.escaped=false;c.userData.announced=false;const e=ambushers[i];e.position.copy(e.userData.start);e.rotation.set(0,0,0);e.visible=false;e.userData.disabled=i>=mode.ambushers;e.userData.feeding=0;e.userData.joined=false;});
   const herdCenter=18-runLength*.165;storyHerd.forEach((cow,i)=>{cow.position.set(cow.userData.offsetX,.05,herdCenter+cow.userData.offsetZ);cow.rotation.set(0,Math.PI,0);cow.visible=false;cow.userData.active=false;cow.userData.escaped=false;cow.userData.eaten=false;});
   currentChapter=-1;activeSafeZone=-1;hideNpcBubbles();safeZones.forEach((zone,i)=>{zone.position.set(0,0,18-runLength*((i+1)/5));zone.visible=true;Object.assign(zone.userData,{entered:false,passed:false,broken:false,timer:0,nextTalk:0,talkIndex:0,activeBubble:-1});zone.userData.light.color.set(0xffc66b);zone.userData.light.intensity=190;zone.userData.floorMat.color.set(0xa79861);zone.userData.floorMat.emissive.set(0xffa82f);zone.userData.floorMat.emissiveIntensity=.36;zone.userData.campfire.life=1;zone.userData.campfire.light.intensity=175;zone.userData.residents.forEach(npc=>{npc.position.copy(npc.userData.safeStart);npc.rotation.set(0,Math.PI,0);npc.visible=true;npc.userData.eaten=false;npc.userData.escaped=false;});});showChapter(0);
-  clothCount=0;switchCount=0;sheltered=false;flashlightUntil=0;smokeCharges=0;radioOwned=false;fakeExitTriggered=false;finalWaveStarted=false;rescuedCows=0;
+  clothCount=0;switchCount=0;sheltered=false;flashlightUntil=0;smokeCharges=0;radioOwned=false;fakeExitTriggered=false;finalWaveStarted=false;rescuedCows=0;npcShoveHintShown=false;
   [[-23,.26],[21,.31],[-18,.36]].forEach(([x,r],i)=>{const item=clothPieces[i];item.position.set(x,.05,18-runLength*r);item.visible=true;item.rotation.y=Math.random()*Math.PI;});forestGate.position.set(0,0,18-runLength*.395);forestGate.userData.open=false;
   [[-20,.66],[22,.735]].forEach(([x,r],i)=>{const sw=powerSwitches[i];sw.position.set(x,0,18-runLength*r);sw.visible=true;sw.userData.on=false;sw.userData.lever.rotation.x=.45;sw.userData.lamp.color.set(0xff2a14);});powerGate.position.set(0,0,18-runLength*.79);powerGate.userData.open=false;
   [[-15,.47],[16,.54]].forEach(([x,r],i)=>{shelterHuts[i].position.set(x,0,18-runLength*r);shelterHuts[i].visible=true;});falseGate.position.set(0,0,18-runLength*.9);falseGate.visible=true;falseGate.userData.triggered=false;falseGate.userData.mat.color.set(0xb9e83b);
   finalHerd.forEach((cow,i)=>{cow.position.set((i%5-2)*4.2,.05,18-runLength*.825-Math.floor(i/5)*6);cow.rotation.set(0,Math.PI,0);cow.visible=false;cow.userData.escaped=false;cow.userData.eaten=false;});
   [[-10,.12],[18,.34],[-16,.55],[20,.72]].forEach(([x,r],i)=>{const item=itemPickups[i];item.position.set(x,.05,18-runLength*r);item.visible=true;item.userData.collected=false;});
   forkWalls.forEach((fork,i)=>{fork.position.set((Math.random()<.5?-1:1)*(8+Math.random()*7),0,18-runLength*(.23+i*.075));fork.rotation.y=(Math.random()-.5)*.08;fork.visible=true;});
-  strangeTravellers.forEach(c=>{c.position.copy(c.userData.start);c.rotation.set(0,0,0);c.visible=true;c.userData.fleeing=false;c.userData.eaten=false;c.userData.escaped=false;c.userData.talked=false;});animalActors.forEach(animal=>{animal.userData.refugeZone=-1;animal.userData.escapeX=0;});
+  strangeTravellers.forEach(c=>{c.position.copy(c.userData.start);c.rotation.set(0,0,0);c.visible=true;c.userData.fleeing=false;c.userData.eaten=false;c.userData.escaped=false;c.userData.talked=false;});animalActors.forEach(animal=>{animal.userData.refugeZone=-1;animal.userData.refugeParked=false;animal.userData.refugeOffset=null;animal.userData.escapeX=0;animal.userData.passingTalked=false;});lastPassingNpcTalk=-99;
   const mobileView=mobileDevice||innerWidth<700;hunterGlow.visible=false;shake=0;camera.fov=66;camera.updateProjectionMatrix();camera.position.set(mobileView?.8:2.2,mobileView?24:19,mobileView?5:0);setMission('hud.defaultMission');document.body.classList.add('playing');ui.intro.classList.add('hidden');ui.result.classList.remove('show');canvas.focus?.();
   dangerAudio.pause();dangerAudio.currentTime=0;dangerAudio.volume=.95;dangerLatched=false;sound(55,.8,'sawtooth',.08);startMusic();setTimeout(()=>say('difficulty.start',2600,{difficulty:tr(difficulties[selectedCharacter].nameKey)}),500);
 }
@@ -730,6 +755,23 @@ joystickEl.addEventListener('touchstart',e=>{e.preventDefault();const touch=e.ch
 joystickEl.addEventListener('touchmove',e=>{e.preventDefault();const touch=trackedTouch(e);if(touch&&touch.identifier===joystickTouch)moveJoystick(touch);},{passive:false});
 joystickEl.addEventListener('touchend',e=>{if(Array.from(e.changedTouches||[]).some(touch=>touch.identifier===joystickTouch))resetJoystick();},{passive:false});joystickEl.addEventListener('touchcancel',resetJoystick,{passive:false});
 document.addEventListener('touchmove',e=>{if(joystickTouch===null)return;const touch=trackedTouch(e);if(touch&&touch.identifier===joystickTouch){e.preventDefault();moveJoystick(touch);}},{passive:false});document.addEventListener('touchend',e=>{if(Array.from(e.changedTouches||[]).some(touch=>touch.identifier===joystickTouch))resetJoystick();},{passive:false});document.addEventListener('touchcancel',resetJoystick,{passive:false});
+
+// 第二根手指可以直接“搓”开挡路的友方 NPC；它与摇杆使用不同 pointerId，不会令移动方向复位。
+const fingerCursor=document.createElement('div');fingerCursor.className='npc-finger';fingerCursor.textContent='☝️';fingerCursor.setAttribute('aria-hidden','true');document.body.appendChild(fingerCursor);
+const npcRaycaster=new THREE.Raycaster(),npcPointerNdc=new THREE.Vector2();let rubPointer=null,rubbedNpc=null,rubLastX=0,rubLastY=0,npcShoveHintShown=false;
+function friendlyNpcFromObject(object){for(let current=object;current&&current!==scene;current=current.parent)if(animalActors.includes(current)&&current.visible&&!current.userData.eaten&&!current.userData.escaped)return current;return null;}
+function friendlyNpcAt(clientX,clientY){const rect=canvas.getBoundingClientRect();npcPointerNdc.set((clientX-rect.left)/rect.width*2-1,-(clientY-rect.top)/rect.height*2+1);npcRaycaster.setFromCamera(npcPointerNdc,camera);for(const hit of npcRaycaster.intersectObjects(animalActors,true)){const npc=friendlyNpcFromObject(hit.object);if(npc)return npc;}return null;}
+function shoveFriendlyNpc(npc,worldX,worldZ){
+  if(!npc||!npc.visible)return;const world=npc.getWorldPosition(new THREE.Vector3());world.x=THREE.MathUtils.clamp(world.x+worldX,-57,57);world.z+=worldZ;if(npc.parent&&npc.parent!==scene){npc.parent.worldToLocal(world);npc.position.x=world.x;npc.position.z=world.z;}else{npc.position.x=world.x;npc.position.z=world.z;}
+  if(npc.userData.refugeOffset){npc.userData.refugeOffset.x+=worldX;npc.userData.refugeOffset.z+=worldZ;}
+  npc.userData.avoidTimer=.28;npc.rotation.z=THREE.MathUtils.clamp(-worldX*.08,-.35,.35);shake=Math.max(shake,.08);
+  if(!npcShoveHintShown){npcShoveHintShown=true;say('event.npcShoved',1800);sound(105,.1,'triangle',.025);}
+}
+function showFinger(e){fingerCursor.style.left=e.clientX+'px';fingerCursor.style.top=e.clientY+'px';fingerCursor.classList.add('show');}
+document.addEventListener('pointerdown',e=>{if(state!=='playing'||rubPointer!==null||e.target.closest?.('.joystick,.run,.language-picker,button'))return;rubPointer=e.pointerId;rubLastX=e.clientX;rubLastY=e.clientY;rubbedNpc=friendlyNpcAt(e.clientX,e.clientY);showFinger(e);});
+document.addEventListener('pointermove',e=>{if(e.pointerId!==rubPointer)return;const dx=e.clientX-rubLastX,dy=e.clientY-rubLastY;rubLastX=e.clientX;rubLastY=e.clientY;showFinger(e);if(!rubbedNpc)rubbedNpc=friendlyNpcAt(e.clientX,e.clientY);if(rubbedNpc&&Math.hypot(dx,dy)>1){fingerCursor.style.setProperty('--finger-angle',Math.atan2(dy,dx)+Math.PI/2+'rad');shoveFriendlyNpc(rubbedNpc,-dx*.075,-dy*.075);}},{passive:false});
+function endNpcRub(e){if(e.pointerId!==rubPointer)return;rubPointer=null;rubbedNpc=null;fingerCursor.classList.remove('show');}
+document.addEventListener('pointerup',endNpcRub);document.addEventListener('pointercancel',endNpcRub);
 
 function glitch(){document.body.classList.add('glitch');sound(48,.1,'square',.03);setTimeout(()=>document.body.classList.remove('glitch'),80+Math.random()*160);}
 function terrorFlash(){
@@ -842,7 +884,8 @@ function tick(){
   rainGeo.attributes.position.needsUpdate=true;rain.position.set(player.position.x,0,player.position.z);rainMat.opacity=(.22+Math.sin(t*.17)*.07)*difficulties[selectedCharacter].rain;
   if(snow.visible){const sp=snowGeo.attributes.position.array;for(let i=0;i<snowCount;i++){const p=i*3;sp[p]+=(Math.sin(t*.8+i)*1.8-3.6)*dt;sp[p+1]-=(5+Math.sin(i)*2)*dt;if(sp[p+1]<-2){sp[p]=(Math.random()-.5)*90;sp[p+1]=38+Math.random()*5;sp[p+2]=(Math.random()-.5)*90;}}snowGeo.attributes.position.needsUpdate=true;snow.position.set(player.position.x,0,player.position.z);snow.material.opacity=.92*snowBlend;}
   gateRing.rotation.z=t*.42;gateRing.scale.setScalar(1+Math.sin(t*2.1)*.055);gateBeam.material.opacity=.1+Math.sin(t*1.5)*.055;beacon.intensity=230+Math.sin(t*2.4)*70;gateSign.material.opacity=.78+Math.sin(t*2.2)*.22;
-  artFruits.forEach((fruit,i)=>{fruit.position.y=fruit.userData.baseY+Math.sin(t*1.35+fruit.userData.phase)*.08;fruit.rotation.y=t*.25+i;});paintedMoons.forEach(moon=>{moon.lookAt(camera.position);moon.material.opacity=.68+Math.sin(t*.45+moon.userData.phase)*.1;});
+  beacon.visible=!performanceMode||Math.abs(player.position.z-exitZ)<150;
+  artFruits.forEach((fruit,i)=>{if(performanceMode&&Math.abs((fruit.parent?.position.z||0)-player.position.z)>150)return;fruit.position.y=fruit.userData.baseY+Math.sin(t*1.35+fruit.userData.phase)*.08;fruit.rotation.y=t*.25+i;});paintedMoons.forEach(moon=>{moon.lookAt(camera.position);moon.material.opacity=.68+Math.sin(t*.45+moon.userData.phase)*.1;});
   hostileAuras.forEach(aura=>{const pulse=1+Math.sin(t*4.2+aura.userData.phase)*.12;aura.scale.setScalar(pulse);aura.material.opacity=.18+Math.max(0,Math.sin(t*4.2+aura.userData.phase))*.18;});
   strangeBirds.forEach((b,i)=>{
     const panic=elapsed<(b.userData.panicUntil||0),flight=panic?4.2:1;b.position.z-=b.userData.speed*flight*dt;b.position.x+=Math.sin(t*(panic?2.8:.7)+b.userData.phase)*dt*(panic?6:1.7);b.position.y+=(panic?5:Math.sin(t*1.1+b.userData.phase)*.18)*dt;
@@ -882,13 +925,13 @@ function tick(){
     if(moving){const len=Math.hypot(x,z);x/=len;z/=len;player.position.x+=x*speed*dt;player.position.z+=z*speed*dt;player.rotation.y=Math.atan2(-x,-z);}
     player.position.x=THREE.MathUtils.clamp(player.position.x,-59,59);player.position.z=Math.min(24,player.position.z);
     // 树、石头、铁网与路障都使用实体圆形碰撞体，不能再直接穿模。
-    let collided=false;for(const o of obstacles){if(!o.visible||o.userData.collisionDisabled)continue;if(pushPlayerFromPoint(o.position.x,o.position.z,(o.userData.collisionRadius||2.1)+1.05))collided=true;}
+    let collided=false;for(const o of obstacles){if(!o.visible||o.userData.collisionDisabled)continue;const radius=(o.userData.collisionRadius||2.1)+1.05;if(Math.abs(player.position.z-o.position.z)>radius+1.2)continue;if(pushPlayerFromPoint(o.position.x,o.position.z,radius))collided=true;}
     if(collided&&elapsed-lastCollisionSound>.45){lastCollisionSound=elapsed;sound(72,.12,'square',.035);shake=Math.max(shake,.12);}
     animatePlayer(player,t,Boolean(moving),Boolean(sprint));
     const progress=-player.position.z;updateStoryWave(progress);
     updateChapter(progress);updateEnemyScale(dt);let safeProtected=updateSafeZone(progress,dt,t,Boolean(moving));
     const objective=updateObjectives(progress,dt,t,Boolean(moving),safeProtected);safeProtected=objective.protectedZone;
-    if(progress>runLength*.145)storyHerd.forEach((cow,i)=>{if(cow.userData.escaped||cow.userData.eaten)return;cow.visible=true;cow.userData.active=true;if(holdNpcInSafeZone(cow,t))return;cow.position.z-=dt*(4.7+(i%3)*.16);cow.position.x+=(cow.userData.escapeX||0)*dt+Math.sin(t*1.7+i)*dt*.34;animateCow(cow,t,9+i%3);if(cow.position.z<exitZ-20){cow.userData.escaped=true;cow.visible=false;}});
+    if(progress>runLength*.145)storyHerd.forEach((cow,i)=>{if(cow.userData.escaped||cow.userData.eaten)return;cow.visible=true;cow.userData.active=true;talkToPassingNpc(cow,i);if(holdNpcInSafeZone(cow,t,dt))return;cow.position.z-=dt*(4.7+(i%3)*.16);cow.position.x+=(cow.userData.escapeX||0)*dt+Math.sin(t*1.7+i)*dt*.34;animateCow(cow,t,9+i%3);if(cow.position.z<exitZ-20){cow.userData.escaped=true;cow.visible=false;}});
     const snowStart=runLength*.4,snowEnd=runLength*.6,snowChapter=progress>snowStart&&progress<snowEnd,snowActive=snowChapter&&weatherActive,rainActive=weatherActive&&!snowChapter;
     snowBlend=THREE.MathUtils.lerp(snowBlend,snowActive?1:0,1-Math.pow(.0005,dt));snow.visible=snowBlend>.015;document.body.classList.toggle('snow-haunting',snowBlend>.28);document.body.classList.toggle('rain-active',rainActive);
     let baseBg=selectedCharacter==='orange'?0xa49368:selectedCharacter==='yellow'?0x837e61:0x5f6255,groundBase=0x59683d;if(currentChapter===1){baseBg=0x42666a;groundBase=0x304a3d;}else if(currentChapter===2){baseBg=0x7b7180;groundBase=0x4a5548;}else if(currentChapter===3){baseBg=0x583b31;groundBase=0x3b302a;}else if(currentChapter===4){baseBg=0x39211f;groundBase=0x281b1a;}scene.background.set(baseBg).lerp(snowBgColor,snowBlend*.86);scene.fog.color.set(baseBg).lerp(snowFogColor,snowBlend*.8);scene.fog.density=difficulty.fog*(1.08+snowBlend*1.45+(currentChapter===1?.42:currentChapter>=3?.3:0));ground.material.color.set(groundBase).lerp(snowGroundColor,snowBlend*.82);rainMat.opacity=rainActive?(currentChapter===2?.12:.5)*(1-snowBlend*.78):0;
@@ -897,9 +940,9 @@ function tick(){
     if(snowStage<3&&progress>=snowEnd){snowStage=3;snowGhost.visible=false;terrorFlash();say('event.snowEnd',3200);}
     herdCows.forEach((cow,i)=>{
       const enemy=ambushers[i];if(cow.userData.eaten){if(enemy.userData.feeding>0){enemy.userData.feeding-=dt;enemy.userData.headBob=(enemy.userData.headBob||0)+dt;enemy.position.y=.05+Math.abs(Math.sin(t*12))*.18;}else if(!enemy.userData.joined){enemy.userData.joined=true;enemy.position.y=.05;enemy.userData.chaseSpeed=7.15+(i%3)*.14;activeChasers.push(enemy);}return;}
-      if(!cow.visible)return;if(!cow.userData.active&&Math.abs(player.position.z-cow.position.z)<58){cow.userData.active=true;enemy.visible=!enemy.userData.disabled;if(!cow.userData.announced){cow.userData.announced=true;say(herdFleeLines[i%herdFleeLines.length],2300);}}
+      if(!cow.visible)return;talkToPassingNpc(cow,i+6);if(!cow.userData.active&&Math.abs(player.position.z-cow.position.z)<58){cow.userData.active=true;enemy.visible=!enemy.userData.disabled;if(!cow.userData.announced){cow.userData.announced=true;say(herdFleeLines[i%herdFleeLines.length],2300);}}
       if(!cow.userData.active)return;
-      if(holdNpcInSafeZone(cow,t)){enemy.visible=false;return;}if(!enemy.userData.disabled&&!enemy.visible)enemy.visible=true;
+      if(holdNpcInSafeZone(cow,t,dt)){enemy.visible=false;return;}if(!enemy.userData.disabled&&!enemy.visible)enemy.visible=true;
       const cowSpeed=cow.userData.super?11.2:5.35+(i%3)*.32;cow.position.z-=cowSpeed*dt;cow.position.x+=Math.sin(t*1.4+i)*dt*(cow.userData.super?.85:.45);cow.userData.legs.forEach((l,n)=>l.rotation.x=Math.sin(t*(cow.userData.super?17:12)+n*Math.PI)*.58);if(cow.userData.halo){cow.userData.halo.rotation.z+=dt*2.8;cow.userData.halo.scale.setScalar(1+Math.sin(t*5)*.09);}
       if(cow.userData.super&&cow.position.z<exitZ+5){cow.userData.escaped=true;cow.visible=false;enemy.userData.joined=true;enemy.userData.chaseSpeed=7.15;activeChasers.push(enemy);say('event.superCow',3000);sound(260,.55,'triangle',.09);return;}
       if(enemy.userData.disabled)return;
@@ -908,7 +951,7 @@ function tick(){
       const prey=chooseClosestPrey(enemy,cow),chase=new THREE.Vector3().subVectors(prey.targetPosition,enemy.position),d=prey.distance;if(updateEnemyPounce(enemy,dt))return;if(d<7.2&&!prey.target.userData?.super&&beginEnemyPounce(enemy,prey.target,prey.targetNpc))return;enemy.position.addScaledVector(chase.normalize(),(prey.target.userData?.super?7.1:7.05+i*.08)*dt);enemy.rotation.y=Math.atan2(-chase.x,-chase.z);animateCow(enemy,t,11);
       if(prey.targetNpc&&d<2.05)bloodyAttack(prey.target,enemy);else if(!prey.targetNpc&&d<3.15)damageHeart('event.heartLost',enemy,'death.enemy',{enemyKey:enemy.userData.enemyKey||'enemy.them'});
     });
-    strangeTravellers.forEach((c,i)=>{if(c.userData.eaten)return;const npcDistance=Math.hypot(player.position.x-c.position.x,player.position.z-c.position.z);if(!c.userData.talked&&npcDistance<15){c.userData.talked=true;say(`roadNpc.${i}`,3000);}if(!c.userData.fleeing&&Math.abs(player.position.z-c.position.z)<72)c.userData.fleeing=true;if(c.userData.fleeing){if(holdNpcInSafeZone(c,t))return;c.position.z-=(5.6+i*.4)*dt;c.position.x+=(c.userData.escapeX||0)*dt+Math.sin(t*1.2+i)*dt*.35;animateCow(c,t,9+i);}});
+    strangeTravellers.forEach((c,i)=>{if(c.userData.eaten)return;const npcDistance=Math.hypot(player.position.x-c.position.x,player.position.z-c.position.z);if(!c.userData.talked&&npcDistance<15){c.userData.talked=true;say(`roadNpc.${i}`,3000);}if(!c.userData.fleeing&&Math.abs(player.position.z-c.position.z)<72)c.userData.fleeing=true;if(c.userData.fleeing){if(holdNpcInSafeZone(c,t,dt))return;c.position.z-=(5.6+i*.4)*dt;c.position.x+=(c.userData.escapeX||0)*dt+Math.sin(t*1.2+i)*dt*.35;animateCow(c,t,9+i);}});
     let nearest=999;
     if(snowGhost.visible){const sanctuary=activeSafeZone>=0?safeZones[activeSafeZone]:(sheltered?shelterHuts.find(hut=>Math.hypot(player.position.x-hut.position.x,player.position.z-hut.position.z)<8):null);if(elapsed<(snowGhost.userData.stunnedUntil||0)){snowGhost.rotation.z=Math.sin(t*18)*.24;nearest=Math.min(nearest,Math.hypot(player.position.x-snowGhost.position.x,player.position.z-snowGhost.position.z));}else if(safeProtected&&sanctuary)patrolSanctuary(snowGhost,sanctuary,dt,t,activeSafeZone>=0?26:9);else{snowGhost.userData.patrolSanctuary=-1;const ghostV=new THREE.Vector3().subVectors(player.position,snowGhost.position);ghostV.y=0;const ghostD=ghostV.length();nearest=Math.min(nearest,ghostD);snowGhost.position.addScaledVector(ghostV.normalize(),(8.4+elapsed*.018)*difficulty.enemy*dt);snowGhost.rotation.y=Math.atan2(-ghostV.x,-ghostV.z);if(ghostD<2.75)damageHeart('event.heartLost',snowGhost,'death.snow');}snowGhost.position.y=.18+Math.sin(t*2.4)*.28;if(elapsed>=(snowGhost.userData.stunnedUntil||0))snowGhost.rotation.z=Math.sin(t*3.1)*.035;}
     for(const enemy of activeChasers){
@@ -932,7 +975,7 @@ function tick(){
       if(!targetNpc&&d<(enemy.userData.type==='car'?6.2:3.3*enemySize)){shake=1;document.body.classList.add('hit');setTimeout(()=>document.body.classList.remove('hit'),400);damageHeart('event.heartLost',enemy,'death.enemy',{enemyKey:enemy.userData.enemyKey||'enemy.them',enemyParams:enemy.userData.enemyParams});}
     }
     if(monsterCar.visible)hunterGlow.position.set(monsterCar.position.x,4,monsterCar.position.z-3);
-    industrialLights.forEach((lamp,i)=>lamp.intensity=(document.body.classList.contains('otherworld')?42:12)*(Math.sin(t*(3.5+i*.17)+i*2)>0.45?1:0));
+    industrialLights.forEach((lamp,i)=>{lamp.visible=!performanceMode||Math.abs(lamp.position.z-player.position.z)<110;lamp.intensity=(document.body.classList.contains('otherworld')?42:12)*(Math.sin(t*(3.5+i*.17)+i*2)>0.45?1:0);});
     const nextSpeedLevel=Math.floor(elapsed/12);if(nextSpeedLevel>speedLevel){speedLevel=nextSpeedLevel;say('difficulty.speedUp',1800,{level:speedLevel+1});sound(96+speedLevel*18,.32,'square',.055);}
     for(const snake of snakes){
       if(elapsed<(snake.userData.stunnedUntil||0)){snake.rotation.z=Math.sin(t*20+snake.id)*.2;nearest=Math.min(nearest,Math.hypot(player.position.x-snake.position.x,player.position.z-snake.position.z));continue;}snake.rotation.z=0;
@@ -974,6 +1017,10 @@ function tick(){
   if(state==='intro')camera.lookAt(player.position.x,2.5,player.position.z);
   else camera.lookAt(player.position.x,narrow?1.2:1.8,player.position.z+(narrow?5:8));
   renderer.render(scene,camera);
+  if(performanceMode&&state==='playing'){
+    qualityFrameTime+=dt*1000;qualityFrames++;
+    const now=performance.now();if(now-qualitySampleStart>1800&&qualityFrames>20){const averageFrame=qualityFrameTime/qualityFrames,next=averageFrame>22.5?Math.max(minRenderDpr,renderDpr-.14):averageFrame<16.5?Math.min(maxRenderDpr,renderDpr+.07):renderDpr;if(Math.abs(next-renderDpr)>.01){renderDpr=next;renderer.setPixelRatio(renderDpr);renderer.setSize(Math.round(window.visualViewport?.width||innerWidth),Math.round(window.visualViewport?.height||innerHeight),false);}qualitySampleStart=now;qualityFrameTime=0;qualityFrames=0;}
+  }
 }
 tick();
 function resizeGame(){const w=Math.round(window.visualViewport?.width||innerWidth),h=Math.round(window.visualViewport?.height||innerHeight);camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false);canvas.style.width=w+'px';canvas.style.height=h+'px';}
@@ -995,8 +1042,15 @@ if(import.meta.env.DEV)window.__NIULAI_TEST__={
   snakePosition(){const snake=snakes[0];return{x:snake.position.x,z:snake.position.z};},
   ageSafeZone(index,seconds){const zone=safeZones[index];zone.userData.entered=true;zone.userData.timer=seconds;return true;},
   safeFire(index){const fire=safeZones[index].userData.campfire;return{life:fire.life,intensity:fire.light.intensity,flameOpacity:fire.flames[0].material.opacity};},
-  refugeProbe(index=0){const animal=storyHerd[0],zone=safeZones[index];animal.visible=true;animal.userData.active=true;animal.userData.eaten=false;animal.userData.escaped=false;animal.position.set(zone.position.x+2,.05,zone.position.z+2);return true;},
-  refugeState(){const animal=storyHerd[0];return{zone:animal.userData.refugeZone,z:animal.position.z,escapeX:animal.userData.escapeX||0};},
+  refugeProbe(index=0){const animal=storyHerd[0],zone=safeZones[index];animal.visible=true;animal.userData.active=true;animal.userData.eaten=false;animal.userData.escaped=false;animal.position.set(zone.position.x+2,.05,zone.position.z+2);holdNpcInSafeZone(animal,clock.elapsedTime,.016);return true;},
+  advanceRefuge(steps=120){for(let i=0;i<steps;i++)holdNpcInSafeZone(storyHerd[0],clock.elapsedTime+i*.016,.016);return true;},
+  refugeState(){const animal=storyHerd[0];return{zone:animal.userData.refugeZone,x:animal.position.x,z:animal.position.z,parked:Boolean(animal.userData.refugeParked),offset:animal.userData.refugeOffset};},
+  passingNpcProbe(index=0){const npc=storyHerd[index%storyHerd.length];npc.visible=true;npc.userData.active=true;npc.userData.eaten=false;npc.userData.escaped=false;npc.userData.passingTalked=false;lastPassingNpcTalk=-99;npc.position.set(player.position.x+2,.05,player.position.z);talkToPassingNpc(npc,index);return true;},
+  passingNpcState(index=0){const npc=storyHerd[index%storyHerd.length];return{talked:Boolean(npc.userData.passingTalked),sayKey:activeSayKey};},
+  playerState(){return{x:player.position.x,z:player.position.z,state};},
+  performanceState(){return{mode:performanceMode,dpr:renderDpr,grass:grassCount,rain:rainCount,snow:snowCount,birds:strangeBirds.length,shadows:renderer.shadowMap.enabled};},
+  shoveNpcProbe(index=0){const npc=storyHerd[index%storyHerd.length];npc.visible=true;npc.userData.eaten=false;npc.userData.escaped=false;npc.position.set(player.position.x+2,.05,player.position.z);npc.userData.shoveStart=npc.position.clone();shoveFriendlyNpc(npc,5,1);return true;},
+  shoveNpcState(index=0){const npc=storyHerd[index%storyHerd.length];return{distance:npc.userData.shoveStart?npc.position.distanceTo(npc.userData.shoveStart):0,sayKey:activeSayKey};},
   safeResidentSpread(index=0){const xs=safeZones[index].userData.residents.map(npc=>npc.position.x);return Math.max(...xs)-Math.min(...xs);},
   roadNpcProbe(index=0){const npc=strangeTravellers[index];player.position.set(npc.position.x+.1,.05,npc.position.z);npc.userData.talked=false;return true;},
   roadNpcState(index=0){const npc=strangeTravellers[index];return{distance:Math.hypot(player.position.x-npc.position.x,player.position.z-npc.position.z),talked:npc.userData.talked,sayKey:activeSayKey};},

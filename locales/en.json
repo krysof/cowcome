@@ -135,7 +135,7 @@
   "death.enemy": "{enemy} knocked down the cow, biting open the fur, and the blood mixed with the rainwater.",
   "death.snake": "The grass snake entangled Niulai's limbs, and then the monster rushed to knock it down and bite it.",
   "death.tree": "The twisted tree trapped Niu Lai. The things behind him pounced, until the rain ran completely red.",
-  "death.bird": "The strange bird's filth fell from the fog and smashed through Niu Lai's body.",
+  "death.bird": "Bird droppings fell from a strange bird in the fog and struck Niu Lai down.",
   "title.cry": "MOM—!",
   "alt.niulaiPortrait": "Niu Lai's avatar",
   "alt.bullPortrait": "big horn avatar",
@@ -144,8 +144,8 @@
   "alt.appIcon": "Niulai application icon",
   "event.heartLost": "You were hurt. {count} hearts remaining.",
   "event.snakeHit": "A grass snake bit you!",
-  "event.birdHit": "Filth fell from the sky!",
-  "event.birdNpcKilled": "The filth dropped by the strange bird killed a refugee.",
+  "event.birdHit": "A strange bird hit you with its droppings!",
+  "event.birdNpcKilled": "A strange bird’s droppings struck and killed a refugee.",
   "event.treeHit": "The strange tree scratched you!",
   "chapter.1.number": "Chapter 1",
   "chapter.1.title": "Grassland Escape",
@@ -210,5 +210,12 @@
   "roadNpc.0": "Don't run after me. There are still live cattle in the front fence.",
   "roadNpc.1": "I heard my mother shouting in the fog, but the sound came from underground.",
   "roadNpc.2": "As soon as the fire is out, walk away. Safe zones are never really safe.",
-  "roadNpc.watcher": "The shadow didn't open his mouth, but a voice came from behind you: Keep walking."
+  "roadNpc.watcher": "The shadow didn't open his mouth, but a voice came from behind you: Keep walking.",
+  "passingNpc.0": "Do not stop! They always take whoever falls behind.",
+  "passingNpc.1": "You can breathe inside the fence ahead, but do not stay long.",
+  "passingNpc.2": "I just saw a cow dragged into the fog.",
+  "passingNpc.3": "Do not trust the voice calling “Mama” in the fog.",
+  "passingNpc.4": "Save your strength. There is still a long way to go.",
+  "passingNpc.5": "If I fall behind… do not look back.",
+  "event.npcShoved": "You push the blocking survivor aside with one finger."
 }

@@ -135,7 +135,7 @@
   "death.enemy": "{enemy}把牛来扑倒，咬开皮毛，鲜血混进了雨水。",
   "death.snake": "草蛇缠住牛来的四肢，随后赶来的怪物将它扑倒撕咬。",
   "death.tree": "怪树卡住了牛来。追来的它们扑上去，直到雨水完全变红。",
-  "death.bird": "怪鸟的污秽物从雾里坠下，砸穿了牛来的身体。",
+  "death.bird": "怪鸟从雾里投下鸟粪，重重砸在牛来身上。",
   "title.cry": "妈妈——！",
   "alt.niulaiPortrait": "牛来头像",
   "alt.bullPortrait": "大角头像",
@@ -144,8 +144,8 @@
   "alt.appIcon": "牛来应用图标",
   "event.heartLost": "受伤了。还剩 {count} 颗心。",
   "event.snakeHit": "草蛇咬伤了你！",
-  "event.birdHit": "天上掉下了污秽物！",
-  "event.birdNpcKilled": "怪鸟投下的污秽物砸死了一名逃难者。",
+  "event.birdHit": "怪鸟拉下的鸟粪砸中你了！",
+  "event.birdNpcKilled": "怪鸟拉下的鸟粪砸死了一名逃难者。",
   "event.treeHit": "怪树抓伤了你！",
   "chapter.1.number": "第一章",
   "chapter.1.title": "草原逃亡",
@@ -210,5 +210,12 @@
   "roadNpc.0": "别跟着我跑。前面的栅栏里还有活着的牛。",
   "roadNpc.1": "我听见妈妈在雾里叫，可声音是从地下传来的。",
   "roadNpc.2": "火一灭就快走。安全区从来不是真的安全。",
-  "roadNpc.watcher": "黑影没有张嘴，声音却从你身后传来：继续走。"
+  "roadNpc.watcher": "黑影没有张嘴，声音却从你身后传来：继续走。",
+  "passingNpc.0": "别停！它们专挑落在最后的吃。",
+  "passingNpc.1": "前面的栅栏能喘口气，但千万别待太久。",
+  "passingNpc.2": "我刚看见一头牛被拖进雾里。",
+  "passingNpc.3": "别信雾里叫“妈妈”的声音。",
+  "passingNpc.4": "省着点体力，后面还有很长的路。",
+  "passingNpc.5": "如果我没跟上……别回头。",
+  "event.npcShoved": "你伸出一根手指，把挡路的同伴搓到一边。"
 }
