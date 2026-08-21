@@ -49,5 +49,5 @@ Debug APK 输出在：
 
 ## 版本
 
-Web、iOS 和 Android 使用相同显示版本 `20260821.26`。Android `versionCode` 与 iOS
-build number 使用纯数字 `26082126`。
+游戏内显示版本与 Android 版本为 `20260821.26`。App Store 营销版本为 `1.0`，iOS
+build number 为 `26082127`；Android `versionCode` 为 `26082126`。
