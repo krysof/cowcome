@@ -1,17 +1,23 @@
 import zhHans from './locales/zh-Hans.json';
 import zhHant from './locales/zh-Hant.json';
 import yue from './locales/yue-Hant-HK.json';
+import en from './locales/en.json';
+import ja from './locales/ja.json';
+import ko from './locales/ko.json';
 
 export const LANGUAGE_STORAGE_KEY='niulai-language';
 export const locales={
+  'en':{nativeName:'English',htmlLang:'en',messages:en},
+  'ja':{nativeName:'日本語',htmlLang:'ja',messages:ja},
   'zh-Hans':{nativeName:'简体中文',htmlLang:'zh-Hans',messages:zhHans},
   'zh-Hant':{nativeName:'繁體中文',htmlLang:'zh-Hant',messages:zhHant},
-  'yue-Hant-HK':{nativeName:'粵語',htmlLang:'yue-Hant-HK',messages:yue}
+  'yue-Hant-HK':{nativeName:'粵語',htmlLang:'yue-Hant-HK',messages:yue},
+  'ko':{nativeName:'한국어',htmlLang:'ko',messages:ko}
 };
-export const languageOrder=['yue-Hant-HK','zh-Hant','zh-Hans'];
+export const languageOrder=['en','ja','yue-Hant-HK','zh-Hant','zh-Hans','ko'];
 const fallback='zh-Hans';
 export function matchLocale(languages=navigator.languages?.length?navigator.languages:[navigator.language]){
-  for(const raw of languages||[]){const tag=String(raw||'').replace('_','-'),low=tag.toLowerCase();if(low.startsWith('yue'))return'yue-Hant-HK';if(low.startsWith('zh')){if(/hant|tw|hk|mo/.test(low))return'zh-Hant';if(/hans|cn|sg/.test(low))return'zh-Hans';return fallback;}}
+  for(const raw of languages||[]){const tag=String(raw||'').replace('_','-'),low=tag.toLowerCase();if(low==='en'||low.startsWith('en-'))return'en';if(low==='ja'||low.startsWith('ja-'))return'ja';if(low==='ko'||low.startsWith('ko-'))return'ko';if(low.startsWith('yue'))return'yue-Hant-HK';if(low.startsWith('zh')){if(/hant|tw|hk|mo/.test(low))return'zh-Hant';if(/hans|cn|sg/.test(low))return'zh-Hans';return fallback;}}
   return fallback;
 }
 export function getLanguageChoice(){let saved;try{saved=localStorage.getItem(LANGUAGE_STORAGE_KEY);}catch{}return saved==='auto'||locales[saved]?saved:'auto';}
