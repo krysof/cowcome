@@ -11,10 +11,17 @@ final class GameViewController: CAPBridgeViewController {
     private func configureTouchDelivery() {
         view.isMultipleTouchEnabled = true
         guard let webView else { return }
+        webView.frame = view.bounds
+        webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         webView.isMultipleTouchEnabled = true
         webView.scrollView.isMultipleTouchEnabled = true
         webView.scrollView.delaysContentTouches = false
         webView.scrollView.canCancelContentTouches = false
+        // The game handles safe areas in CSS.  Keep UIKit from shifting the
+        // scroll view's interactive region away from what is drawn onscreen.
+        webView.scrollView.contentInsetAdjustmentBehavior = .never
+        webView.scrollView.contentInset = .zero
+        webView.scrollView.scrollIndicatorInsets = .zero
     }
 }
 

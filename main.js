@@ -806,8 +806,10 @@ const activeActionTouches=new Map();
 function syncActionTouches(event){
   if(!touchControls)return;const changed=Array.from(event.changedTouches||[]),ending=event.type==='touchend'||event.type==='touchcancel';for(const touch of changed){if(ending)activeActionTouches.delete(touch.identifier);else activeActionTouches.set(touch.identifier,{identifier:touch.identifier,clientX:touch.clientX,clientY:touch.clientY});}
   if(event.type==='touchmove')for(const touch of Array.from(event.touches||[]))activeActionTouches.set(touch.identifier,{identifier:touch.identifier,clientX:touch.clientX,clientY:touch.clientY});
-  const touches=Array.from(activeActionTouches.values()),runHeld=state==='playing'&&touches.some(touch=>touchInside(touch,runBtn,0));keys.ShiftLeft=runHeld;runVisual.classList.toggle('pressed',runHeld);
-  const currentShoveIds=new Set();if(state==='playing')for(const touch of touches)if(touchInside(touch,shoveBtn,0)){currentShoveIds.add(touch.identifier);if(!shoveTouchIds.has(touch.identifier))performNpcShove();}
+  // A small invisible margin makes the complete painted circle (including its
+  // antialiased edge) a reliable target on high-DPI mobile screens.
+  const touches=Array.from(activeActionTouches.values()),runHeld=state==='playing'&&touches.some(touch=>touchInside(touch,runBtn,12));keys.ShiftLeft=runHeld;runVisual.classList.toggle('pressed',runHeld);
+  const currentShoveIds=new Set();if(state==='playing')for(const touch of touches)if(touchInside(touch,shoveBtn,12)){currentShoveIds.add(touch.identifier);if(!shoveTouchIds.has(touch.identifier))performNpcShove();}
   shoveTouchIds.clear();currentShoveIds.forEach(id=>shoveTouchIds.add(id));shoveVisual.classList.toggle('pressed',shoveTouchIds.size>0);
   if(runHeld||shoveTouchIds.size)event.preventDefault();
 }

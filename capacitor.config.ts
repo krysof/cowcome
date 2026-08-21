@@ -7,7 +7,10 @@ const config: CapacitorConfig = {
   backgroundColor: '#0b0d09',
   ios: {
     backgroundColor: '#0b0d09',
-    contentInset: 'always',
+    // CSS already accounts for every safe-area inset.  Letting UIKit add a
+    // second inset makes the visible bottom controls and WKWebView's touch
+    // coordinates disagree on devices with a home indicator.
+    contentInset: 'never',
     allowsLinkPreview: false,
     scrollEnabled: false,
     preferredContentMode: 'mobile',
