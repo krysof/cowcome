@@ -753,11 +753,12 @@ addEventListener('keyup',e=>keys[e.code]=false);
 addEventListener('blur',()=>{Object.keys(keys).forEach(key=>delete keys[key]);resetJoystick();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){Object.keys(keys).forEach(key=>delete keys[key]);resetJoystick();}});
 document.querySelectorAll('.mobile-controls button[data-key]').forEach(button=>{
-  const key=button.dataset.key,activePresses=new Set(),refresh=()=>{keys[key]=activePresses.size>0;button.classList.toggle('pressed',activePresses.size>0);};
-  button.addEventListener('pointerdown',event=>{event.preventDefault();activePresses.add(`p${event.pointerId}`);refresh();try{button.setPointerCapture(event.pointerId)}catch{}});
-  const releasePointer=event=>{activePresses.delete(`p${event.pointerId}`);refresh();};button.addEventListener('pointerup',releasePointer);button.addEventListener('pointercancel',releasePointer);button.addEventListener('lostpointercapture',releasePointer);
-  button.addEventListener('touchstart',event=>{event.preventDefault();for(const touch of event.changedTouches)activePresses.add(`t${touch.identifier}`);refresh();},{passive:false});
-  const releaseTouches=event=>{event.preventDefault();for(const touch of event.changedTouches)activePresses.delete(`t${touch.identifier}`);refresh();};button.addEventListener('touchend',releaseTouches,{passive:false});button.addEventListener('touchcancel',releaseTouches,{passive:false});
+  const key=button.dataset.key;
+  button.addEventListener('pointerdown',event=>{event.preventDefault();keys[key]=true;button.classList.add('pressed')});
+  const release=()=>{keys[key]=false;button.classList.remove('pressed')};
+  ['pointerup','pointercancel','pointerleave'].forEach(type=>button.addEventListener(type,release));
+  button.addEventListener('touchstart',event=>{event.preventDefault();keys[key]=true;button.classList.add('pressed')},{passive:false});
+  ['touchend','touchcancel'].forEach(type=>button.addEventListener(type,release,{passive:false}));
 });
 const joystickEl=document.querySelector('#joystick'),joystickKnob=document.querySelector('#joystickKnob');
 function moveJoystick(e){
@@ -796,11 +797,11 @@ function performNpcShove(){
   const world=target.getWorldPosition(new THREE.Vector3()),dx=world.x-player.position.x,dz=world.z-player.position.z,d=Math.max(.1,Math.hypot(dx,dz)),rightX=Math.cos(player.rotation.y),rightZ=-Math.sin(player.rotation.y),side=(dx*rightX+dz*rightZ)>=0?1:-1,pushX=rightX*side*3.45+dx/d*.35,pushZ=rightZ*side*3.45+dz/d*.35;setTimeout(()=>{if(state==='playing')shoveFriendlyNpc(target,pushX,pushZ);},130);return true;
 }
 const shoveBtn=document.querySelector('#shoveBtn');
-const shovePresses=new Set(),refreshShove=()=>shoveBtn.classList.toggle('pressed',shovePresses.size>0);
-shoveBtn.addEventListener('pointerdown',event=>{event.preventDefault();shovePresses.add(`p${event.pointerId}`);refreshShove();try{shoveBtn.setPointerCapture(event.pointerId)}catch{}performNpcShove();});
-const releaseShovePointer=event=>{shovePresses.delete(`p${event.pointerId}`);refreshShove();};shoveBtn.addEventListener('pointerup',releaseShovePointer);shoveBtn.addEventListener('pointercancel',releaseShovePointer);shoveBtn.addEventListener('lostpointercapture',releaseShovePointer);
-shoveBtn.addEventListener('touchstart',event=>{event.preventDefault();for(const touch of event.changedTouches)shovePresses.add(`t${touch.identifier}`);refreshShove();performNpcShove();},{passive:false});
-const releaseShoveTouches=event=>{event.preventDefault();for(const touch of event.changedTouches)shovePresses.delete(`t${touch.identifier}`);refreshShove();};shoveBtn.addEventListener('touchend',releaseShoveTouches,{passive:false});shoveBtn.addEventListener('touchcancel',releaseShoveTouches,{passive:false});
+shoveBtn.addEventListener('pointerdown',event=>{event.preventDefault();shoveBtn.classList.add('pressed');performNpcShove();});
+const releaseShove=()=>shoveBtn.classList.remove('pressed');
+['pointerup','pointercancel','pointerleave'].forEach(type=>shoveBtn.addEventListener(type,releaseShove));
+shoveBtn.addEventListener('touchstart',event=>{event.preventDefault();shoveBtn.classList.add('pressed');performNpcShove();},{passive:false});
+['touchend','touchcancel'].forEach(type=>shoveBtn.addEventListener(type,releaseShove,{passive:false}));
 
 function glitch(){document.body.classList.add('glitch');sound(48,.1,'square',.03);setTimeout(()=>document.body.classList.remove('glitch'),80+Math.random()*160);}
 function terrorFlash(){
