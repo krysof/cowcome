@@ -752,10 +752,11 @@ addEventListener('keydown',e=>{if(movementCodes.has(e.code)){e.preventDefault();
 addEventListener('keyup',e=>keys[e.code]=false);
 addEventListener('blur',()=>{Object.keys(keys).forEach(key=>delete keys[key]);resetJoystick();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){Object.keys(keys).forEach(key=>delete keys[key]);resetJoystick();}});
-document.querySelectorAll('.mobile-controls button[data-key]').forEach(b=>{
-  const k=b.dataset.key;b.addEventListener('pointerdown',e=>{e.preventDefault();keys[k]=true});
-  ['pointerup','pointercancel','pointerleave'].forEach(ev=>b.addEventListener(ev,()=>keys[k]=false));
-  b.addEventListener('touchstart',e=>{e.preventDefault();keys[k]=true},{passive:false});['touchend','touchcancel'].forEach(ev=>b.addEventListener(ev,()=>keys[k]=false,{passive:false}));
+document.querySelectorAll('.mobile-controls button[data-key]').forEach(button=>{
+  const key=button.dataset.key,activePointers=new Set();
+  button.addEventListener('pointerdown',event=>{event.preventDefault();activePointers.add(event.pointerId);keys[key]=true;button.classList.add('pressed');try{button.setPointerCapture(event.pointerId)}catch{}});
+  const release=event=>{if(!activePointers.has(event.pointerId))return;activePointers.delete(event.pointerId);if(!activePointers.size){keys[key]=false;button.classList.remove('pressed');}};
+  button.addEventListener('pointerup',release);button.addEventListener('pointercancel',release);button.addEventListener('lostpointercapture',release);
 });
 const joystickEl=document.querySelector('#joystick'),joystickKnob=document.querySelector('#joystickKnob');
 function moveJoystick(e){
@@ -791,7 +792,9 @@ function performNpcShove(){
   if(state!=='playing'||elapsed-lastNpcShove<.55)return false;lastNpcShove=elapsed;const target=findNpcToShove(),shoveFinger=player.userData.shoveFinger;if(shoveFinger){shoveFinger.until=elapsed+.48;shoveFinger.finger.scale.y=2.27;shoveFinger.rig.visible=true;}sound(82,.14,'triangle',.035);navigator.vibrate?.(18);if(!target)return false;
   const world=target.getWorldPosition(new THREE.Vector3()),dx=world.x-player.position.x,dz=world.z-player.position.z,d=Math.max(.1,Math.hypot(dx,dz));setTimeout(()=>{if(state==='playing')shoveFriendlyNpc(target,dx/d*5.8,dz/d*5.8);},130);return true;
 }
-document.querySelector('#shoveBtn').addEventListener('pointerdown',e=>{e.preventDefault();performNpcShove();});
+const shoveBtn=document.querySelector('#shoveBtn');
+shoveBtn.addEventListener('pointerdown',event=>{event.preventDefault();shoveBtn.classList.add('pressed');try{shoveBtn.setPointerCapture(event.pointerId)}catch{}performNpcShove();});
+const releaseShove=()=>shoveBtn.classList.remove('pressed');shoveBtn.addEventListener('pointerup',releaseShove);shoveBtn.addEventListener('pointercancel',releaseShove);shoveBtn.addEventListener('lostpointercapture',releaseShove);
 
 function glitch(){document.body.classList.add('glitch');sound(48,.1,'square',.03);setTimeout(()=>document.body.classList.remove('glitch'),80+Math.random()*160);}
 function terrorFlash(){
@@ -1075,6 +1078,7 @@ if(import.meta.env.DEV)window.__NIULAI_TEST__={
   shoveNpcState(index=0){const npc=storyHerd[index%storyHerd.length];return{distance:npc.userData.shoveStart?npc.position.distanceTo(npc.userData.shoveStart):0,sayKey:activeSayKey};},
   shoveButtonProbe(){animalActors.forEach(npc=>npc.visible=false);player.position.set(0,.05,0);player.rotation.y=0;const npc=storyHerd[0];npc.visible=true;npc.userData.eaten=false;npc.userData.escaped=false;npc.position.set(0,.05,-4);npc.userData.shoveStart=npc.position.clone();hunter.visible=true;hunter.position.set(0,.05,-2);hunter.userData.chaseSpeed=0;hunter.userData.nextPounce=elapsed+99;hunter.userData.shoveStart=hunter.position.clone();activeChasers=[];const obstacle=obstacles[0];obstacle.userData.shoveStart=obstacle.position.clone();lastNpcShove=-9;return true;},
   shoveButtonState(){const npc=storyHerd[0],obstacle=obstacles[0],finger=player.userData.shoveFinger;return{friendDistance:npc.userData.shoveStart?npc.position.distanceTo(npc.userData.shoveStart):0,enemyDistance:hunter.userData.shoveStart?hunter.position.distanceTo(hunter.userData.shoveStart):0,obstacleDistance:obstacle.userData.shoveStart?obstacle.position.distanceTo(obstacle.userData.shoveStart):0,fingerAnimated:Boolean(finger?.rig.visible),fingerLength:finger?.finger.scale.y||0};},
+  controlsState(){return{running:Boolean(keys.ShiftLeft),runPressed:document.querySelector('.mobile-controls .run').classList.contains('pressed'),shovePressed:shoveBtn.classList.contains('pressed'),joystickHeld:joystickPointer!==null||joystickTouch!==null};},
   safeResidentSpread(index=0){const xs=safeZones[index].userData.residents.map(npc=>npc.position.x);return Math.max(...xs)-Math.min(...xs);},
   roadNpcProbe(index=0){const npc=strangeTravellers[index];player.position.set(npc.position.x+.1,.05,npc.position.z);npc.userData.talked=false;return true;},
   roadNpcState(index=0){const npc=strangeTravellers[index];return{distance:Math.hypot(player.position.x-npc.position.x,player.position.z-npc.position.z),talked:npc.userData.talked,sayKey:activeSayKey};},
