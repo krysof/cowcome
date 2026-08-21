@@ -60,22 +60,31 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xb9c98a);
 scene.fog = new THREE.FogExp2(0xa7b886, 0.018);
 const camera = new THREE.PerspectiveCamera(66, innerWidth / innerHeight, .1, 900);
-const mobileDevice=matchMedia('(max-width:700px), (pointer:coarse)').matches,
-  lowMemory=Number(navigator.deviceMemory||8)<=4,
-  appleMobile=/iPhone|iPad|iPod/i.test(navigator.userAgent),
-  cpuCores=Number(navigator.hardwareConcurrency||4),
-  performanceMode=mobileDevice&&(appleMobile||lowMemory||cpuCores<=6);
-// iOS Safari 不提供 deviceMemory，旧逻辑会把 iPhone 12 Pro Max 错当成高端机并以 2.25x 渲染。
-// 自动性能档保留关键玩法与怪物，只降低不可见的 GPU/CPU 开销；分辨率还会按实际帧耗微调。
-document.documentElement.classList.toggle('performance-mode',performanceMode);
-const quality={
-  hills:performanceMode?70:110,puddles:performanceMode?58:95,roundTrees:performanceMode?112:190,
-  deadTrees:performanceMode?165:280,grass:performanceMode?15000:(mobileDevice?26000:56000),
-  rain:performanceMode?300:(mobileDevice?480:850),snow:performanceMode?330:(mobileDevice?520:900),
-  birds:performanceMode?12:18,particles:performanceMode?20:42
-};
-const maxRenderDpr=Math.min(devicePixelRatio||1,performanceMode?1.42:(mobileDevice?1.8:1.75)),minRenderDpr=performanceMode?1.08:maxRenderDpr;
-let renderDpr=maxRenderDpr,qualitySampleStart=performance.now(),qualityFrameTime=0,qualityFrames=0;
+function classifyDeviceProfile({mobile,ua,width,height,dpr,memory,cores}){
+  if(!mobile)return{tier:'high',model:'desktop'};
+  const small=Math.round(Math.min(width,height)),large=Math.round(Math.max(width,height)),key=`${small}x${large}`;
+  if(/iPhone|iPod/i.test(ua)){
+    // Safari 不公开 iPhone 硬件编号；这些 CSS 屏幕规格可稳定覆盖同代性能组，重叠型号再交给实时帧率校准。
+    const low=new Set(['320x568','375x667','414x736','375x812']),high=new Set(['393x852','402x874','430x932','440x956']);
+    const tier=low.has(key)||large<812?'low':high.has(key)||large>932?'high':'balanced';
+    return{tier,model:`iPhone-${key}`};
+  }
+  if(/iPad/i.test(ua))return{tier:cores<=4?'low':cores>=8?'high':'balanced',model:`iPad-${key}`};
+  const pixels=width*height*dpr*dpr,tier=memory<=4||cores<=4||pixels>7_000_000?'low':memory>=8&&cores>=8&&pixels<5_000_000?'high':'balanced';
+  return{tier,model:`Android-${key}`};
+}
+const mobileDevice=matchMedia('(max-width:700px), (pointer:coarse)').matches,cpuCores=Number(navigator.hardwareConcurrency||4),deviceMemory=Number(navigator.deviceMemory||8),
+  deviceProfile=classifyDeviceProfile({mobile:mobileDevice,ua:navigator.userAgent,width:screen.width||innerWidth,height:screen.height||innerHeight,dpr:devicePixelRatio||1,memory:deviceMemory,cores:cpuCores}),
+  qualityTier=deviceProfile.tier,performanceMode=mobileDevice&&qualityTier!=='high';
+document.documentElement.classList.add(`quality-${qualityTier}`);document.documentElement.classList.toggle('performance-mode',performanceMode);
+const qualityPresets={
+  low:{hills:52,puddles:42,roundTrees:82,deadTrees:118,grass:10000,rain:210,snow:240,birds:9,particles:14},
+  balanced:{hills:76,puddles:62,roundTrees:126,deadTrees:178,grass:17000,rain:320,snow:360,birds:13,particles:22},
+  high:{hills:110,puddles:95,roundTrees:190,deadTrees:280,grass:mobileDevice?28000:56000,rain:mobileDevice?520:850,snow:mobileDevice?580:900,birds:18,particles:42}
+},quality=qualityPresets[qualityTier];
+const dprLimits=qualityTier==='low'?{min:.92,start:1.15,max:1.28}:qualityTier==='balanced'?{min:1.02,start:1.35,max:1.65}:mobileDevice?{min:1.25,start:1.7,max:2}:{min:1.75,start:1.75,max:1.75},
+  maxRenderDpr=Math.min(devicePixelRatio||1,dprLimits.max),minRenderDpr=Math.min(maxRenderDpr,dprLimits.min);
+let renderDpr=Math.min(maxRenderDpr,dprLimits.start),qualitySampleStart=performance.now(),qualityFrameTime=0,qualityFrames=0;
 const renderer = new THREE.WebGLRenderer({ canvas, antialias:!performanceMode, powerPreference:'high-performance',precision:performanceMode?'mediump':'highp' });
 renderer.setPixelRatio(renderDpr);
 renderer.setSize(innerWidth, innerHeight);
@@ -1017,7 +1026,7 @@ function tick(){
   if(state==='intro')camera.lookAt(player.position.x,2.5,player.position.z);
   else camera.lookAt(player.position.x,narrow?1.2:1.8,player.position.z+(narrow?5:8));
   renderer.render(scene,camera);
-  if(performanceMode&&state==='playing'){
+  if(mobileDevice&&state==='playing'){
     qualityFrameTime+=dt*1000;qualityFrames++;
     const now=performance.now();if(now-qualitySampleStart>1800&&qualityFrames>20){const averageFrame=qualityFrameTime/qualityFrames,next=averageFrame>22.5?Math.max(minRenderDpr,renderDpr-.14):averageFrame<16.5?Math.min(maxRenderDpr,renderDpr+.07):renderDpr;if(Math.abs(next-renderDpr)>.01){renderDpr=next;renderer.setPixelRatio(renderDpr);renderer.setSize(Math.round(window.visualViewport?.width||innerWidth),Math.round(window.visualViewport?.height||innerHeight),false);}qualitySampleStart=now;qualityFrameTime=0;qualityFrames=0;}
   }
@@ -1048,7 +1057,8 @@ if(import.meta.env.DEV)window.__NIULAI_TEST__={
   passingNpcProbe(index=0){const npc=storyHerd[index%storyHerd.length];npc.visible=true;npc.userData.active=true;npc.userData.eaten=false;npc.userData.escaped=false;npc.userData.passingTalked=false;lastPassingNpcTalk=-99;npc.position.set(player.position.x+2,.05,player.position.z);talkToPassingNpc(npc,index);return true;},
   passingNpcState(index=0){const npc=storyHerd[index%storyHerd.length];return{talked:Boolean(npc.userData.passingTalked),sayKey:activeSayKey};},
   playerState(){return{x:player.position.x,z:player.position.z,state};},
-  performanceState(){return{mode:performanceMode,dpr:renderDpr,grass:grassCount,rain:rainCount,snow:snowCount,birds:strangeBirds.length,shadows:renderer.shadowMap.enabled};},
+  performanceState(){return{tier:qualityTier,model:deviceProfile.model,mode:performanceMode,dpr:renderDpr,dprMin:minRenderDpr,dprMax:maxRenderDpr,grass:grassCount,rain:rainCount,snow:snowCount,birds:strangeBirds.length,shadows:renderer.shadowMap.enabled};},
+  classifyDevice(metrics){return classifyDeviceProfile(metrics);},
   shoveNpcProbe(index=0){const npc=storyHerd[index%storyHerd.length];npc.visible=true;npc.userData.eaten=false;npc.userData.escaped=false;npc.position.set(player.position.x+2,.05,player.position.z);npc.userData.shoveStart=npc.position.clone();shoveFriendlyNpc(npc,5,1);return true;},
   shoveNpcState(index=0){const npc=storyHerd[index%storyHerd.length];return{distance:npc.userData.shoveStart?npc.position.distanceTo(npc.userData.shoveStart):0,sayKey:activeSayKey};},
   safeResidentSpread(index=0){const xs=safeZones[index].userData.residents.map(npc=>npc.position.x);return Math.max(...xs)-Math.min(...xs);},
