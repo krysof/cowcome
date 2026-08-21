@@ -460,10 +460,20 @@ for(let z=4;z>-WORLD_DEPTH;z-=17+Math.random()*15){
   const side=Math.random()>.5?1:-1; addRock(side*(8+Math.random()*41),z,.7+Math.random()*2.2);
   if(Math.random()>.62)addRock(-side*(12+Math.random()*35),z-3,.6+Math.random()*1.5);
 }
-// crooked black monoliths make landmarks and occlusion
-for(let z=-65;z>-WORLD_DEPTH;z-=115){
-  const x=(Math.random()-.5)*55;
-  const p=mesh(new THREE.BoxGeometry(4,16+Math.random()*14,3),flat(0x26251f),scene,x,6,z,[1,1,1],[0,0,(Math.random()-.5)*.25]);p.userData.collisionRadius=2.6;obstacles.push(p);
+// 路上的旧方柱改为扭曲的刻纹石：七边形锥体、错位骨节与发暗红光的环形咒纹。
+const monolithStone=flat(0x24231f),monolithStoneAlt=flat(0x353027),runeMats=[0x7d2119,0x79632d,0x273f39].map(color=>new THREE.MeshStandardMaterial({color,emissive:color,emissiveIntensity:.38,roughness:.92,flatShading:true}));
+function makePatternedMonolith(index){
+  const g=new THREE.Group(),height=13+Math.random()*15,lower=mesh(new THREE.CylinderGeometry(1.2+Math.random()*.55,2.1+Math.random()*.65,height*.62,7,3),monolithStone,g,0,height*.31,0,[1,1,1],[.05*(index%3-1),Math.random()*.5,(Math.random()-.5)*.2]);
+  lower.geometry.attributes.position.needsUpdate=true;
+  mesh(new THREE.DodecahedronGeometry(2.05,0),monolithStoneAlt,g,(index%2?1:-1)*.35,height*.61,.12,[1,.75+Math.random()*.35,.82],[Math.random()*.5,index*.31,.18]);
+  mesh(new THREE.ConeGeometry(1.55+Math.random()*.45,height*.4,5,2),monolithStone,g,(index%3-1)*.28,height*.82,0,[1,1,1],[(Math.random()-.5)*.2,index*.17,(Math.random()-.5)*.28]);
+  const runeMat=runeMats[index%runeMats.length];
+  for(let band=0;band<3;band++)mesh(new THREE.TorusGeometry(1.48-band*.12,.09+band*.025,4,7),runeMat,g,0,height*(.2+band*.18),0,[1+band*.08,1,1],[Math.PI/2+(band-1)*.13,0,index*.8+band*.55]);
+  for(let shard=0;shard<3;shard++){const angle=index*.9+shard*Math.PI*2/3;mesh(new THREE.ConeGeometry(.28,.95+shard*.22,4),runeMat,g,Math.cos(angle)*1.7,height*(.34+shard*.14),Math.sin(angle)*1.25,[1,1,1],[Math.sin(angle)*.55,0,-Math.cos(angle)*.55]);}
+  g.rotation.y=Math.random()*Math.PI;g.userData.collisionRadius=2.75;return g;
+}
+for(let z=-65,index=0;z>-WORLD_DEPTH;z-=115,index++){
+  const p=makePatternedMonolith(index);p.position.set((Math.random()-.5)*55,0,z);p.rotation.z=(Math.random()-.5)*.14;obstacles.push(p);scene.add(p);
 }
 
 // destination arch
@@ -645,7 +655,7 @@ function horrorSound(kind=0){
 function triggerHaunt(){
   if(state!=='playing')return;const kind=Math.floor(Math.random()*5);
   document.body.classList.remove('apparition','blackout','blood-flash','heartbeat');
-  if(kind===0){document.body.classList.add('blackout');horrorSound(0);shake=.45;hauntTimer=setTimeout(()=>document.body.classList.remove('blackout'),110+Math.random()*190);}
+  if(kind===0){document.body.classList.add('blackout');horrorSound(0);shake=.45;hauntTimer=setTimeout(()=>document.body.classList.remove('blackout'),70+Math.random()*90);}
   else if(kind===1){document.body.classList.add('apparition');horrorSound(1);shake=.8;hauntTimer=setTimeout(()=>document.body.classList.remove('apparition'),480);}
   else if(kind===2){document.body.classList.add('blood-flash');horrorSound(2);hauntTimer=setTimeout(()=>document.body.classList.remove('blood-flash'),520);}
   else if(kind===3){const w=watchers.find(x=>!x.visible)||watchers[0],side=Math.random()<.5?-1:1;if(activeSafeZone>=0){const zone=safeZones[activeSafeZone],angle=Math.random()*Math.PI*2;w.position.set(zone.position.x+Math.cos(angle)*25,0,zone.position.z+Math.sin(angle)*23);w.rotation.y=-angle;}else{w.position.set(player.position.x+side*(7+Math.random()*9),0,player.position.z-12-Math.random()*20);w.rotation.y=side>0?-.4:.4;}w.userData.spoken=false;w.visible=true;horrorSound(0);hauntTimer=setTimeout(()=>w.visible=false,3200+Math.random()*1800);}
