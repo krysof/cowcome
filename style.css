@@ -141,7 +141,7 @@ body.glitch #game { filter:blur(1.1px) hue-rotate(80deg) contrast(1.7); transfor
 body.hit #game{animation:hit .22s linear 2}
 @keyframes hit{0%,100%{transform:none}50%{transform:translateX(7px) scale(1.006);filter:brightness(2) saturate(2)}}
 @media(max-width:700px), (pointer:coarse) {
-  .language-picker{right:max(10px,env(safe-area-inset-right));top:max(10px,env(safe-area-inset-top))}.language-picker>button{width:42px;padding:0;justify-content:center}.language-picker>button b{display:none}.language-menu{right:0;top:47px}
+  .language-picker{right:max(12px,calc(env(safe-area-inset-right) + 8px));top:max(32px,calc(env(safe-area-inset-top) + 26px))}.language-picker>button{width:42px;padding:0;justify-content:center}.language-picker>button b{display:none}.language-menu{right:0;top:47px}
   #game{filter:blur(.32px) saturate(var(--game-sat,.68)) brightness(var(--game-light,.86)) contrast(var(--game-contrast,1.12))}
   .noise{opacity:.18;animation-duration:.28s}
   .screen{padding:20px 24px}.intro{background:#e8e3d3}
