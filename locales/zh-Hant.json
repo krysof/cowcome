@@ -203,5 +203,9 @@
   "direction.ahead": "正前方",
   "enemy.crawler": "雙頭爬行物",
   "enemy.hollow": "空面長肢者",
-  "enemy.knot": "肉結眼獸"
+  "enemy.knot": "肉結眼獸",
+  "roadNpc.0": "別跟著我跑。前面的柵欄裡還有活著的牛。",
+  "roadNpc.1": "我聽見媽媽在霧裡呼喚，可聲音是從地下傳來的。",
+  "roadNpc.2": "火一熄就快走。安全區從來不是真的安全。",
+  "roadNpc.watcher": "黑影沒有張嘴，聲音卻從你身後傳來：繼續走。"
 }

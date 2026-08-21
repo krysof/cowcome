@@ -203,5 +203,9 @@
   "direction.ahead": "正前面",
   "enemy.crawler": "雙頭爬行怪",
   "enemy.hollow": "空面長腳怪",
-  "enemy.knot": "肉結眼怪"
+  "enemy.knot": "肉結眼怪",
+  "roadNpc.0": "唔好跟住我跑。前面個圍欄入面仲有牛未死。",
+  "roadNpc.1": "我聽到媽媽喺霧入面叫，但把聲係地下傳上嚟。",
+  "roadNpc.2": "火一熄就好走。安全區從來都唔係真係安全。",
+  "roadNpc.watcher": "黑影冇擘嘴，把聲卻由你身後傳嚟：繼續行。"
 }
