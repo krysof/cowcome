@@ -162,13 +162,15 @@ function makePaintedTree(index){const g=new THREE.Group(),lean=(index%2?1:-1)*(1
 for(let i=0;i<30;i++){const tree=makePaintedTree(i),side=i%2?1:-1;tree.position.set(side*(16+(i%3)*4),0,-90-i*166);tree.rotation.y=(i%5-2)*.12;tree.userData.collisionRadius=1.85;obstacles.push(tree);paintedTrees.push(tree);scene.add(tree);}
 const paintedMoons=[];[-620,-1580,-2520,-3460,-4380].forEach((z,i)=>{const moon=mesh(new THREE.CircleGeometry(6.5+i%2*2,28),new THREE.MeshBasicMaterial({color:i<2?0xf2ad3b:i===2?0xc7d4c8:0xb95b32,transparent:true,opacity:.76,side:THREE.DoubleSide,fog:false}),scene,(i%2?1:-1)*37,17,z,[1,1,1],[0,0,0]);moon.userData.phase=i*.8;paintedMoons.push(moon);});
 function addShoveFinger(character,skin,x=.9,y=2.55){
-  const rig=new THREE.Group();rig.position.set(x,y,-.55);rig.visible=false;character.add(rig);
-  mesh(new THREE.SphereGeometry(.27,7,5),skin,rig,0,0,0,[1,.82,1]);
-  const geometry=new THREE.CylinderGeometry(.085,.16,1.75,7);geometry.translate(0,.875,0);
-  const finger=mesh(geometry,skin,rig,0,0,-.05,[1,1,1],[-Math.PI/2,0,0]);
-  finger.scale.y=.12;
-  const tip=mesh(new THREE.SphereGeometry(.115,7,5),skin,finger,0,1.73,0,[1,1.05,1]);
-  character.userData.shoveFinger={rig,finger,tip,until:-1};
+  const hands=[-1,1].map(side=>{
+    const rig=new THREE.Group();rig.position.set(side*x,y,-.55);rig.visible=false;character.add(rig);
+    mesh(new THREE.SphereGeometry(.27,7,5),skin,rig,0,0,0,[1,.82,1]);
+    const geometry=new THREE.CylinderGeometry(.085,.16,1.75,7);geometry.translate(0,.875,0);
+    const finger=mesh(geometry,skin,rig,0,0,-.05,[1,1,1],[-Math.PI/2,0,0]);finger.scale.y=.12;
+    const tip=mesh(new THREE.SphereGeometry(.115,7,5),skin,finger,0,1.73,0,[1,1.05,1]);return{rig,finger,tip,side};
+  });
+  // 从右手开始，此后每次按“搓”严格左右交替。
+  character.userData.shoveFinger={hands,active:1,next:1,rig:hands[1].rig,finger:hands[1].finger,tip:hands[1].tip,until:-1};
 }
 function makeNiuLai(scale=1, dark=false){
   const g=new THREE.Group();
@@ -802,7 +804,7 @@ function findNpcToShove(){
   return best;
 }
 function performNpcShove(){
-  if(state!=='playing'||elapsed-lastNpcShove<.55)return false;lastNpcShove=elapsed;const target=findNpcToShove(),shoveFinger=player.userData.shoveFinger;if(shoveFinger){shoveFinger.until=elapsed+.48;shoveFinger.finger.scale.y=2.27;shoveFinger.rig.visible=true;}sound(82,.14,'triangle',.035);navigator.vibrate?.(18);if(!target)return false;
+  if(state!=='playing'||elapsed-lastNpcShove<.55)return false;lastNpcShove=elapsed;const target=findNpcToShove(),shoveFinger=player.userData.shoveFinger;if(shoveFinger){const handIndex=shoveFinger.next??1,hand=shoveFinger.hands?.[handIndex]||shoveFinger;shoveFinger.hands?.forEach(item=>{item.rig.visible=false;item.finger.scale.y=.12;});shoveFinger.active=handIndex;shoveFinger.next=handIndex?0:1;shoveFinger.rig=hand.rig;shoveFinger.finger=hand.finger;shoveFinger.tip=hand.tip;shoveFinger.until=elapsed+.48;hand.finger.scale.y=2.27;hand.rig.visible=true;}sound(82,.14,'triangle',.035);navigator.vibrate?.(18);if(!target)return false;
   const world=target.getWorldPosition(new THREE.Vector3()),dx=world.x-player.position.x,dz=world.z-player.position.z,d=Math.max(.1,Math.hypot(dx,dz)),rightX=Math.cos(player.rotation.y),rightZ=-Math.sin(player.rotation.y),side=(dx*rightX+dz*rightZ)>=0?1:-1,pushX=rightX*side*3.45+dx/d*.35,pushZ=rightZ*side*3.45+dz/d*.35;setTimeout(()=>{if(state==='playing')shoveFriendlyNpc(target,pushX,pushZ);},130);return true;
 }
 const shoveBtn=document.querySelector('#shoveBtn');
@@ -889,7 +891,7 @@ function animatePlayer(cow,t,moving,sprinting){
     cow.rotation.x=THREE.MathUtils.lerp(cow.rotation.x,0,.2);cow.position.y=THREE.MathUtils.lerp(cow.position.y,.05,.18);if(cow.userData.head)cow.userData.head.rotation.x=THREE.MathUtils.lerp(cow.userData.head.rotation.x,0,.2);cow.userData.arms.forEach((a,i)=>a.rotation.z=THREE.MathUtils.lerp(a.rotation.z,i?-.16:.16,.2));cow.userData.legs.forEach(l=>l.rotation.z=THREE.MathUtils.lerp(l.rotation.z,0,.2));animateCow(cow,t,moving?10:1);
   }
   const damage=3-hearts;if(damage){cow.rotation.z+=Math.sin(t*(damage===2?7:4.5))*(damage===2?.1:.045);if(!sprinting)cow.rotation.x-=damage*.075;if(cow.userData.head){cow.userData.head.rotation.z=THREE.MathUtils.lerp(cow.userData.head.rotation.z||0,damage*.1,.16);}if(cow.userData.arms?.[0])cow.userData.arms[0].rotation.x-=damage*.18;}
-  const shove=cow.userData.shoveFinger;if(shove){const remaining=shove.until-elapsed;if(remaining>0){const age=.48-remaining,p=age<.14?age/.14:age<.29?1:Math.max(0,1-(age-.29)/.19),eased=1-Math.pow(1-p,3);shove.rig.visible=true;shove.finger.scale.y=.12+eased*2.15;shove.rig.rotation.x=-.12-eased*.18;shove.rig.rotation.z=-.08-eased*.12;if(cow.userData.arms?.[1])cow.userData.arms[1].rotation.x=THREE.MathUtils.lerp(cow.userData.arms[1].rotation.x,-1.32,.72);}else{shove.rig.visible=false;shove.finger.scale.y=.12;}}
+  const shove=cow.userData.shoveFinger;if(shove){const hand=shove.hands?.[shove.active]||shove,armIndex=shove.hands?shove.active:1,remaining=shove.until-elapsed;if(remaining>0){const age=.48-remaining,p=age<.14?age/.14:age<.29?1:Math.max(0,1-(age-.29)/.19),eased=1-Math.pow(1-p,3);hand.rig.visible=true;hand.finger.scale.y=.12+eased*2.15;hand.rig.rotation.x=-.12-eased*.18;hand.rig.rotation.z=(armIndex?-.08:.08)+eased*(armIndex?-.12:.12);if(cow.userData.arms?.[armIndex])cow.userData.arms[armIndex].rotation.x=THREE.MathUtils.lerp(cow.userData.arms[armIndex].rotation.x,-1.32,.72);}else{shove.hands?.forEach(item=>{item.rig.visible=false;item.finger.scale.y=.12;});hand.rig.visible=false;hand.finger.scale.y=.12;}}
 }
 function placeChaser(enemy,xOffset,zOffset,speed){if(activeChasers.includes(enemy))return;enemy.position.set(player.position.x+xOffset,.05,player.position.z+zOffset);enemy.visible=true;enemy.userData.spawned=true;enemy.userData.chaseSpeed=speed;activeChasers.push(enemy);}
 const chapterRoleOrders=[

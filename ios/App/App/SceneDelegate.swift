@@ -1,11 +1,26 @@
 import UIKit
 import Capacitor
+import AVFAudio
 
 final class GameViewController: CAPBridgeViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
+        configureGameAudio()
         configureTouchDelivery()
         DispatchQueue.main.async { [weak self] in self?.configureTouchDelivery() }
+    }
+
+    private func configureGameAudio() {
+        // WKWebView otherwise inherits the ambient category and becomes silent
+        // whenever the iPhone mute switch is on.  Music and horror cues are
+        // intentional game audio, so play them through the normal media route.
+        let session = AVAudioSession.sharedInstance()
+        do {
+            try session.setCategory(.playback, mode: .default, options: [])
+            try session.setActive(true)
+        } catch {
+            NSLog("Unable to activate game audio session: %@", error.localizedDescription)
+        }
     }
 
     private func configureTouchDelivery() {
