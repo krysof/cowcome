@@ -148,6 +148,7 @@
   "event.snakeHit": "草ヘビに噛まれました！",
   "event.birdHit": "奇妙な鳥の糞が直撃した！",
   "event.birdNpcKilled": "奇妙な鳥の糞が避難者を直撃し、命を奪った。",
+  "event.birdShoved": "牛来は手を高く上げ、そばを飛ぶ怪鳥を指一本ではじき飛ばした！",
   "event.treeHit": "奇妙な木があなたを傷つけたのです！",
   "chapter.1.number": "第1章",
   "chapter.1.title": "草原の逃走",

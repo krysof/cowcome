@@ -148,6 +148,7 @@
   "event.snakeHit": "草蛇咬傷你喇！",
   "event.birdHit": "怪鳥屙落嚟嘅鳥糞砸中你！",
   "event.birdNpcKilled": "怪鳥屙落嚟嘅鳥糞砸死咗一個逃難者。",
+  "event.birdShoved": "牛來舉高手，一隻手指捽飛咗掠過身邊嘅怪鳥！",
   "event.treeHit": "怪樹抓傷你喇！",
   "chapter.1.number": "第一章",
   "chapter.1.title": "草原逃亡",

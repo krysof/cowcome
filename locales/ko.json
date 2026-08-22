@@ -148,6 +148,7 @@
   "event.snakeHit": "풀뱀이 당신을 물었습니다!",
   "event.birdHit": "기괴한 새가 떨어뜨린 새똥에 맞았습니다!",
   "event.birdNpcKilled": "기괴한 새의 새똥에 피난민 한 명이 맞아 죽었습니다.",
+  "event.birdShoved": "니우라이가 손을 높이 들어 스쳐 가던 괴조를 손가락 하나로 튕겨 냈습니다!",
   "event.treeHit": "이상한 나무가 당신을 긁었습니다!",
   "chapter.1.number": "제1장",
   "chapter.1.title": "초원 탈출",

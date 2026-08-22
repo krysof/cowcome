@@ -3,11 +3,11 @@
 * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 html,body { margin:0; width:100%; height:100%; min-height:100dvh; overflow:hidden; overscroll-behavior:none; background:#cbd3a1; color:var(--paper); font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif; -webkit-text-size-adjust:100%; }
 #game { position:fixed; inset:-1px; width:calc(100% + 2px); height:calc(100% + 2px); filter:blur(.65px) saturate(var(--game-sat,.72)) brightness(var(--game-light,.9)) contrast(var(--game-contrast,1.08));transition:filter .35s; }
-body.difficulty-easy{--game-sat:.82;--game-light:.97;--game-contrast:1.02}body.difficulty-normal{--game-sat:.7;--game-light:.9;--game-contrast:1.1}body.difficulty-hard{--game-sat:.48;--game-light:.72;--game-contrast:1.24}.difficulty-easy .noise{opacity:.17}.difficulty-normal .noise{opacity:.27}.difficulty-hard .noise{opacity:.39}.difficulty-hard .danger-state{filter:saturate(1.5) contrast(1.2)}
-body.enemy-near{--game-contrast:1.2}body.exhausted{--game-sat:.24;--game-light:.66;--game-contrast:1.22}body.enemy-near.exhausted{--game-sat:.15;--game-light:.57;--game-contrast:1.48}
-body.health-2{--game-sat:.64;--game-light:.84;--game-contrast:1.18}body.health-1{--game-sat:.3;--game-light:.66;--game-contrast:1.42}body.health-0{--game-sat:.08;--game-light:.46;--game-contrast:1.68}
+body.difficulty-easy{--game-sat:.82;--game-light:.99;--game-contrast:1.02}body.difficulty-normal{--game-sat:.7;--game-light:.94;--game-contrast:1.1}body.difficulty-hard{--game-sat:.48;--game-light:.82;--game-contrast:1.2}.difficulty-easy .noise{opacity:.17}.difficulty-normal .noise{opacity:.27}.difficulty-hard .noise{opacity:.36}.difficulty-hard .danger-state{filter:saturate(1.5) contrast(1.2)}
+body.enemy-near{--game-contrast:1.18}body.exhausted{--game-sat:.24;--game-light:.76;--game-contrast:1.18}body.enemy-near.exhausted{--game-sat:.15;--game-light:.68;--game-contrast:1.36}
+body.health-2{--game-sat:.64;--game-light:.92;--game-contrast:1.14}body.health-1{--game-sat:.3;--game-light:.78;--game-contrast:1.3}body.health-0{--game-sat:.08;--game-light:.55;--game-contrast:1.52}
 body.health-2:after,body.health-1:after,body.health-0:after{content:"";position:fixed;inset:0;z-index:6;pointer-events:none;mix-blend-mode:multiply;background:radial-gradient(ellipse at 50% 48%,transparent 28%,#4d000070 78%,#150000e8 118%)}
-body.health-2:after{opacity:.28}body.health-1:after{opacity:.7;animation:woundPulse 1.15s ease-in-out infinite}body.health-0:after{opacity:.96}
+body.health-2:after{opacity:.24}body.health-1:after{opacity:.58;animation:woundPulse 1.15s ease-in-out infinite}body.health-0:after{opacity:.9}
 @keyframes woundPulse{50%{opacity:.46;transform:scale(1.025)}}
 .noise { position:fixed; inset:-8%; pointer-events:none; opacity:.27; z-index:3; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.65'/%3E%3C/svg%3E"),radial-gradient(ellipse at 50% 55%,transparent 16%,#d8ddbd3d 54%,#1a2118aa 112%); mix-blend-mode:soft-light; animation:grain .18s steps(2) infinite; }
 .noise:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 3px,#dfe5cf0b 4px 5px);opacity:.7}
@@ -27,17 +27,17 @@ body.terror-flash .horror-overlay span{position:absolute;inset:0;display:grid;pl
 body.apparition .horror-overlay{opacity:.92;background:radial-gradient(ellipse at 50% 42%,transparent 2%,#000b 43%,#000 100%);mix-blend-mode:normal;animation:apparitionJolt .48s steps(2) both}
 body.apparition .horror-overlay i{opacity:1;animation:eyeJitter .09s steps(2) infinite}
 /* 闪黑只压暗外围，中央始终保留人物与道路的轮廓，避免玩家误以为游戏卡死。 */
-body.blackout .horror-overlay{opacity:.9;background:radial-gradient(ellipse at 50% 55%,#0008 0 22%,#000d 62%,#000 112%);mix-blend-mode:normal;animation:none}
+body.blackout .horror-overlay{opacity:.78;background:radial-gradient(ellipse at 50% 55%,#0004 0 22%,#000b 62%,#000e 112%);mix-blend-mode:normal;animation:none}
 body.blood-flash .horror-overlay{opacity:.86;background:radial-gradient(circle,#26000022 0,#780000dd 72%,#180000 100%);mix-blend-mode:multiply;animation:bloodBlink .42s steps(2) both}
-body.otherworld{--game-sat:.18;--game-light:.62;--game-contrast:1.5}
+body.otherworld{--game-sat:.18;--game-light:.74;--game-contrast:1.38}
 body.otherworld .horror-overlay{opacity:.7;mix-blend-mode:multiply;background:repeating-linear-gradient(90deg,#16000044 0 2px,transparent 3px 17px),radial-gradient(circle at 50% 52%,transparent 0 26%,#39000070 62%,#000 118%);animation:otherworldPulse .62s steps(2) infinite}
 body.otherworld .horror-overlay:before{opacity:.7;background:repeating-linear-gradient(0deg,#1c000044 0 3px,transparent 4px 12px),repeating-linear-gradient(91deg,transparent 0 7%,#5b130044 8% 9%)}
 body.otherworld .noise{opacity:.58;mix-blend-mode:hard-light}
-body.snow-haunting{--game-sat:.12;--game-light:.7;--game-contrast:1.34}
+body.snow-haunting{--game-sat:.12;--game-light:.78;--game-contrast:1.28}
 body.snow-haunting .horror-overlay{opacity:.68;background:radial-gradient(ellipse at 50% 48%,transparent 8%,#b9c9d044 35%,#071016cc 105%);mix-blend-mode:multiply}
 body.snow-haunting .noise{opacity:.46;mix-blend-mode:screen}
 body.snow-haunting .mission{border-color:#d7eff4;background:linear-gradient(90deg,#07151dde,transparent)}body.snow-haunting .mission span{color:#d7eff4}
-body.heartbeat #game{transform:scale(1.018);filter:blur(1.2px) saturate(var(--game-sat,.72)) brightness(calc(var(--game-light,.9) * .74)) contrast(1.42)}
+body.heartbeat #game{transform:scale(1.018);filter:blur(1.2px) saturate(var(--game-sat,.72)) brightness(calc(var(--game-light,.9) * .86)) contrast(1.34)}
 body.death-maul .danger-state{opacity:1;background:radial-gradient(circle at 50% 52%,transparent 5%,#630000aa 45%,#150000 100%);mix-blend-mode:multiply;animation:maulPulse .34s ease-in-out infinite alternate}
 body.death-maul .danger-state span{font-size:clamp(31px,9vw,86px);color:#ff160b;letter-spacing:.12em}.death-maul .mobile-controls{display:none!important}
 @keyframes horrorBreath{50%{opacity:.62;transform:scale(1.018)}}@keyframes filmTear{0%,88%,100%{transform:none}89%{transform:translateX(-3%)}91%{transform:translateX(4%)}}
@@ -57,7 +57,7 @@ body.death-maul .danger-state span{font-size:clamp(31px,9vw,86px);color:#ff160b;
 .gate-version{margin-top:22px;color:#fff4;font:9px monospace;letter-spacing:.18em}.gate-version b{color:#d9ff4399}
 @keyframes grain { 0%{transform:translate(0)} 50%{transform:translate(-1%,1%)} }
 @keyframes terrorFlash{0%,100%{opacity:0}8%,22%{opacity:.95}23%,59%{opacity:0}60%,72%{opacity:.48}73%{opacity:0}}
-@keyframes flashWorld{0%,100%{filter:none}8%,22%{filter:grayscale(1) contrast(3.2) brightness(2.2)}23%,59%{filter:brightness(.12) contrast(2)}60%,72%{filter:sepia(1) saturate(4) hue-rotate(315deg) contrast(2.5)}73%{filter:none}}
+@keyframes flashWorld{0%,100%{filter:none}8%,22%{filter:grayscale(1) contrast(3.2) brightness(2.2)}23%,59%{filter:brightness(.28) contrast(1.75)}60%,72%{filter:sepia(1) saturate(4) hue-rotate(315deg) contrast(2.3)}73%{filter:none}}
 @keyframes flashMessage{0%,7%,23%,100%{opacity:0}8%,22%{opacity:.9;transform:scale(1.3)}60%,72%{opacity:.44;transform:scale(.98)}}
 .hud { position:fixed; top:0; left:0; right:0; padding:24px 30px; display:flex; align-items:flex-start; justify-content:space-between; z-index:5; opacity:0; transform:translateY(-10px); transition:.5s; pointer-events:none; }
 .playing .hud { opacity:1; transform:none; }
@@ -82,8 +82,8 @@ body.death-maul .danger-state span{font-size:clamp(31px,9vw,86px);color:#ff160b;
 @keyframes chapterReveal{0%{opacity:0;transform:translate(-50%,-50%) scale(1.5)}12%,72%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-58%) scale(.96)}}
 .npc-bubbles{position:fixed;inset:0;z-index:9;pointer-events:none}.npc-bubble{position:absolute;max-width:180px;padding:8px 11px;border:2px solid #161713;border-radius:12px;background:#fff;color:#111;font-size:12px;font-weight:800;line-height:1.35;box-shadow:4px 5px 0 #0008;transform:translate(-50%,-115%);transition:opacity .2s}.npc-bubble:after{content:"";position:absolute;left:50%;bottom:-9px;width:14px;height:14px;background:#fff;border-right:2px solid #161713;border-bottom:2px solid #161713;transform:translateX(-50%) rotate(45deg)}.safe-cold .npc-bubble{background:#c8d8d7;color:#152020;border-color:#314345}.safe-cold .npc-bubble:after{background:#c8d8d7;border-color:#314345}.safe-broken .npc-bubble{background:#260000;color:#ff3325;border-color:#9d0904;box-shadow:4px 5px 0 #000,0 0 18px #b40000}.safe-broken .npc-bubble:after{background:#260000;border-color:#9d0904}
 .witness-bubble{background:#f5f2df!important;color:#171711!important;border-color:#25251f!important}.witness-bubble:after{background:#f5f2df!important;border-color:#25251f!important}.super-cow-bubble{max-width:230px;background:#142c67!important;color:#ffe052!important;border:3px solid #ffd633!important;font-size:14px;letter-spacing:.04em;text-shadow:0 1px #000;box-shadow:5px 6px 0 #8d1818,0 0 24px #ffd63399!important}.super-cow-bubble:after{background:#142c67!important;border-color:#ffd633!important}
-.safe-warm{--game-sat:.9;--game-light:1.06;--game-contrast:.98}.safe-warm .horror-overlay{opacity:.08;animation:none}.safe-cold{--game-sat:.28;--game-light:.7;--game-contrast:1.32}.safe-cold .weather-rain{opacity:.72}.safe-broken{--game-sat:.12;--game-light:.58;--game-contrast:1.5}.safe-broken .horror-overlay{opacity:.76;background:radial-gradient(circle at 50% 52%,transparent 0 24%,#45000088 74%,#000 120%)}
-.chapter-2{--game-sat:.48;--game-light:.74;--game-contrast:1.26}.chapter-2 .horror-overlay{opacity:.58}.chapter-3{--game-sat:.2;--game-light:.76;--game-contrast:1.32}.chapter-4{--game-sat:.18;--game-light:.64;--game-contrast:1.44}.chapter-4 .horror-overlay{opacity:.68;background:repeating-linear-gradient(90deg,#31000033 0 3px,transparent 4px 20px),radial-gradient(circle at 50% 52%,transparent 0 24%,#210000b8 112%)}.chapter-5{--game-sat:.12;--game-light:.58;--game-contrast:1.52}.chapter-5 .horror-overlay{opacity:.74;background:radial-gradient(circle at 50% 52%,transparent 0 27%,#5c000070 66%,#000 120%)}.chapter-5 .weather-rain{opacity:.68;filter:sepia(1) saturate(3) hue-rotate(315deg)}
+.safe-warm{--game-sat:.9;--game-light:1.06;--game-contrast:.98}.safe-warm .horror-overlay{opacity:.08;animation:none}.safe-cold{--game-sat:.28;--game-light:.78;--game-contrast:1.24}.safe-cold .weather-rain{opacity:.72}.safe-broken{--game-sat:.12;--game-light:.7;--game-contrast:1.35}.safe-broken .horror-overlay{opacity:.64;background:radial-gradient(circle at 50% 52%,transparent 0 24%,#45000078 74%,#000d 120%)}
+.chapter-2{--game-sat:.48;--game-light:.82;--game-contrast:1.2}.chapter-2 .horror-overlay{opacity:.52}.chapter-3{--game-sat:.2;--game-light:.84;--game-contrast:1.24}.chapter-4{--game-sat:.18;--game-light:.76;--game-contrast:1.3}.chapter-4 .horror-overlay{opacity:.58;background:repeating-linear-gradient(90deg,#31000033 0 3px,transparent 4px 20px),radial-gradient(circle at 50% 52%,transparent 0 24%,#210000a0 112%)}.chapter-5{--game-sat:.12;--game-light:.72;--game-contrast:1.36}.chapter-5 .horror-overlay{opacity:.62;background:radial-gradient(circle at 50% 52%,transparent 0 27%,#5c000060 66%,#000e 120%)}.chapter-5 .weather-rain{opacity:.62;filter:sepia(1) saturate(3) hue-rotate(315deg)}
 .sheltered .weather-rain,.sheltered .weather-snow{opacity:.08!important}.sheltered .horror-overlay{opacity:.16}.flashlight-on .horror-overlay{opacity:.12}.flashlight-on canvas{filter:saturate(var(--game-sat,1)) brightness(calc(var(--game-light,1) * 1.28)) contrast(.96)!important}.smoke-screen:after{content:"";position:fixed;inset:-10%;z-index:15;pointer-events:none;background:radial-gradient(circle,#d9dfd4ee,#7c8580bb 48%,transparent 78%);animation:smokeClear 1.5s ease-out both}@keyframes smokeClear{from{opacity:1;filter:blur(1px)}to{opacity:0;filter:blur(24px)}}
 .warning { position:fixed; z-index:7; left:50%; top:24%; transform:translate(-50%,-50%) scale(1.5); width:100%; text-align:center; font-size:clamp(25px,7vw,68px); font-weight:900; color:#d91408; letter-spacing:.3em; opacity:0; text-shadow:3px 4px 0 #260000,0 0 8px #ff2a12,0 0 28px #a80000; -webkit-text-stroke:1px #4a0000; pointer-events:none; }
 .warning.show { animation:warn 1.1s ease-out; }
@@ -147,14 +147,14 @@ body.glitch #game { filter:blur(1.1px) hue-rotate(80deg) contrast(1.7); transfor
 body.hit #game{animation:hit .22s linear 2}
 @keyframes hit{0%,100%{transform:none}50%{transform:translateX(7px) scale(1.006);filter:brightness(2) saturate(2)}}
 /* iPhone/低内存设备避免整屏实时模糊和高频噪点重绘；闪屏、变色和血色效果仍完整保留。 */
-.performance-mode #game{filter:saturate(var(--game-sat,.68)) brightness(var(--game-light,.86)) contrast(var(--game-contrast,1.12))}
+.performance-mode #game{filter:saturate(var(--game-sat,.68)) brightness(var(--game-light,.92)) contrast(var(--game-contrast,1.1))}
 .performance-mode .noise{animation-duration:1.1s;opacity:.13}
 .performance-mode .language-picker>button,.performance-mode .language-menu{backdrop-filter:none}
-.performance-mode body.heartbeat #game{filter:saturate(var(--game-sat,.68)) brightness(calc(var(--game-light,.86) * .74)) contrast(1.42)}
+.performance-mode body.heartbeat #game{filter:saturate(var(--game-sat,.68)) brightness(calc(var(--game-light,.92) * .86)) contrast(1.32)}
 .performance-mode body.glitch #game{filter:hue-rotate(80deg) contrast(1.7)}
 @media(max-width:700px), (pointer:coarse) {
   .language-picker{z-index:60;right:max(12px,calc(env(safe-area-inset-right) + 8px));top:max(32px,calc(env(safe-area-inset-top) + 26px))}.language-picker>button{width:42px;padding:0;justify-content:center}.language-picker>button b{display:none}.language-menu{right:0;top:47px}
-  #game{filter:blur(.32px) saturate(var(--game-sat,.68)) brightness(var(--game-light,.86)) contrast(var(--game-contrast,1.12))}
+  #game{filter:blur(.32px) saturate(var(--game-sat,.68)) brightness(var(--game-light,.92)) contrast(var(--game-contrast,1.1))}
   .noise{opacity:.18;animation-duration:.28s}
   .screen{padding:20px 24px}.intro{background:#e8e3d3}
   .intro{overflow-y:auto;align-items:flex-start;padding-top:max(22px,env(safe-area-inset-top))}

@@ -148,6 +148,7 @@
   "event.snakeHit": "A grass snake bit you!",
   "event.birdHit": "A strange bird hit you with its droppings!",
   "event.birdNpcKilled": "A strange bird’s droppings struck and killed a refugee.",
+  "event.birdShoved": "Niu Lai raised a hand and flicked the passing bird out of the sky!",
   "event.treeHit": "The strange tree scratched you!",
   "chapter.1.number": "Chapter 1",
   "chapter.1.title": "Grassland Escape",
