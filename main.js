@@ -35,6 +35,7 @@ const ui = {
 const chapterBanner=document.querySelector('#chapterBanner'),chapterNumber=document.querySelector('#chapterNumber'),chapterTitle=document.querySelector('#chapterTitle'),chapterDescription=document.querySelector('#chapterDescription'),npcBubbles=document.querySelector('#npcBubbles'),objectiveArrow=document.querySelector('#objectiveArrow');
 const scoreboard=document.querySelector('#scoreboard'),scoreList=document.querySelector('#scoreList');
 const memoryArchive=document.querySelector('#memoryArchive'),memoryList=document.querySelector('#memoryList'),memoryCount=document.querySelector('#memoryCount'),superCharacter=document.querySelector('#superCharacter'),finalChoiceEl=document.querySelector('#finalChoice');
+const endingCinema=document.querySelector('#endingCinema'),endingVisual=document.querySelector('#endingVisual'),endingEyebrow=document.querySelector('#endingEyebrow'),endingSceneTitle=document.querySelector('#endingSceneTitle'),endingNarrative=document.querySelector('#endingNarrative'),endingNextBtn=document.querySelector('#endingNextBtn'),resultSummary=document.querySelector('#resultSummary');
 const installHint=document.querySelector('#installHint'),installText=document.querySelector('#installText'),installBtn=document.querySelector('#installBtn');let deferredInstallPrompt=null;
 const languagePicker=document.querySelector('#languagePicker'),languageBtn=document.querySelector('#languageBtn'),languageMenu=document.querySelector('#languageMenu'),languageCurrent=document.querySelector('#languageCurrent');
 document.querySelector('#languageOptions').innerHTML=languageOrder.map(code=>`<button role="menuitemradio" data-language="${code}"><i>✓</i><span>${locales[code].nativeName}</span></button>`).join('');
@@ -915,6 +916,7 @@ function playTitleCry(){clearTimeout(titleCryTimer);titleCryAudio.pause();titleC
 document.querySelector('#enterGameBtn').addEventListener('click',unlockAudio);
 document.addEventListener('WeixinJSBridgeReady',()=>{dangerAudio.load();titleCryAudio.load();if(audio)audio.resume().catch(()=>{});},{once:true});
 function start(){
+  clearTimeout(endingTimer);endingCinema.classList.remove('finished');resultSummary.classList.remove('show');document.body.classList.remove('ending-open');
   clearTimeout(titleCryTimer);titleCryAudio.pause();titleCryAudio.currentTime=0;document.body.classList.remove('title-cry');
   clearTimeout(specialEntranceTimer);document.body.classList.remove(...specialEntranceClasses,'well-haunting');objectiveArrow.classList.remove('show');objectiveTrail.visible=false;
   clearTimeout(say.t);clearTimeout(hauntTimer);clearEnemySpeech();ui.subtitle.classList.remove('show');ui.warning.classList.remove('show');activeSayKey='';activeMissionKey='hud.defaultMission';activeMissionParams={};Object.keys(keys).forEach(key=>delete keys[key]);resetJoystick();stopMusic();
@@ -947,6 +949,8 @@ function start(){
   dangerAudio.pause();dangerAudio.currentTime=0;dangerAudio.volume=.95;dangerLatched=false;sound(55,.8,'sawtooth',.08);startMusic();setTimeout(()=>{const tier=persistentProgress.memories.length>=5?2:persistentProgress.memories.length>=2?1:0;say(`memory.opening.${tier}`,3000);},500);setTimeout(()=>say('difficulty.start',2400,{difficulty:tr(difficulties[selectedCharacter].nameKey)}),3600);
 }
 let resultSnapshot=null;
+let endingStage=0,endingTimer=0;
+const endingSlugs={'ending.alone':'alone','ending.herd':'herd','ending.rescueFailed':'failed','ending.super':'super','ending.fakeMother':'fake','ending.loop':'loop'};
 function localizeDeath(reason){if(!reason)return tr('result.defaultDeath');const params={...(reason.params||{})};if(params.enemyKey){params.enemy=tr(params.enemyKey,params.enemyParams);delete params.enemyKey;delete params.enemyParams;}return tr(reason.key,params);}
 function chooseEnding(win){
   if(win&&hearts===3&&itemPickups.every(i=>i.userData.collected)&&rescuedCows>=10)return'ending.super';
@@ -957,13 +961,35 @@ function chooseEnding(win){
   return'ending.loop';
 }
 function renderResult(){if(!resultSnapshot)return;const {win,runDistance,exactTime,reason,endingKey}=resultSnapshot;ui.result.classList.toggle('dead',!win);ui.result.classList.toggle('escaped',win);ui.eyebrow.textContent=tr(win?'result.exitFound':'result.deathConfirmed');ui.title.textContent=tr(win?'result.winTitle':'result.deadTitle');ui.resultText.innerHTML=tr(win?'result.win':'result.dead',{distance:runDistance,time:exactTime,reason:localizeDeath(reason)})+`<br><strong>${tr(endingKey)}</strong>`;}
+function renderEndingScene(){
+  if(!resultSnapshot)return;
+  const slug=endingSlugs[resultSnapshot.endingKey]||'loop',scene=endingStage+1;
+  endingVisual.className=`ending-visual ending-${slug} stage-${scene}`;
+  endingEyebrow.textContent=tr('cinematic.eyebrow',{current:scene,total:3});
+  endingSceneTitle.textContent=tr(`cinematic.${slug}.${scene}.title`);
+  endingNarrative.textContent=tr(`cinematic.${slug}.${scene}.text`);
+  endingCinema.querySelectorAll('.ending-progress i').forEach((dot,index)=>dot.classList.toggle('active',index===endingStage));
+  endingNextBtn.querySelector('span').textContent=tr(scene<3?'cinematic.continue':'cinematic.summary');
+}
+function finishEndingCinematic(){clearTimeout(endingTimer);endingCinema.classList.add('finished');resultSummary.classList.add('show');resultSummary.querySelector('button')?.focus({preventScroll:true});}
+function advanceEndingCinematic(){
+  if(endingCinema.classList.contains('finished'))return;
+  clearTimeout(endingTimer);
+  if(endingStage>=2){finishEndingCinematic();return;}
+  endingStage++;renderEndingScene();endingTimer=setTimeout(advanceEndingCinematic,5200);
+}
+function startEndingCinematic(){
+  clearTimeout(endingTimer);endingStage=0;endingCinema.classList.remove('finished');resultSummary.classList.remove('show');renderEndingScene();
+  endingTimer=setTimeout(advanceEndingCinematic,5200);
+}
 function end(win){
-  state=win?'win':'caught';finalChoiceEl.classList.remove('show');finalChoiceEl.setAttribute('aria-hidden','true');document.body.classList.remove('choice-open');const endingKey=chooseEnding(win);recordScore(win,endingKey);clearTimeout(hauntTimer);clearTimeout(specialEntranceTimer);clearEnemySpeech();objectiveArrow.classList.remove('show');objectiveTrail.visible=false;witnessBubble.hidden=true;superCowBubble.hidden=true;watchers.forEach(w=>w.visible=false);[snowGhost,toshio,kayako,sadako,slitWoman,kayakoStairs,cursedTelevision,freddy,jiangchen,edwardRipper,dreamClock].forEach(actor=>actor.visible=false);snow.visible=false;document.body.classList.remove('playing','death-maul','exhausted','enemy-near','terror-flash','flash-negative','apparition','blackout','blood-flash','heartbeat','otherworld','snow-haunting','rain-active','safe-warm','safe-cold','safe-broken','dreaming','speed-boost','well-haunting',...specialEntranceClasses);ui.result.classList.add('show');
+  state=win?'win':'caught';finalChoiceEl.classList.remove('show');finalChoiceEl.setAttribute('aria-hidden','true');document.body.classList.remove('choice-open');document.body.classList.add('ending-open');const endingKey=chooseEnding(win);recordScore(win,endingKey);clearTimeout(hauntTimer);clearTimeout(specialEntranceTimer);clearEnemySpeech();objectiveArrow.classList.remove('show');objectiveTrail.visible=false;witnessBubble.hidden=true;superCowBubble.hidden=true;watchers.forEach(w=>w.visible=false);[snowGhost,toshio,kayako,sadako,slitWoman,kayakoStairs,cursedTelevision,freddy,jiangchen,edwardRipper,dreamClock].forEach(actor=>actor.visible=false);snow.visible=false;document.body.classList.remove('playing','death-maul','exhausted','enemy-near','terror-flash','flash-negative','apparition','blackout','blood-flash','heartbeat','otherworld','snow-haunting','rain-active','safe-warm','safe-cold','safe-broken','dreaming','speed-boost','well-haunting',...specialEntranceClasses);ui.result.classList.add('show');
   const runDistance=Math.max(0,Math.min(runLength,Math.round(18-player.position.z))),exactTime=formatTime(Math.round(elapsed*1000));
-  resultSnapshot={win,runDistance,exactTime,reason:deathReason,endingKey};renderResult();
+  resultSnapshot={win,runDistance,exactTime,reason:deathReason,endingKey};renderResult();startEndingCinematic();
   dangerAudio.pause();dangerAudio.currentTime=0;dangerLatched=false;stopMusic();sound(win?220:38,1.5,'sawtooth',.1);
 }
 document.querySelector('#startBtn').onclick=start;document.querySelector('#restartBtn').onclick=start;
+endingNextBtn.onclick=advanceEndingCinematic;
 document.querySelector('#rescueChoiceBtn').onclick=()=>selectFinalChoice('rescue');document.querySelector('#aloneChoiceBtn').onclick=()=>selectFinalChoice('alone');
 function selectFinalChoice(choice){if(state!=='playing'||finalChoice!=='pending')return;finalChoice=choice;finalChoiceEl.classList.remove('show');finalChoiceEl.setAttribute('aria-hidden','true');document.body.classList.remove('choice-open');canvas.focus?.();say(choice==='rescue'?'choice.rescueChosen':'choice.aloneChosen',2600);sound(choice==='rescue'?74:132,.55,'sawtooth',.07);}
 document.querySelector('#memoryBtn').onclick=()=>{renderProgress();memoryArchive.classList.add('show');memoryArchive.setAttribute('aria-hidden','false');};document.querySelector('#closeMemoryBtn').onclick=()=>{memoryArchive.classList.remove('show');memoryArchive.setAttribute('aria-hidden','true');};
@@ -979,7 +1005,7 @@ installBtn.onclick=async()=>{
 document.querySelector('#closeInstallBtn').onclick=()=>{installHint.classList.remove('show');installHint.setAttribute('aria-hidden','true');};
 addEventListener('appinstalled',()=>{deferredInstallPrompt=null;installBtn.classList.add('installed');installBtn.querySelector('span').textContent=tr('install.installed');});
 document.querySelector('#changeBtn').onclick=()=>{
-  stopMusic();clearEnemySpeech();state='intro';hearts=3;renderHearts();objectiveArrow.classList.remove('show');objectiveTrail.visible=false;document.body.classList.remove('playing','well-haunting',...specialEntranceClasses);ui.result.classList.remove('show');ui.intro.classList.remove('hidden');
+  clearTimeout(endingTimer);endingCinema.classList.remove('finished');resultSummary.classList.remove('show');stopMusic();clearEnemySpeech();state='intro';hearts=3;renderHearts();objectiveArrow.classList.remove('show');objectiveTrail.visible=false;document.body.classList.remove('playing','ending-open','well-haunting',...specialEntranceClasses);ui.result.classList.remove('show');ui.intro.classList.remove('hidden');
   clearTimeout(hauntTimer);watchers.forEach(w=>w.visible=false);snowGhost.visible=false;snow.visible=false;document.body.classList.remove('exhausted','enemy-near','terror-flash','flash-negative','apparition','blackout','blood-flash','heartbeat','otherworld','snow-haunting','rain-active','safe-warm','safe-cold','safe-broken','speed-boost');
   player.position.set(0,.05,18);player.rotation.set(0,0,0);storyStage=0;activeChasers=[];allEnemies.forEach(e=>e.visible=false);hunterGlow.visible=false;
   playTitleCry();
@@ -1465,6 +1491,9 @@ if(import.meta.env.DEV)window.__NIULAI_TEST__={
   enemyTauntProbe(type='alien'){const enemy=type==='snowGhost'?snowGhost:type==='slitWoman'?slitWoman:type==='snake'?snakes[0]:type==='car'?monsterCar:allEnemies.find(actor=>actor.userData.type===type);if(!enemy)return null;enemy.visible=true;enemy.userData.taunted=false;enemyTaunt(enemy,`taunt.${type}`,0,3300);showEnemySpeech(enemy,`taunt.${type}`,3300);return{type,taunted:enemy.userData.taunted,visible:enemySpeechBubble.hidden===false,text:enemySpeechBubble.textContent,key:activeSayKey};},
   progressionState(){return{memories:[...persistentProgress.memories],runs:persistentProgress.runs,superUnlocked:persistentProgress.memories.length>=6,selectedCharacter};},
   memoryProbe(id='bell'){const item=memoryPickups[0];item.userData.memoryId=id;item.userData.collected=false;item.visible=true;item.position.copy(player.position);return true;},
+  endingProbe(endingKey='ending.herd',win=true){state=win?'win':'caught';resultSnapshot={win,runDistance:3210,exactTime:'08:15.042',reason:win?null:{key:'result.defaultDeath'},endingKey};document.querySelector('#audioGate').classList.add('hidden');ui.intro.classList.add('hidden');document.body.classList.add('ending-open');ui.result.classList.add('show');renderResult();startEndingCinematic();return true;},
+  endingState(){const slug=endingSlugs[resultSnapshot?.endingKey]||'loop';return{stage:endingStage,slug,title:endingSceneTitle.textContent,text:endingNarrative.textContent,cinemaFinished:endingCinema.classList.contains('finished'),summaryVisible:resultSummary.classList.contains('show'),dots:[...endingCinema.querySelectorAll('.ending-progress i')].map(dot=>dot.classList.contains('active'))};},
+  advanceEnding(){advanceEndingCinematic();return this.endingState();},
   routeState(){return{signature:proceduralLayoutSignature,chunks:forkWalls.map(f=>({template:f.userData.template,openLane:f.userData.openLane,x:f.position.x,z:f.position.z}))};},
   rerollRoute(){configureProceduralRoute();return proceduralLayoutSignature;},
   hideProbe(kind='grass'){const spot=hideSpots.find(s=>s.kind===kind);player.position.set(spot.object.position.x,.05,spot.object.position.z);joystick.x=joystick.y=0;Object.keys(keys).forEach(key=>delete keys[key]);hideTime=0;hideDiscovered=false;return true;},
@@ -1480,6 +1509,6 @@ if(import.meta.env.DEV)window.__NIULAI_TEST__={
   snapshot(){return{state,progress:-player.position.z,chapter:currentChapter,safe:activeSafeZone,clothCount,switchCount,sheltered,fakeExitTriggered,finalWaveStarted,rescuedCows,rainOpacity:rainMat.opacity,snowOpacity:snow.material.opacity,mission:activeMissionKey,joystick:{x:joystick.x,y:joystick.y},pickupEffects:pickupEffects.length,enemyScale:scalableEnemies[0].userData.sizeMultiplier,enemyGiantRank:scalableEnemies[0].userData.giantRank,storyStage,activeTypes:activeChasers.map(enemy=>enemy.userData.type||'unknown'),spawnedStalkers:stalkers.filter(enemy=>enemy.userData.spawned).length,errors:[]};}
 };
 
-addEventListener('niulai:languagechange',()=>{refreshLanguageMenu();renderProgress();renderScores();drawExitSign();if(activeSayKey){if(activeSayKey==='difficulty.start')activeSayParams={difficulty:tr(difficulties[selectedCharacter].nameKey)};ui.subtitle.textContent=tr(activeSayKey,activeSayParams);}if(enemySpeechKey)enemySpeechBubble.textContent=tr(enemySpeechKey);setMission(activeMissionKey,activeMissionParams);if(currentChapter>=0){chapterNumber.textContent=tr(chapters[currentChapter].number);chapterTitle.textContent=tr(chapters[currentChapter].title);chapterDescription.textContent=tr(chapters[currentChapter].description);}if(resultSnapshot)renderResult();installText.textContent=tr(installHintKey);ui.distance.textContent=Math.floor(distance)+tr('world.m');});
+addEventListener('niulai:languagechange',()=>{refreshLanguageMenu();renderProgress();renderScores();drawExitSign();if(activeSayKey){if(activeSayKey==='difficulty.start')activeSayParams={difficulty:tr(difficulties[selectedCharacter].nameKey)};ui.subtitle.textContent=tr(activeSayKey,activeSayParams);}if(enemySpeechKey)enemySpeechBubble.textContent=tr(enemySpeechKey);setMission(activeMissionKey,activeMissionParams);if(currentChapter>=0){chapterNumber.textContent=tr(chapters[currentChapter].number);chapterTitle.textContent=tr(chapters[currentChapter].title);chapterDescription.textContent=tr(chapters[currentChapter].description);}if(resultSnapshot){renderResult();renderEndingScene();}installText.textContent=tr(installHintKey);ui.distance.textContent=Math.floor(distance)+tr('world.m');});
 
 SplashScreen.hide({fadeOutDuration:500}).catch(()=>{});

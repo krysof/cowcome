@@ -35,7 +35,7 @@
   "build": {
     "appId": "net.kryso.cowcome.mac",
     "productName": "妈妈在哪里",
-    "buildVersion": "20260823.1",
+    "buildVersion": "20260823.2",
     "asar": true,
     "directories": {
       "output": "native-build/macos"
@@ -70,10 +70,10 @@
       ]
     },
     "dmg": {
-      "artifactName": "MamaWhere-20260823.1-${arch}.${ext}",
-      "title": "妈妈在哪里 20260823.1"
+      "artifactName": "MamaWhere-20260823.2-${arch}.${ext}",
+      "title": "妈妈在哪里 20260823.2"
     },
-    "artifactName": "MamaWhere-20260823.1-${arch}.${ext}",
+    "artifactName": "MamaWhere-20260823.2-${arch}.${ext}",
     "npmRebuild": false
   },
   "description": "妈妈在哪里：雾中逃亡——离线恐怖生存逃亡游戏",
