@@ -12,7 +12,7 @@ function createWindow(){
     show:false,trafficLightPosition:{x:18,y:18},
     webPreferences:{contextIsolation:true,nodeIntegration:false,sandbox:true,webSecurity:true,devTools:false}
   });
-  win.webContents.setUserAgent(`${win.webContents.getUserAgent()} CowcomeMac/20260822.28`);
+  win.webContents.setUserAgent(`${win.webContents.getUserAgent()} CowcomeMac/20260822.29`);
   win.webContents.setWindowOpenHandler(({url})=>{if(/^https?:\/\//i.test(url))shell.openExternal(url);return{action:'deny'};});
   win.webContents.on('will-navigate',(event,url)=>{if(url!==win.webContents.getURL()){event.preventDefault();if(/^https?:\/\//i.test(url))shell.openExternal(url);}});
   win.once('ready-to-show',()=>win.show());
