@@ -141,6 +141,7 @@ button { border:0; font:inherit; cursor:pointer; }
 .result-actions { display:flex; justify-content:center; gap:12px; flex-wrap:wrap; }
 .result button.secondary { color:#fff; background:#222; box-shadow:7px 7px 0 #000; }
 .mobile-controls { display:none; }
+.objective-arrow{position:fixed;z-index:18;left:50%;top:29%;display:flex;flex-direction:column;align-items:center;gap:2px;opacity:0;visibility:hidden;pointer-events:none;transform:translate(-50%,-50%) scale(var(--arrow-pulse,1));transition:opacity .18s;color:#efff83;text-shadow:0 2px 4px #000,0 0 15px #d9ff43}.objective-arrow.show{opacity:1;visibility:visible}.objective-arrow i{display:block;font:900 48px/1 sans-serif;font-style:normal;transform:rotate(var(--arrow-angle,0deg));filter:drop-shadow(0 0 7px #d9ff43)}.objective-arrow b{padding:3px 8px;border-radius:10px;background:#10140dcc;font:900 11px/1.2 monospace;letter-spacing:.04em}
 /* 桌面端为语言按钮保留独立栏位，生命与体力区永远停在它左侧。 */
 @media(min-width:701px) and (pointer:fine){.playing .hud-right{padding-right:190px}.playing .language-picker{top:18px;right:24px}.playing .language-picker>button{min-width:142px;justify-content:center}}
 body.glitch #game { filter:blur(1.1px) hue-rotate(80deg) contrast(1.7); transform:translateX(4px); }
@@ -192,3 +193,26 @@ body.dreaming{--game-sat:.42;--game-light:.88;--game-contrast:1.22}
 body.dreaming #game{filter:sepia(.24) hue-rotate(172deg) saturate(.58) brightness(.88) contrast(1.22)}
 body.dreaming .horror-overlay{opacity:.3;background:repeating-linear-gradient(88deg,#15100d22 0 2px,transparent 2px 14px),radial-gradient(circle at 50% 48%,transparent 20%,#13070888 100%)}
 .performance-mode body.dreaming #game{filter:sepia(.18) hue-rotate(172deg) saturate(.62) brightness(.9) contrast(1.18)}
+/* 每种特殊怪物拥有独立的全屏入场语言，且亮度下限不低于可辨识范围。 */
+/* 井中怨灵从电视亮起到逃脱期间一直污染整块画面；刚出场的前
+   2.8 秒再由 entrance-well 叠加更猛烈的同步丢失和雪花。 */
+body.well-haunting #game{filter:grayscale(.82) contrast(1.34) brightness(.9)!important}
+body.well-haunting .noise{opacity:.42!important;mix-blend-mode:screen;animation:tvSnow .11s steps(2) infinite}
+body.well-haunting .horror-overlay{opacity:.32;background:repeating-linear-gradient(0deg,transparent 0 3px,#0005 4px 5px),radial-gradient(ellipse,transparent 20%,#05050588 100%)}
+body.entrance-well #game{animation:oldTvSignal .16s steps(2) infinite;filter:grayscale(1) contrast(1.65) brightness(.9)!important}
+body.entrance-well .noise{opacity:.92!important;mix-blend-mode:screen;background-size:83px 67px,100% 100%;animation:tvSnow .055s steps(2) infinite}
+body.entrance-well .horror-overlay{opacity:.7!important;mix-blend-mode:normal;background:repeating-linear-gradient(0deg,#fff1 0 2px,#0005 3px 5px),radial-gradient(ellipse,transparent 12%,#050505aa 100%)}
+body.entrance-cat #game{animation:catArrival .22s steps(2) 5;filter:saturate(.35) hue-rotate(145deg) brightness(1.02) contrast(1.35)!important}
+body.entrance-cat .horror-overlay i{opacity:1;background:#dffaff;box-shadow:0 0 12px #bff5ff,0 0 36px #69dfff}
+body.entrance-crawler #game{animation:crawlArrival .13s steps(2) 12;filter:saturate(.38) brightness(.88) contrast(1.42)!important}
+body.entrance-crawler .horror-overlay:after{opacity:.76;background:repeating-linear-gradient(93deg,transparent 0 13%,#170000aa 14% 15%,transparent 16% 25%)}
+body.entrance-dream .noise{opacity:.5;mix-blend-mode:color-dodge;animation-duration:.12s}
+body.entrance-mistblade .horror-overlay{opacity:.82!important;mix-blend-mode:normal;background:linear-gradient(100deg,transparent 0 12%,#5f080899 32%,#b71d1744 49%,#310000aa 74%,transparent 100%);animation:mistbladeSweep .28s steps(3) 6}
+body.entrance-corpse #game{animation:corpseLightning .19s steps(2) 8;filter:saturate(.72) brightness(.9) contrast(1.4)!important}
+body.entrance-corpse .horror-overlay{opacity:.8!important;mix-blend-mode:screen;background:linear-gradient(102deg,transparent 44%,#ff1616 47%,#fff 49%,#e10000 51%,transparent 55%),radial-gradient(circle,#4b000088,#110000cc)}
+@keyframes oldTvSignal{0%{transform:translateX(-3px) scaleX(1.008)}50%{transform:translateX(4px) scaleY(.994)}100%{transform:translate(-1px,2px)}}
+@keyframes tvSnow{to{transform:translate(7%,-5%) scale(1.07);filter:contrast(2.2)}}
+@keyframes catArrival{50%{transform:translate(5px,-2px);filter:invert(.3) hue-rotate(160deg) brightness(1.15) contrast(1.5)}}
+@keyframes crawlArrival{0%,100%{transform:rotate(-.35deg) translateY(0)}50%{transform:rotate(.4deg) translateY(5px)}}
+@keyframes mistbladeSweep{50%{transform:translateX(6%);filter:saturate(1.7)}}
+@keyframes corpseLightning{0%,60%,100%{transform:none}30%{transform:translate(-4px,3px);filter:brightness(1.35) saturate(1.4)}}
