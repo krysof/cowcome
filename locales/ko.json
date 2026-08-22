@@ -197,6 +197,7 @@
   "item.flashlight": "손전등 획득: 잠시 안개가 걷힘",
   "item.radio": "라디오 획득: 괴물의 접근을 더 일찍 감지",
   "item.smoke": "연막탄 획득: 괴물 접근 시 자동 사용",
+  "item.speed": "가속 부적 획득: 11초 동안 이동 속도 증가",
   "item.smokeUsed": "연막이 터졌다—도망쳐!",
   "item.healthPickup": "집 안에서 생명의 심장을 찾았습니다: 하트 1개 회복.",
   "ending.alone": "결말: 홀로 탈출",

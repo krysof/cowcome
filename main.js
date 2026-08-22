@@ -164,16 +164,17 @@ const paintedMoons=[];[-620,-1580,-2520,-3460,-4380].forEach((z,i)=>{const moon=
 function addShoveFinger(character,skin,x=.9,y=2.55){
   const hands=[-1,1].map(side=>{
     const rig=new THREE.Group();rig.position.set(side*x,y,-.55);rig.visible=false;character.add(rig);
-    // 不是一根圆柱：掌心、蜷起的四指、拇指、三段食指、指甲和关节纹共同组成真正可辨认的手。
+    // 掌心、蜷起的四指、拇指和食指共同组成手。食指本体必须是一条
+    // 连续的圆润网格；旧版用三截胶囊拼接，低分辨率下看成了两截棍。
     mesh(new THREE.SphereGeometry(.34,10,7),skin,rig,0,0,0,[.9,1.08,.62]);
     for(let i=0;i<4;i++)mesh(new THREE.CapsuleGeometry(.055,.28,2,6),skin,rig,(i-1.5)*.115,-.27,.03,[1,1,1],[1.08,0,(i-1.5)*.06]);
     mesh(new THREE.CapsuleGeometry(.075,.42,2,7),skin,rig,side*.29,-.02,-.03,[1,1,1],[-.42,0,side*-.72]);
     const finger=new THREE.Group();finger.position.set(0,.08,-.08);finger.rotation.x=-Math.PI/2;rig.add(finger);
-    const segments=[mesh(new THREE.CapsuleGeometry(.15,.5,3,8),skin,finger,0,.36,0,[1,1,1]),mesh(new THREE.CapsuleGeometry(.135,.46,3,8),skin,finger,0,.91,0,[.96,1,.96]),mesh(new THREE.CapsuleGeometry(.122,.38,3,8),skin,finger,0,1.39,0,[.92,1,.92])];
-    const tip=mesh(new THREE.SphereGeometry(.13,9,7),skin,finger,0,1.68,0,[.92,1.08,.95]);
-    const nailMat=new THREE.MeshStandardMaterial({color:0xffe7da,roughness:.58,metalness:0,flatShading:false}),nail=mesh(new THREE.SphereGeometry(.085,9,6),nailMat,finger,0,1.72,-.085,[.72,1.08,.22]);
+    const shaft=mesh(new THREE.CapsuleGeometry(.145,1.32,5,10),skin,finger,0,.76,0,[1,1,1]),segments=[shaft];
+    const tip=mesh(new THREE.SphereGeometry(.145,10,8),skin,finger,0,1.5,0,[.94,1.05,.96]);
+    const nailMat=new THREE.MeshStandardMaterial({color:0xffe7da,roughness:.58,metalness:0,flatShading:false}),nail=mesh(new THREE.SphereGeometry(.09,10,7),nailMat,finger,0,1.54,-.095,[.72,1.08,.22]);
     const creaseMat=new THREE.MeshBasicMaterial({color:0x8f654f,transparent:true,opacity:.55,fog:false}),creases=[.68,1.18].map(jointY=>mesh(new THREE.TorusGeometry(.112,.012,5,10,Math.PI*.9),creaseMat,finger,0,jointY,.012,[1,1,1],[Math.PI/2,0,.15]));
-    const basePosition=rig.position.clone(),setExtension=amount=>{amount=THREE.MathUtils.clamp(amount,0,1);segments[0].scale.y=1+amount*.42;segments[1].scale.y=1+amount*.48;segments[1].position.y=.91+amount*.34;segments[2].scale.y=1+amount*.52;segments[2].position.y=1.39+amount*.72;tip.position.y=1.68+amount*1.08;nail.position.y=1.72+amount*1.08;creases[0].position.y=.68+amount*.16;creases[1].position.y=1.18+amount*.54;finger.userData.extension=amount;};
+    const basePosition=rig.position.clone(),setExtension=amount=>{amount=THREE.MathUtils.clamp(amount,0,1);shaft.scale.y=1+amount*.7;shaft.position.y=.76+amount*.46;tip.position.y=1.5+amount*.94;nail.position.y=1.54+amount*.94;creases[0].position.y=.68+amount*.28;creases[1].position.y=1.18+amount*.68;finger.userData.extension=amount;};
     return{rig,finger,tip,nail,segments,creases,side,basePosition,setExtension};
   });
   // 从右手开始，此后每次按“搓”严格左右交替。
@@ -376,7 +377,7 @@ function makeMonsterCar(scale=1){
 function createCharacter(kind){return kind==='yellow'?makeYellowBull(.68):kind==='leopard'?makeLeopard(.78):makeNiuLai(.72,false);}
 let selectedCharacter='orange';
 const difficulties={
-  orange:{nameKey:'character.easy',length:3600,pack:3,stalkers:9,ambushers:2,chapterWaves:[3,1,3],player:1.06,enemy:.86,drain:.78,recovery:1.25,hazard:.72,fog:.014,rain:.75,flashMin:9,flashRange:13},
+  orange:{nameKey:'character.easy',length:3200,pack:2,stalkers:6,ambushers:1,chapterWaves:[2,1,2],player:1.12,enemy:.72,drain:.6,recovery:1.5,hazard:.5,invuln:3.2,fog:.011,rain:.62,flashMin:12,flashRange:17},
   yellow:{nameKey:'character.normal',length:4200,pack:5,stalkers:14,ambushers:4,chapterWaves:[4,2,4],player:1,enemy:1,drain:1,recovery:1,hazard:1,fog:.021,rain:1,flashMin:6,flashRange:10},
   leopard:{nameKey:'character.hard',length:4800,pack:6,stalkers:18,ambushers:7,chapterWaves:[5,2,5],player:.97,enemy:1.14,drain:1.24,recovery:.82,hazard:1.3,fog:.03,rain:1.35,flashMin:4,flashRange:7}
 };
@@ -450,14 +451,23 @@ function makeSwitch(){const g=new THREE.Group();mesh(new THREE.BoxGeometry(1.6,3
 const powerSwitches=Array.from({length:2},makeSwitch);powerSwitches.forEach(sw=>{sw.userData.collisionRadius=1.3;obstacles.push(sw);});
 function makeTaskGate(color=0x503a2c){const g=new THREE.Group(),mat=flat(color),warning=new THREE.MeshBasicMaterial({color:0xb73a22,fog:false});for(let x=-58;x<=58;x+=6)mesh(new THREE.BoxGeometry(1.35,8.5,1.2),mat,g,x,4.25,0);for(const y of [1.7,4.4,7.1])mesh(new THREE.BoxGeometry(118,.72,1.05),mat,g,0,y,0);for(const x of [-6,6])mesh(new THREE.BoxGeometry(.5,5.8,.32),warning,g,x,4.3,-.7,[1,1,1],[0,0,x<0?.36:-.36]);g.userData={open:false};scene.add(g);return g;}
 const forestGate=makeTaskGate(0x40352c),powerGate=makeTaskGate(0x6b3328);
+// 地面导航采用沿路线流动的多枚箭头，不再把一个 HUD 箭头钉在屏幕上。
+const objectiveTrail=new THREE.Group(),objectiveTrailArrows=[];scene.add(objectiveTrail);objectiveTrail.visible=false;
+const navShape=new THREE.Shape();navShape.moveTo(-.48,-1.25);navShape.lineTo(.48,-1.25);navShape.lineTo(.48,.05);navShape.lineTo(1.02,.05);navShape.lineTo(0,1.5);navShape.lineTo(-1.02,.05);navShape.lineTo(-.48,.05);navShape.closePath();
+for(let i=0;i<5;i++){const mat=new THREE.MeshBasicMaterial({color:0xd9ff43,transparent:true,opacity:.65,side:THREE.DoubleSide,fog:false,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4}),arrow=mesh(new THREE.ShapeGeometry(navShape),mat,objectiveTrail,0,.09,0,[1.05,1.05,1.05],[-Math.PI/2,0,0]);arrow.renderOrder=4;objectiveTrailArrows.push(arrow);}
 function makeHut(){const g=new THREE.Group(),wood=flat(0x4c392b),roof=flat(0x241f1d);mesh(new THREE.BoxGeometry(11,5,8),wood,g,0,2.5,0);mesh(new THREE.ConeGeometry(8,4,4),roof,g,0,6,0,[1,1,.78],[0,Math.PI/4,0]);mesh(new THREE.BoxGeometry(4.2,4.4,.8),flat(0x11120f),g,0,2.1,-4.1);const warm=new THREE.PointLight(0xffb34c,52,20);warm.position.set(0,3,-2);g.add(warm);g.userData.warm=warm;scene.add(g);return g;}
 const shelterHuts=[makeHut(),makeHut()];shelterHuts.forEach(hut=>{hut.userData.collisionRadius=4.8;obstacles.push(hut);});
 function makeFalseGate(){const g=new THREE.Group(),mat=flat(0xb9e83b);for(const x of [-8,8])mesh(new THREE.BoxGeometry(2.4,15,2.4),mat,g,x,7.5,0);mesh(new THREE.BoxGeometry(18,2.4,2.4),mat,g,0,14,0);const sign=mesh(new THREE.BoxGeometry(9,3,.5),mat,g,0,10,-1.5);g.userData={mat,sign,triggered:false};scene.add(g);return g;}
 const falseGate=makeFalseGate();
 const finalHerd=Array.from({length:13},(_,i)=>{const cow=i===0?makeHerdCow(.9):i%4===2?makeWalkingHerdCow(.48+(i%3)*.065,i):makeHerdCow(.5+(i%3)*.08);if(i===0){cow.userData.super=true;turnIntoSuperCow(cow);}cow.visible=false;scene.add(cow);return cow;});
-const itemTypes=['herb','flashlight','radio','smoke'];
-const itemPickups=itemTypes.map((type,i)=>{const colors=[0x65d451,0xffef8a,0x61b6da,0xc7c7c7],g=new THREE.Group();mesh(new THREE.DodecahedronGeometry(.65,0),new THREE.MeshBasicMaterial({color:colors[i],fog:false}),g,0,1,0);const ring=mesh(new THREE.TorusGeometry(1,.09,5,16),new THREE.MeshBasicMaterial({color:colors[i],fog:false}),g,0,1,0,[1,1,1],[Math.PI/2,0,0]);g.userData={type,ring,collected:false};scene.add(g);return g;});
-const pickupEffects=[],itemColors={herb:0x65ff51,flashlight:0xfff27c,radio:0x58cfff,smoke:0xe5e5e5,health:0xff2446};
+// 逃亡牛群不再像复制出来的一样只露出同一个背面。固定安排正面、
+// 背面、左右侧面和四个斜面；其中部分直立牛会倒立着狂奔。
+const herdViewYaws=[0,Math.PI,Math.PI/2,-Math.PI/2,Math.PI/4,-Math.PI/4,Math.PI*.75,-Math.PI*.75];
+function stageHerdViews(cows,handstandIndexes=[]){const inverted=new Set(handstandIndexes);cows.forEach((cow,i)=>{cow.userData.viewYaw=herdViewYaws[i%herdViewYaws.length];cow.userData.lockRunView=true;cow.userData.handstand=inverted.has(i)&&cow.userData.upright;});}
+stageHerdViews(herdCows,[2,5]);stageHerdViews(storyHerd,[1,5,9]);stageHerdViews(finalHerd,[2,6,10]);safeZones.forEach(zone=>stageHerdViews(zone.userData.residents.slice(0,4),[1,3]));
+const itemTypes=['herb','flashlight','radio','smoke','speed','speed','speed','speed'],itemColors={herb:0x65ff51,flashlight:0xfff27c,radio:0x58cfff,smoke:0xe5e5e5,speed:0x67fff0,health:0xff2446};
+const itemPickups=itemTypes.map(type=>{const color=itemColors[type],g=new THREE.Group();mesh(type==='speed'?new THREE.OctahedronGeometry(.72,0):new THREE.DodecahedronGeometry(.65,0),new THREE.MeshBasicMaterial({color,fog:false}),g,0,1,0);const ring=mesh(new THREE.TorusGeometry(1,.09,5,16),new THREE.MeshBasicMaterial({color,fog:false}),g,0,1,0,[1,1,1],[Math.PI/2,0,0]);if(type==='speed')for(const side of [-1,1])mesh(new THREE.ConeGeometry(.18,.75,5),new THREE.MeshBasicMaterial({color:0xe8ffff,fog:false}),g,side*.43,1,.02,[1,1,1],[Math.PI/2,0,0]);g.userData={type,ring,collected:false};scene.add(g);return g;});
+const pickupEffects=[];
 function spawnPickupParticles(item){const group=new THREE.Group(),particles=[],color=itemColors[item.userData.type]||0xffffff,mat=new THREE.MeshBasicMaterial({color,transparent:true,opacity:1,fog:false,blending:THREE.AdditiveBlending});for(let i=0;i<quality.particles;i++){const particle=mesh(new THREE.DodecahedronGeometry(.11+Math.random()*.22,0),mat.clone(),group,0,1.2,0);const angle=Math.random()*Math.PI*2,speed=5+Math.random()*11;particle.userData.velocity=new THREE.Vector3(Math.cos(angle)*speed,3+Math.random()*10,Math.sin(angle)*speed);particle.userData.spin=(Math.random()-.5)*14;particles.push(particle);}const ring=mesh(new THREE.RingGeometry(.8,1.18,24),new THREE.MeshBasicMaterial({color,transparent:true,opacity:1,side:THREE.DoubleSide,fog:false,blending:THREE.AdditiveBlending}),group,0,.18,0,[1,1,1],[-Math.PI/2,0,0]),light=new THREE.PointLight(color,95,34);light.position.y=2;group.add(light);group.position.copy(item.position);scene.add(group);pickupEffects.push({group,particles,ring,light,age:0});}
 function playPickupSound(type){const notes=type==='health'?[392,523,659,784]:type==='radio'?[330,495,742]:type==='flashlight'?[520,780,1040]:type==='herb'?[392,523,659]:[185,277,415];notes.forEach((note,i)=>setTimeout(()=>sound(note,.24,'triangle',.085),i*75));}
 const forkWalls=Array.from({length:8},(_,i)=>{const g=new THREE.Group(),mat=flat(i%2?0x34352f:0x4d4036),mark=new THREE.MeshBasicMaterial({color:i%2?0x6f2430:0x6c7131,fog:true});for(const side of [-1,1])for(let piece=0;piece<8;piece++){const x=side*18+(piece-3.5)*2.75,height=3.8+(piece%3)*.7,stone=mesh(new THREE.DodecahedronGeometry(1.2,0),mat,g,x,height*.45,(piece%2-.5)*.7,[1.55,height*.48,1.1+(piece%3)*.16],[piece*.13,i*.17,(piece%2?1:-1)*.12]);if(piece%2===0)mesh(new THREE.TorusGeometry(.62,.08,4,7),mark,stone,0,.12,-1.03,[1,1,1],[Math.PI/2,0,piece*.7]);}g.userData.gapSide=i%2?1:-1;scene.add(g);return g;});
@@ -638,7 +648,7 @@ function makeWatcher(){const g=new THREE.Group(),voidMat=new THREE.MeshBasicMate
 const watchers=Array.from({length:4},makeWatcher);
 
 const keys={}, joystick={x:0,y:0}, clock=new THREE.Clock();
-let state='intro', stamina=100, hearts=3, exhausted=false, runLength=430, exitZ=-412, distance=430, hunterSpeed=7.5, elapsed=0, lastLine=-1, shake=0, audio, musicMaster, radioGain, musicNodes=[], musicTimer, storyStage=0, waveWarningStage=0, snowStage=0, snowBlend=0, activeChasers=[], speedLevel=0, nextTerrorFlash=9,nextHaunt=6,hauntTimer,titleCryTimer,deathElapsed=0,deathAttacker=null,deathReason=null,nextDeathBlood=0,lastCollisionSound=-99,invulnerableUntil=0,clothCount=0,switchCount=0,sheltered=false,flashlightUntil=0,smokeCharges=0,radioOwned=false,fakeExitTriggered=false,finalWaveStarted=false,rescuedCows=0,weatherActive=false,nextWeatherChange=0;
+let state='intro', stamina=100, hearts=3, exhausted=false, runLength=430, exitZ=-412, distance=430, hunterSpeed=7.5, elapsed=0, lastLine=-1, shake=0, audio, musicMaster, radioGain, musicNodes=[], musicTimer, storyStage=0, waveWarningStage=0, snowStage=0, snowBlend=0, activeChasers=[], speedLevel=0, nextTerrorFlash=9,nextHaunt=6,hauntTimer,titleCryTimer,deathElapsed=0,deathAttacker=null,deathReason=null,nextDeathBlood=0,lastCollisionSound=-99,invulnerableUntil=0,clothCount=0,switchCount=0,sheltered=false,flashlightUntil=0,speedBoostUntil=0,smokeCharges=0,radioOwned=false,fakeExitTriggered=false,finalWaveStarted=false,rescuedCows=0,weatherActive=false,nextWeatherChange=0;
 const bloodEffects=[];
 const lines=[
   [.04,'story.0'],[.08,'story.1'],[.12,'story.2'],[.16,'story.3'],[.36,'story.4'],[.66,'story.5'],[.86,'story.6']
@@ -710,10 +720,11 @@ function updateObjectives(progress,dt,t,moving,safeProtected){
     if(item.userData.type==='herb'){hearts=Math.min(3,hearts+1);stamina=100;renderHearts();}
     else if(item.userData.type==='flashlight')flashlightUntil=elapsed+32;
     else if(item.userData.type==='radio')radioOwned=true;
+    else if(item.userData.type==='speed'){speedBoostUntil=Math.max(speedBoostUntil,elapsed)+11;stamina=Math.min(100,stamina+28);}
     else smokeCharges=1;
     say(`item.${item.userData.type}`,2600);shake=Math.max(shake,.16);
   });
-  document.body.classList.toggle('flashlight-on',elapsed<flashlightUntil);
+  document.body.classList.toggle('flashlight-on',elapsed<flashlightUntil);document.body.classList.toggle('speed-boost',elapsed<speedBoostUntil);
 
   // 只按画出来的两段石墙碰撞；旧版把整条地图边缘也当成墙，形成了看不见的空气墙。
   forkWalls.forEach(fork=>{if(!fork.visible)return;for(const side of [-1,1])if(pushPlayerFromBox(fork.position.x+side*18,fork.position.z,10.8,1.45))shake=Math.max(shake,.12);});
@@ -731,14 +742,18 @@ function updateObjectives(progress,dt,t,moving,safeProtected){
   }
   return {protectedZone:safeProtected||sheltered,missionKey,missionParams};
 }
-function updateObjectiveArrow(t){
+function updateObjectiveArrow(progress,t){
   let candidates=[];
-  if(clothCount<clothPieces.length)candidates=clothPieces.filter(item=>item.visible);
-  else if(switchCount<powerSwitches.length)candidates=powerSwitches.filter(item=>item.visible&&!item.userData.on);
-  if(dreamClock.visible)candidates=[dreamClock];
+  const clothTask=clothCount<clothPieces.length&&progress>runLength*.245&&progress<runLength*.41;
+  const switchTask=switchCount<powerSwitches.length&&progress>runLength*.645&&progress<runLength*.805;
+  if(clothTask)candidates=clothPieces.filter(item=>item.visible);
+  else if(switchTask)candidates=powerSwitches.filter(item=>item.visible&&!item.userData.on);
+  else if(dreamClock.visible)candidates=[dreamClock];
   let target=null,best=Infinity;for(const item of candidates){const d=Math.hypot(item.position.x-player.position.x,item.position.z-player.position.z);if(d<best){best=d;target=item;}}
-  if(!target||best>105||state!=='playing'){objectiveArrow.classList.remove('show');return;}
-  const dx=target.position.x-player.position.x,dz=target.position.z-player.position.z,angle=Math.atan2(dx,-dz)*180/Math.PI;objectiveArrow.style.setProperty('--arrow-angle',`${angle}deg`);objectiveArrow.querySelector('b').textContent=`${Math.round(best)}${tr('world.m')}`;objectiveArrow.classList.add('show');objectiveArrow.style.setProperty('--arrow-pulse',String(.92+Math.sin(t*6)*.08));
+  objectiveArrow.classList.remove('show');
+  if(!target||best>105||best<3.4||state!=='playing'){objectiveTrail.visible=false;return;}
+  const dx=target.position.x-player.position.x,dz=target.position.z-player.position.z,yaw=Math.atan2(-dx,-dz),flow=t*7;
+  objectiveTrail.visible=true;objectiveTrailArrows.forEach((arrow,i)=>{const travel=4+(flow+i*5.2)%26;arrow.visible=travel<best-1.3;if(!arrow.visible)return;const ratio=travel/best;arrow.position.set(player.position.x+dx*ratio,.09,player.position.z+dz*ratio);arrow.rotation.set(-Math.PI/2,yaw,0);arrow.material.opacity=.38+.42*(.5+.5*Math.sin(t*7-i*.8));const scale=.82+Math.sin(t*7-i*.7)*.1;arrow.scale.setScalar(scale);});
 }
 const herdFleeLines=Array.from({length:7},(_,i)=>`herd.flee.${i}`),herdCaughtLines=Array.from({length:7},(_,i)=>`herd.caught.${i}`);
 const passingNpcLines=Array.from({length:6},(_,i)=>`passingNpc.${i}`);let lastPassingNpcTalk=-99;
@@ -768,7 +783,7 @@ function applyPlayerHealthAppearance(){
   player.traverse(part=>{if(!part.isMesh||!part.material?.color)return;if(!part.userData.healthyColor)part.userData.healthyColor=part.material.color.clone();part.material.color.copy(part.userData.healthyColor).lerp(new THREE.Color(0x3b1513),damage*(damage===1?.09:.17));});
 }
 function renderHearts(hit=false){[...ui.hearts.children].forEach((heart,index)=>{heart.classList.toggle('lost',index>=hearts);heart.classList.remove('hit-heart');if(hit&&index===hearts){void heart.offsetWidth;heart.classList.add('hit-heart');}});applyPlayerHealthAppearance();}
-function damageHeart(hitKey,attacker,deathKey,deathParams={}){if(state!=='playing'||elapsed<invulnerableUntil)return;invulnerableUntil=elapsed+2.15;hearts=Math.max(0,hearts-1);renderHearts(true);terrorFlash();shake=.9;if(hearts)say('event.heartLost',1800,{count:hearts});if(hearts<=0)beginPlayerDeath(attacker,deathKey,deathParams);else if(attacker){const dx=player.position.x-attacker.position.x,dz=player.position.z-attacker.position.z,d=Math.max(1,Math.hypot(dx,dz));player.position.x+=dx/d*4.2;player.position.z+=dz/d*4.2;attacker.position.x-=dx/d*1.5;attacker.position.z-=dz/d*1.5;}}
+function damageHeart(hitKey,attacker,deathKey,deathParams={}){if(state!=='playing'||elapsed<invulnerableUntil)return;invulnerableUntil=elapsed+(difficulties[selectedCharacter].invuln||2.15);hearts=Math.max(0,hearts-1);renderHearts(true);terrorFlash();shake=.9;if(hearts)say('event.heartLost',1800,{count:hearts});if(hearts<=0)beginPlayerDeath(attacker,deathKey,deathParams);else if(attacker){const dx=player.position.x-attacker.position.x,dz=player.position.z-attacker.position.z,d=Math.max(1,Math.hypot(dx,dz));player.position.x+=dx/d*4.2;player.position.z+=dz/d*4.2;attacker.position.x-=dx/d*1.5;attacker.position.z-=dz/d*1.5;}}
 renderHearts();
 function sound(freq=80,dur=.16,type='sawtooth',vol=.05){
   if(!audio) audio=new (window.AudioContext||window.webkitAudioContext)();
@@ -826,11 +841,11 @@ document.querySelector('#enterGameBtn').addEventListener('click',unlockAudio);
 document.addEventListener('WeixinJSBridgeReady',()=>{dangerAudio.load();titleCryAudio.load();if(audio)audio.resume().catch(()=>{});},{once:true});
 function start(){
   clearTimeout(titleCryTimer);titleCryAudio.pause();titleCryAudio.currentTime=0;document.body.classList.remove('title-cry');
-  clearTimeout(specialEntranceTimer);document.body.classList.remove(...specialEntranceClasses,'well-haunting');objectiveArrow.classList.remove('show');
+  clearTimeout(specialEntranceTimer);document.body.classList.remove(...specialEntranceClasses,'well-haunting');objectiveArrow.classList.remove('show');objectiveTrail.visible=false;
   clearTimeout(say.t);clearTimeout(hauntTimer);ui.subtitle.classList.remove('show');ui.warning.classList.remove('show');activeSayKey='';activeMissionKey='hud.defaultMission';activeMissionParams={};Object.keys(keys).forEach(key=>delete keys[key]);resetJoystick();stopMusic();
   document.body.style.removeProperty('transform');document.body.style.removeProperty('filter');canvas.style.removeProperty('transform');camera.zoom=1;document.body.classList.remove('dreaming');
   const mode=difficulties[selectedCharacter];runLength=mode.length;exitZ=18-runLength;distance=runLength;gate.position.set(22,0,exitZ);beacon.position.set(22,14,exitZ+2);gateBeam.position.set(22,50,exitZ);gateSign.position.set(22,36,exitZ+1);guidePosts.forEach(post=>post.visible=post.position.z>exitZ+18);scene.fog.density=mode.fog;scene.background.set(selectedCharacter==='orange'?0xaeba88:selectedCharacter==='yellow'?0x9daa7c:0x77806a);
-  state='playing'; elapsed=0; stamina=100;hearts=3;invulnerableUntil=0;exhausted=false; hunterSpeed=7.5; lastLine=-1;speedLevel=0;deathElapsed=0;deathAttacker=null;deathReason=null;resultSnapshot=null;nextDeathBlood=0;snowStage=0;snowBlend=0;snow.visible=false;snow.material.opacity=0;snowGhost.visible=false;weatherActive=Math.random()<.58;nextWeatherChange=7+Math.random()*12;nextTerrorFlash=mode.flashMin+Math.random()*mode.flashRange;nextHaunt=5+Math.random()*6;watchers.forEach(w=>w.visible=false);document.body.classList.remove('death-maul','exhausted','enemy-near','terror-flash','flash-negative','apparition','blackout','blood-flash','heartbeat','otherworld','snow-haunting','rain-active','safe-warm','safe-cold','safe-broken','sheltered','flashlight-on','smoke-screen','chapter-1','chapter-2','chapter-3','chapter-4','chapter-5','hit','glitch','title-cry','health-3','health-2','health-1','health-0','difficulty-easy','difficulty-normal','difficulty-hard');document.body.classList.add(selectedCharacter==='orange'?'difficulty-easy':selectedCharacter==='yellow'?'difficulty-normal':'difficulty-hard');ui.distance.textContent=runLength+tr('world.m');
+  state='playing'; elapsed=0; stamina=100;hearts=3;invulnerableUntil=0;exhausted=false; hunterSpeed=7.5; lastLine=-1;speedLevel=0;deathElapsed=0;deathAttacker=null;deathReason=null;resultSnapshot=null;nextDeathBlood=0;snowStage=0;snowBlend=0;snow.visible=false;snow.material.opacity=0;snowGhost.visible=false;weatherActive=Math.random()<.58;nextWeatherChange=7+Math.random()*12;nextTerrorFlash=mode.flashMin+Math.random()*mode.flashRange;nextHaunt=5+Math.random()*6;watchers.forEach(w=>w.visible=false);document.body.classList.remove('death-maul','exhausted','enemy-near','terror-flash','flash-negative','apparition','blackout','blood-flash','heartbeat','otherworld','snow-haunting','rain-active','safe-warm','safe-cold','safe-broken','sheltered','flashlight-on','speed-boost','smoke-screen','chapter-1','chapter-2','chapter-3','chapter-4','chapter-5','hit','glitch','title-cry','health-3','health-2','health-1','health-0','difficulty-easy','difficulty-normal','difficulty-hard');document.body.classList.add(selectedCharacter==='orange'?'difficulty-easy':selectedCharacter==='yellow'?'difficulty-normal':'difficulty-hard');ui.distance.textContent=runLength+tr('world.m');
   const oldPlayer=player;player=createCharacter(selectedCharacter);player.position.set(0,.05,18);player.rotation.set(0,0,0);scene.remove(oldPlayer);scene.add(player);renderHearts();storyStage=0;waveWarningStage=0;activeChasers=[];allEnemies.forEach(e=>{e.visible=false;e.position.y=e.userData.type==='car'?0:.05;e.userData.feeding=0;e.userData.joined=false;e.userData.headBob=0;e.userData.spawned=false;e.userData.pounce=null;e.userData.nextPounce=0;e.userData.stunnedUntil=0;});scalableEnemies.forEach(enemy=>{enemy.userData.sizeMultiplier=1;enemy.scale.copy(enemy.userData.baseScale);});stalkers.forEach(e=>e.position.copy(e.userData.home));monsterCar.position.set(0,0,80);snakes.forEach(snake=>{snake.position.copy(snake.userData.home);snake.rotation.set(0,Math.PI/2,0);snake.userData.avoidTimer=0;snake.visible=true;});treeEnemies.forEach(e=>e.visible=true);snowGhost.userData.stunnedUntil=0;
   bloodEffects.splice(0).forEach(f=>scene.remove(f.group));
   birdDroppings.splice(0).forEach(drop=>{scene.remove(drop.mesh);drop.mesh.material.dispose();});strangeBirds.forEach((bird,i)=>{bird.userData.nextDrop=8+i*1.8+Math.random()*15;bird.userData.panicUntil=0;bird.userData.shoveVelocity=null;});
@@ -840,13 +855,14 @@ function start(){
   const herdCenter=18-runLength*.165;storyHerd.forEach((cow,i)=>{cow.position.set(cow.userData.offsetX,.05,herdCenter+cow.userData.offsetZ);cow.rotation.set(0,Math.PI,0);cow.visible=false;cow.userData.active=false;cow.userData.escaped=false;cow.userData.eaten=false;});
   currentChapter=-1;activeSafeZone=-1;hideNpcBubbles();witnessSpeaker=null;superCowSpeaker=null;witnessBubble.hidden=true;superCowBubble.hidden=true;safeZones.forEach((zone,i)=>{zone.position.set(0,0,18-runLength*((i+1)/5));zone.visible=true;Object.assign(zone.userData,{entered:false,passed:false,broken:false,timer:0,nextTalk:0,talkIndex:0,activeBubble:-1});zone.userData.light.color.set(0xffc66b);zone.userData.light.intensity=190;zone.userData.floorMat.color.set(0xa79861);zone.userData.floorMat.emissive.set(0xffa82f);zone.userData.floorMat.emissiveIntensity=.36;zone.userData.campfire.life=1;zone.userData.campfire.light.intensity=175;zone.userData.house.healthPickup.userData.collected=false;zone.userData.house.healthPickup.visible=true;zone.userData.house.roofMats.forEach(mat=>mat.opacity=.94);zone.userData.residents.forEach(npc=>{npc.position.copy(npc.userData.safeStart);npc.rotation.set(0,Math.PI,0);npc.visible=true;npc.userData.eaten=false;npc.userData.escaped=false;});});showChapter(0);
   toshioStage=0;kayakoStage=0;sadakoStage=0;toshioStageAt=0;kayakoStageAt=0;sadakoStageAt=0;toshioIndex=0;kayakoIndex=0;sadakoIndex=0;[toshio,kayako,sadako].forEach(ghost=>{ghost.visible=false;ghost.position.y=.05;ghost.rotation.set(0,0,0);ghost.scale.setScalar(1);ghost.userData.pounce=null;ghost.userData.stunnedUntil=0;ghost.userData.feeding=0;});kayakoStairs.visible=false;cursedTelevision.visible=false;cursedTelevision.userData.screenMat.opacity=.82;sadako.userData.nextTeleport=0;
-  const encounterSets=selectedCharacter==='orange'?{toshio:[.12,.48,.86],kayako:[.3,.7],sadako:[.51,.9],freddy:[.67,.88],edward:[.36,.76,.95],jiangchen:[.84,.94]}:selectedCharacter==='yellow'?{toshio:[.11,.28,.47,.66,.86],kayako:[.27,.49,.69,.88],sadako:[.48,.68,.87],freddy:[.64,.76,.9],edward:[.34,.58,.78,.94],jiangchen:[.82,.9,.97]}:{toshio:[.1,.25,.42,.62,.82,.94],kayako:[.24,.43,.63,.83,.95],sadako:[.42,.61,.81,.94],freddy:[.62,.71,.82,.91,.97],edward:[.32,.47,.64,.78,.9,.97],jiangchen:[.81,.88,.94,.98]};toshioRatios=encounterSets.toshio;kayakoRatios=encounterSets.kayako;sadakoRatios=encounterSets.sadako;freddyRatios=encounterSets.freddy;edwardRatios=encounterSets.edward;jiangchenRatios=encounterSets.jiangchen;freddyIndex=0;edwardIndex=0;jiangchenIndex=0;freddyUntil=0;edwardStage=0;edwardStageAt=0;jiangchenUntil=0;[freddy,jiangchen,edwardRipper,dreamClock].forEach(actor=>{actor.visible=false;actor.position.y=.05;actor.rotation.set(0,0,0);actor.scale.setScalar(1);});freddy.userData.pounce=null;jiangchen.userData.pounce=null;
-  clothCount=0;switchCount=0;sheltered=false;flashlightUntil=0;smokeCharges=0;radioOwned=false;fakeExitTriggered=false;finalWaveStarted=false;rescuedCows=0;npcShoveHintShown=false;lastNpcShove=-9;
-  [[-23,.26],[21,.31],[-18,.36]].forEach(([x,r],i)=>{const item=clothPieces[i];item.position.set(x,.05,18-runLength*r);item.visible=true;item.rotation.y=Math.random()*Math.PI;});forestGate.position.set(0,0,18-runLength*.395);forestGate.userData.open=false;
-  [[-20,.66],[22,.735]].forEach(([x,r],i)=>{const sw=powerSwitches[i];sw.position.set(x,0,18-runLength*r);sw.visible=true;sw.userData.on=false;sw.userData.lever.rotation.x=.45;sw.userData.lamp.color.set(0xff2a14);});powerGate.position.set(0,0,18-runLength*.79);powerGate.userData.open=false;
+  const encounterSets=selectedCharacter==='orange'?{toshio:[.14,.78],kayako:[.34],sadako:[.53],freddy:[.69],edward:[.39,.88],jiangchen:[.86]}:selectedCharacter==='yellow'?{toshio:[.11,.28,.47,.66,.86],kayako:[.27,.49,.69,.88],sadako:[.48,.68,.87],freddy:[.64,.76,.9],edward:[.34,.58,.78,.94],jiangchen:[.82,.9,.97]}:{toshio:[.1,.25,.42,.62,.82,.94],kayako:[.24,.43,.63,.83,.95],sadako:[.42,.61,.81,.94],freddy:[.62,.71,.82,.91,.97],edward:[.32,.47,.64,.78,.9,.97],jiangchen:[.81,.88,.94,.98]};toshioRatios=encounterSets.toshio;kayakoRatios=encounterSets.kayako;sadakoRatios=encounterSets.sadako;freddyRatios=encounterSets.freddy;edwardRatios=encounterSets.edward;jiangchenRatios=encounterSets.jiangchen;freddyIndex=0;edwardIndex=0;jiangchenIndex=0;freddyUntil=0;edwardStage=0;edwardStageAt=0;jiangchenUntil=0;[freddy,jiangchen,edwardRipper,dreamClock].forEach(actor=>{actor.visible=false;actor.position.y=.05;actor.rotation.set(0,0,0);actor.scale.setScalar(1);});freddy.userData.pounce=null;jiangchen.userData.pounce=null;
+  clothCount=0;switchCount=0;sheltered=false;flashlightUntil=0;speedBoostUntil=0;smokeCharges=0;radioOwned=false;fakeExitTriggered=false;finalWaveStarted=false;rescuedCows=0;npcShoveHintShown=false;lastNpcShove=-9;
+  // 任务物全部排在门前，玩家沿前进方向依次取得，不会越过出口后再被迫回头。
+  [[-22,.365],[20,.378],[0,.389]].forEach(([x,r],i)=>{const item=clothPieces[i];item.position.set(x,.05,18-runLength*r);item.visible=true;item.rotation.y=Math.random()*Math.PI;});forestGate.position.set(0,0,18-runLength*.395);forestGate.userData.open=false;
+  [[-20,.755],[20,.778]].forEach(([x,r],i)=>{const sw=powerSwitches[i];sw.position.set(x,0,18-runLength*r);sw.visible=true;sw.userData.on=false;sw.userData.lever.rotation.x=.45;sw.userData.lamp.color.set(0xff2a14);});powerGate.position.set(0,0,18-runLength*.79);powerGate.userData.open=false;
   [[-15,.47],[16,.54]].forEach(([x,r],i)=>{shelterHuts[i].position.set(x,0,18-runLength*r);shelterHuts[i].visible=true;});falseGate.position.set(0,0,18-runLength*.9);falseGate.visible=true;falseGate.userData.triggered=false;falseGate.userData.mat.color.set(0xb9e83b);
   finalHerd.forEach((cow,i)=>{cow.position.set((i%5-2)*4.2,.05,18-runLength*.825-Math.floor(i/5)*6);cow.rotation.set(0,Math.PI,0);cow.visible=false;cow.userData.escaped=false;cow.userData.eaten=false;cow.userData.superBoastAt=0;cow.userData.superBoasted=false;});
-  [[-10,.12],[18,.34],[-16,.55],[20,.72]].forEach(([x,r],i)=>{const item=itemPickups[i];item.position.set(x,.05,18-runLength*r);item.visible=true;item.userData.collected=false;});
+  [[-10,.18],[18,.39],[-16,.59],[20,.74],[14,.1],[-17,.29],[16,.51],[-14,.69]].forEach(([x,r],i)=>{const item=itemPickups[i];item.position.set(x,.05,18-runLength*r);item.visible=true;item.userData.collected=false;});
   forkWalls.forEach((fork,i)=>{fork.position.set((Math.random()<.5?-1:1)*(8+Math.random()*7),0,18-runLength*(.23+i*.075));fork.rotation.y=(Math.random()-.5)*.08;fork.visible=true;});
   strangeTravellers.forEach(c=>{c.position.copy(c.userData.start);c.rotation.set(0,0,0);c.visible=true;c.userData.fleeing=false;c.userData.eaten=false;c.userData.escaped=false;c.userData.talked=false;});animalActors.forEach(animal=>{animal.userData.refugeZone=-1;animal.userData.refugeParked=false;animal.userData.refugeOffset=null;animal.userData.escapeX=0;animal.userData.passingTalked=false;});lastPassingNpcTalk=-99;
   const mobileView=mobileDevice||innerWidth<700;hunterGlow.visible=false;shake=0;camera.fov=66;camera.updateProjectionMatrix();camera.position.set(mobileView?.8:2.2,mobileView?24:19,mobileView?5:0);setMission('hud.defaultMission');document.body.classList.add('playing');ui.intro.classList.add('hidden');ui.result.classList.remove('show');canvas.focus?.();
@@ -863,7 +879,7 @@ function chooseEnding(win){
 }
 function renderResult(){if(!resultSnapshot)return;const {win,runDistance,exactTime,reason,endingKey}=resultSnapshot;ui.result.classList.toggle('dead',!win);ui.result.classList.toggle('escaped',win);ui.eyebrow.textContent=tr(win?'result.exitFound':'result.deathConfirmed');ui.title.textContent=tr(win?'result.winTitle':'result.deadTitle');ui.resultText.innerHTML=tr(win?'result.win':'result.dead',{distance:runDistance,time:exactTime,reason:localizeDeath(reason)})+`<br><strong>${tr(endingKey)}</strong>`;}
 function end(win){
-  state=win?'win':'caught';recordScore(win);clearTimeout(hauntTimer);clearTimeout(specialEntranceTimer);objectiveArrow.classList.remove('show');witnessBubble.hidden=true;superCowBubble.hidden=true;watchers.forEach(w=>w.visible=false);[snowGhost,toshio,kayako,sadako,kayakoStairs,cursedTelevision,freddy,jiangchen,edwardRipper,dreamClock].forEach(actor=>actor.visible=false);snow.visible=false;document.body.classList.remove('playing','death-maul','exhausted','enemy-near','terror-flash','flash-negative','apparition','blackout','blood-flash','heartbeat','otherworld','snow-haunting','rain-active','safe-warm','safe-cold','safe-broken','dreaming','well-haunting',...specialEntranceClasses);ui.result.classList.add('show');
+  state=win?'win':'caught';recordScore(win);clearTimeout(hauntTimer);clearTimeout(specialEntranceTimer);objectiveArrow.classList.remove('show');objectiveTrail.visible=false;witnessBubble.hidden=true;superCowBubble.hidden=true;watchers.forEach(w=>w.visible=false);[snowGhost,toshio,kayako,sadako,kayakoStairs,cursedTelevision,freddy,jiangchen,edwardRipper,dreamClock].forEach(actor=>actor.visible=false);snow.visible=false;document.body.classList.remove('playing','death-maul','exhausted','enemy-near','terror-flash','flash-negative','apparition','blackout','blood-flash','heartbeat','otherworld','snow-haunting','rain-active','safe-warm','safe-cold','safe-broken','dreaming','speed-boost','well-haunting',...specialEntranceClasses);ui.result.classList.add('show');
   const runDistance=Math.max(0,Math.min(runLength,Math.round(18-player.position.z))),exactTime=formatTime(Math.round(elapsed*1000));
   resultSnapshot={win,runDistance,exactTime,reason:deathReason,endingKey:chooseEnding(win)};renderResult();
   dangerAudio.pause();dangerAudio.currentTime=0;dangerLatched=false;stopMusic();sound(win?220:38,1.5,'sawtooth',.1);
@@ -881,8 +897,8 @@ installBtn.onclick=async()=>{
 document.querySelector('#closeInstallBtn').onclick=()=>{installHint.classList.remove('show');installHint.setAttribute('aria-hidden','true');};
 addEventListener('appinstalled',()=>{deferredInstallPrompt=null;installBtn.classList.add('installed');installBtn.querySelector('span').textContent=tr('install.installed');});
 document.querySelector('#changeBtn').onclick=()=>{
-  stopMusic();state='intro';hearts=3;renderHearts();objectiveArrow.classList.remove('show');document.body.classList.remove('playing','well-haunting',...specialEntranceClasses);ui.result.classList.remove('show');ui.intro.classList.remove('hidden');
-  clearTimeout(hauntTimer);watchers.forEach(w=>w.visible=false);snowGhost.visible=false;snow.visible=false;document.body.classList.remove('exhausted','enemy-near','terror-flash','flash-negative','apparition','blackout','blood-flash','heartbeat','otherworld','snow-haunting','rain-active','safe-warm','safe-cold','safe-broken');
+  stopMusic();state='intro';hearts=3;renderHearts();objectiveArrow.classList.remove('show');objectiveTrail.visible=false;document.body.classList.remove('playing','well-haunting',...specialEntranceClasses);ui.result.classList.remove('show');ui.intro.classList.remove('hidden');
+  clearTimeout(hauntTimer);watchers.forEach(w=>w.visible=false);snowGhost.visible=false;snow.visible=false;document.body.classList.remove('exhausted','enemy-near','terror-flash','flash-negative','apparition','blackout','blood-flash','heartbeat','otherworld','snow-haunting','rain-active','safe-warm','safe-cold','safe-broken','speed-boost');
   player.position.set(0,.05,18);player.rotation.set(0,0,0);storyStage=0;activeChasers=[];allEnemies.forEach(e=>e.visible=false);hunterGlow.visible=false;
   playTitleCry();
 };
@@ -1024,7 +1040,14 @@ function chooseClosestPrey(enemy,fallback=player,maxNpcRange=48){
 function animateCow(cow,t,speed){
   cow.userData.legs.forEach((l,i)=>l.rotation.x=Math.sin(t*speed+(i%2)*Math.PI)*.55);
   cow.userData.arms.forEach((a,i)=>a.rotation.x=Math.sin(t*speed+(i%2)*Math.PI)*.42);
-  cow.rotation.z=Math.sin(t*speed*.5)*.025;
+  if(cow.userData.lockRunView)cow.rotation.y=cow.userData.viewYaw||0;
+  if(cow.userData.handstand){
+    // 以模型脚底为旋转点翻转后抬高，让头和双手贴近地面、双腿在上方
+    // 交替摆动；不是把贴图简单倒过来。
+    cow.position.y=.05+4.55*cow.scale.y+Math.abs(Math.sin(t*speed))*cow.scale.y*.14;
+    cow.rotation.z=Math.PI+Math.sin(t*speed*.62)*.065;
+    cow.userData.arms.forEach((arm,i)=>{arm.rotation.x=Math.sin(t*speed+i*Math.PI)*.78;arm.rotation.z=(i?-.38:.38)+Math.sin(t*speed*.5+i)*.12;});
+  }else{cow.position.y=.05;cow.rotation.z=Math.sin(t*speed*.5)*.025;}
 }
 function animateDistortion(enemy,t){if(!enemy.userData.twistParts)return;enemy.userData.twistParts.forEach((part,i)=>{part.rotation.y+=.018+(i%3)*.006;part.rotation.z=Math.sin(t*(2.8+i*.17)+i)*(.1+(i%2)*.08);part.scale.y=1+Math.sin(t*4+i)*.07;});if(enemy.userData.type==='crawler')enemy.position.y=.12+Math.abs(Math.sin(t*7))*.2;if(enemy.userData.type==='hollow')enemy.rotation.z=Math.sin(t*2.2)*.09;if(enemy.userData.type==='knot')enemy.rotation.y+=.025;}
 function animateClassicGhost(enemy,t){
@@ -1159,7 +1182,7 @@ function tick(){
     let x=(keys.KeyA||keys.ArrowLeft?1:0)-(keys.KeyD||keys.ArrowRight?1:0)-joystick.x;
     let z=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0)-joystick.y;
     const moving=x||z,wantsSprint=(keys.ShiftLeft||keys.ShiftRight)&&moving,sprint=wantsSprint&&!exhausted&&stamina>0;
-    const difficulty=difficulties[selectedCharacter],speed=gameCore.movement_speed(sprint?1:0,exhausted?1:0)*difficulty.player;
+    const difficulty=difficulties[selectedCharacter],speed=gameCore.movement_speed(sprint?1:0,exhausted?1:0)*difficulty.player*(elapsed<speedBoostUntil?1.38:1);
     stamina=gameCore.update_stamina(stamina,dt*(sprint?difficulty.drain:difficulty.recovery),moving?1:0,wantsSprint?1:0,exhausted?1:0,sprint?1:0);
     if(sprint){
       if(stamina<=0){exhausted=true;document.body.classList.add('exhausted');say('event.tired',2300);sound(43,.75,'sawtooth',.11);}
@@ -1174,7 +1197,7 @@ function tick(){
     animatePlayer(player,t,Boolean(moving),Boolean(sprint));
     const progress=-player.position.z;updateStoryWave(progress);
     updateChapter(progress);updateEnemyScale(dt);let safeProtected=updateSafeZone(progress,dt,t,Boolean(moving));
-    const objective=updateObjectives(progress,dt,t,Boolean(moving),safeProtected);safeProtected=objective.protectedZone;updateObjectiveArrow(t);
+    const objective=updateObjectives(progress,dt,t,Boolean(moving),safeProtected);safeProtected=objective.protectedZone;updateObjectiveArrow(progress,t);
     if(progress>runLength*.145)storyHerd.forEach((cow,i)=>{if(cow.userData.escaped||cow.userData.eaten)return;cow.visible=true;cow.userData.active=true;talkToPassingNpc(cow,i);if(holdNpcInSafeZone(cow,t,dt))return;cow.position.z-=dt*(4.7+(i%3)*.16);cow.position.x+=(cow.userData.escapeX||0)*dt+Math.sin(t*1.7+i)*dt*.34;animateCow(cow,t,9+i%3);if(cow.position.z<exitZ-20){cow.userData.escaped=true;cow.visible=false;}});
     const snowStart=runLength*.4,snowEnd=runLength*.6,snowChapter=progress>snowStart&&progress<snowEnd,snowActive=snowChapter&&weatherActive,rainActive=weatherActive&&!snowChapter;
     snowBlend=THREE.MathUtils.lerp(snowBlend,snowActive?1:0,1-Math.pow(.0005,dt));snow.visible=snowBlend>.015;document.body.classList.toggle('snow-haunting',snowBlend>.28);document.body.classList.toggle('rain-active',rainActive);
@@ -1308,9 +1331,12 @@ if(import.meta.env.DEV)window.__NIULAI_TEST__={
   safeResidentSpread(index=0){const xs=safeZones[index].userData.residents.map(npc=>npc.position.x);return Math.max(...xs)-Math.min(...xs);},
   roadNpcProbe(index=0){const npc=strangeTravellers[index];npc.position.set(player.position.x+.1,.05,player.position.z);npc.userData.talked=false;return talkToRoadNpc(npc,index);},
   roadNpcState(index=0){const npc=strangeTravellers[index];return{distance:Math.hypot(player.position.x-npc.position.x,player.position.z-npc.position.z),talked:npc.userData.talked,sayKey:activeSayKey};},
-  objectiveArrowProbe(){clothCount=0;clothPieces.forEach((item,i)=>{item.visible=i===0;});clothPieces[0].position.set(player.position.x+8,.05,player.position.z-8);updateObjectiveArrow(clock.elapsedTime);return{shown:objectiveArrow.classList.contains('show'),distance:objectiveArrow.querySelector('b').textContent,angle:objectiveArrow.style.getPropertyValue('--arrow-angle')};},
+  objectiveArrowProbe(){clothCount=0;player.position.set(0,.05,18-runLength*.3);clothPieces.forEach((item,i)=>{item.visible=i===0;});clothPieces[0].position.set(player.position.x+18,.05,player.position.z-32);const now=clock.elapsedTime;updateObjectiveArrow(runLength*.3,now);const before=objectiveTrailArrows[0].position.clone();updateObjectiveArrow(runLength*.3,now+.45);return{shown:objectiveTrail.visible,grounded:objectiveTrailArrows.filter(arrow=>arrow.visible).every(arrow=>Math.abs(arrow.position.y-.09)<.001),moving:before.distanceTo(objectiveTrailArrows[0].position)>1,screenArrow:objectiveArrow.classList.contains('show')};},
   specialEntranceProbe(type='well'){specialEntrance(type,5000);return document.body.classList.contains(`entrance-${type}`);},
   wellHauntingProbe(active=true){document.body.classList.remove(...specialEntranceClasses);document.body.classList.toggle('well-haunting',active);return document.body.classList.contains('well-haunting');},
+  herdPresentationProbe(){storyHerd.forEach((cow,i)=>animateCow(cow,1+i*.07,10));return{handstands:storyHerd.filter(cow=>cow.userData.handstand&&Math.abs(cow.rotation.z)>3).length,yaws:[...new Set(storyHerd.map(cow=>Number(cow.rotation.y.toFixed(2))))]};},
+  shoveFingerTopology(){return player.userData.shoveFinger.hands.map(hand=>hand.segments.length);},
+  routePickupState(){return{clothBeforeGate:clothPieces.every(item=>item.position.z>forestGate.position.z),switchesBeforeGate:powerSwitches.every(item=>item.position.z>powerGate.position.z),speedPickups:itemPickups.filter(item=>item.userData.type==='speed').length,easy:{...difficulties.orange}};},
   watcherProbe(){const watcher=watchers[0];watcher.position.set(player.position.x+.1,0,player.position.z);watcher.visible=true;watcher.userData.spoken=false;return true;},
   watcherState(){const watcher=watchers[0];return{distance:Math.hypot(player.position.x-watcher.position.x,player.position.z-watcher.position.z),spoken:watcher.userData.spoken,sayKey:activeSayKey};},
   solidProbe(kind){if(kind==='fence'){const zone=safeZones[0];player.position.set(zone.position.x+20,.05,zone.position.z+5);return true;}if(kind==='taskGate'){forestGate.userData.open=false;forestGate.position.y=0;player.position.set(forestGate.position.x,.05,forestGate.position.z+.1);return true;}if(kind==='falseGate'){falseGate.visible=true;player.position.set(falseGate.position.x+8.1,.05,falseGate.position.z);return true;}if(kind==='exitGate'){player.position.set(gate.position.x+12.1,.05,gate.position.z);return true;}let object;if(kind==='enemy'){object=hunter;hunter.visible=true;hunter.userData.chaseSpeed=0;activeChasers=[hunter];}else if(kind==='ambusher'){object=ambushers[0];object.visible=true;object.userData.disabled=false;object.userData.chaseSpeed=0;}else if(kind==='snake'){object=snakes[0];object.visible=true;}else if(kind==='hut')object=shelterHuts[0];else if(kind==='switch')object=powerSwitches[0];if(!object)return false;player.position.set(object.position.x+.1,.05,object.position.z);object.userData.testStart=object.position.clone();return true;},

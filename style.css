@@ -19,6 +19,9 @@ body.terror-flash .noise:before{content:"";position:absolute;inset:0;background:
 body.flash-negative #game{filter:invert(1) grayscale(1) contrast(2.8) brightness(1.8)}
 body.terror-flash .horror-overlay span{position:absolute;inset:0;display:grid;place-items:center;color:#eae9dc;font:900 clamp(18px,6vw,56px) STKaiti,"KaiTi",serif;letter-spacing:.35em;text-shadow:4px 3px 0 #710000;opacity:0;animation:flashMessage .82s steps(1) both}
 .horror-overlay{position:fixed;inset:0;z-index:6;pointer-events:none;opacity:0;background:radial-gradient(ellipse at 50% 48%,transparent 9%,#04060499 58%,#000 112%);mix-blend-mode:multiply}
+/* 闪屏文案只能在闪屏动画期间出现；否则已写入的旧文字会回流到
+   fixed 容器左上角，正是截图中越过安全区的那一行字。 */
+.horror-overlay span{display:none}
 .playing .horror-overlay{opacity:.56;animation:horrorBreath 4.8s ease-in-out infinite}
 .horror-overlay:before,.horror-overlay:after{content:"";position:absolute;inset:-12%;opacity:.13;background:repeating-linear-gradient(92deg,transparent 0 11%,#000 12% 13%,transparent 14% 26%);animation:filmTear 7s steps(1) infinite}
 .horror-overlay:after{background:repeating-linear-gradient(0deg,transparent 0 46px,#fff1 47px,#0005 49px);animation-duration:.23s}
@@ -141,7 +144,9 @@ button { border:0; font:inherit; cursor:pointer; }
 .result-actions { display:flex; justify-content:center; gap:12px; flex-wrap:wrap; }
 .result button.secondary { color:#fff; background:#222; box-shadow:7px 7px 0 #000; }
 .mobile-controls { display:none; }
-.objective-arrow{position:fixed;z-index:18;left:50%;top:29%;display:flex;flex-direction:column;align-items:center;gap:2px;opacity:0;visibility:hidden;pointer-events:none;transform:translate(-50%,-50%) scale(var(--arrow-pulse,1));transition:opacity .18s;color:#efff83;text-shadow:0 2px 4px #000,0 0 15px #d9ff43}.objective-arrow.show{opacity:1;visibility:visible}.objective-arrow i{display:block;font:900 48px/1 sans-serif;font-style:normal;transform:rotate(var(--arrow-angle,0deg));filter:drop-shadow(0 0 7px #d9ff43)}.objective-arrow b{padding:3px 8px;border-radius:10px;background:#10140dcc;font:900 11px/1.2 monospace;letter-spacing:.04em}
+.objective-arrow{display:none!important}
+body.speed-boost:before{content:"";position:fixed;inset:-12%;z-index:5;pointer-events:none;background:repeating-linear-gradient(100deg,transparent 0 27px,#aaffee22 28px 30px,transparent 31px 66px);mix-blend-mode:screen;animation:speedRush .36s linear infinite}
+@keyframes speedRush{to{transform:translate(-4%,22%)}}
 /* 桌面端为语言按钮保留独立栏位，生命与体力区永远停在它左侧。 */
 @media(min-width:701px) and (pointer:fine){.playing .hud-right{padding-right:190px}.playing .language-picker{top:18px;right:24px}.playing .language-picker>button{min-width:142px;justify-content:center}}
 body.glitch #game { filter:blur(1.1px) hue-rotate(80deg) contrast(1.7); transform:translateX(4px); }
@@ -163,7 +168,7 @@ body.hit #game{animation:hit .22s linear 2}
   .intro-copy{margin:auto 0}.ink-landscape{right:-46%;width:145vw;opacity:.38}.eyebrow{margin-bottom:12px}h1{margin-bottom:16px}
   h1 span{font-size:clamp(62px,24vw,88px)}h1 em{margin-top:14px;font-size:18px}.intro p{margin:10px 0;font-size:12px}.stamp{display:none}
   .chooser>div{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.chooser .character{padding:0 0 7px}.chooser .character b{display:block;padding:6px 3px 0;font-size:9px}.chooser .character small{padding:2px 3px 0;font-size:7px}.intro .menu-actions{width:100%;gap:9px;margin-top:14px}.intro .menu-actions button{width:100%;min-height:58px;padding:15px 16px;margin-top:0}.intro .menu-actions #startBtn{min-height:68px;font-size:18px}.score-card{padding:28px 22px}
-  .hud{padding:16px;transform:none!important;transition:opacity .35s}.brand span{display:none}.distance{position:fixed;left:50%;right:auto;top:max(34px,calc(env(safe-area-inset-top) + 29px));transform:translateX(-50%);text-align:center;line-height:1.15}.distance small{min-height:13px;line-height:13px}.distance strong{display:block;font-size:19px;line-height:23px}.survival-bars{position:fixed;right:max(64px,calc(env(safe-area-inset-right) + 64px));top:max(21px,calc(env(safe-area-inset-top) + 16px));align-items:flex-end;gap:3px}.hearts{height:28px;overflow:visible;font-size:20px;line-height:28px}.hearts span{height:28px;line-height:28px}.stamina-wrap{display:block;width:118px}.stamina-wrap>span{display:block}.stamina{height:7px}.mission{left:16px;top:max(98px,calc(env(safe-area-inset-top) + 88px))}.controls{display:none}
+  .hud{padding:max(34px,calc(env(safe-area-inset-top) + 16px)) 16px 16px;transform:none!important;transition:opacity .35s}.brand span{display:none}.distance{position:fixed;left:50%;right:auto;top:max(34px,calc(env(safe-area-inset-top) + 29px));transform:translateX(-50%);text-align:center;line-height:1.15}.distance small{min-height:13px;line-height:13px}.distance strong{display:block;font-size:19px;line-height:23px}.survival-bars{position:fixed;right:max(64px,calc(env(safe-area-inset-right) + 64px));top:max(21px,calc(env(safe-area-inset-top) + 16px));align-items:flex-end;gap:3px}.hearts{height:28px;overflow:visible;font-size:20px;line-height:28px}.hearts span{height:28px;line-height:28px}.stamina-wrap{display:block;width:118px}.stamina-wrap>span{display:block}.stamina{height:7px}.mission{left:16px;top:max(98px,calc(env(safe-area-inset-top) + 88px))}.controls{display:none}
   /* 字幕固定在三个操作圆钮的上方；不能再用视口百分比，否则在长屏
      iPhone 上会落进摇杆、搓和奔的触控区域。 */
   .subtitle{bottom:max(175px,calc(env(safe-area-inset-bottom) + 145px));width:min(86vw,560px);min-width:0;padding:0 8px;line-height:1.55}

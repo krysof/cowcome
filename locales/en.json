@@ -197,6 +197,7 @@
   "item.flashlight": "Flashlight collected: the fog clears briefly",
   "item.radio": "Radio collected: hear nearby monsters sooner",
   "item.smoke": "Smoke bomb collected: deploys automatically when monsters approach",
+  "item.speed": "Speed charm collected: run faster for 11 seconds",
   "item.smokeUsed": "The smoke bomb burst—run!",
   "item.healthPickup": "You found a Heart of Life inside the house: one heart restored.",
   "ending.alone": "Ending: Escape alone",

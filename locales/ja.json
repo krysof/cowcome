@@ -197,6 +197,7 @@
   "item.flashlight": "懐中電灯を入手：一時的に霧を払う",
   "item.radio": "ラジオを入手：怪物の接近を早く察知",
   "item.smoke": "煙幕弾を入手：怪物接近時に自動使用",
+  "item.speed": "加速のお守りを入手：11秒間、移動速度が上昇",
   "item.smokeUsed": "煙幕が炸裂した——逃げろ！",
   "item.healthPickup": "小屋の中で命のハートを発見：ハートを1つ回復した。",
   "ending.alone": "結末：一人で脱出",
