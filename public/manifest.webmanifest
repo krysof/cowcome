@@ -1,7 +1,7 @@
 {
   "id": "cowcome-pwa",
   "name": "妈妈在哪里：雾中逃亡",
-  "short_name": "妈妈在哪里：雾中逃亡",
+  "short_name": "妈妈在哪里",
   "description": "完全离线的诡异草原生存逃亡游戏。穿过雨雪、迷雾与兽群，别让它们追上。",
   "lang": "zh-Hans",
   "start_url": "./",
