@@ -1,4 +1,4 @@
-# iOS 与 Android 构建
+# iOS、Android 与 macOS 构建
 
 本项目使用 Capacitor 将同一套 Web 游戏封装为原生 iOS / Android 应用。应用 ID 为
 `net.kryso.cowcome`，竖屏运行，并包含原生牛来头像图标与启动画面。
@@ -47,10 +47,23 @@ Debug APK 输出在：
 
 正式发布时请在 Android Studio 配置自己的签名密钥并生成签名 AAB。签名密钥不得提交到代码库。
 
+## macOS
+
+macOS 版使用安全的 Electron 外壳封装同一套离线游戏资源，隐藏 PWA 安装入口，关闭
+Node.js 渲染进程访问及非必要权限。默认生成同时支持 Apple Silicon 与 Intel 的 Universal
+应用，并使用本机 Developer ID Application 证书签名：
+
+```bash
+npm run mac:build
+```
+
+DMG、ZIP 与解包应用输出在 `native-build/macos/`，Bundle ID 为
+`net.kryso.cowcome.mac`。
+
 ## 版本
 
-游戏内显示版本与 Android 版本为 `20260822.26`。App Store 营销版本为 `1.0`，iOS
-build number 为 `26082226`；Android `versionCode` 为 `26082226`。原生安装包包含完整游戏资源，
+游戏内显示版本与 Android 版本为 `20260822.27`。App Store 营销版本为 `1.0`，iOS
+build number 为 `26082227`；Android `versionCode` 为 `26082227`。原生安装包包含完整游戏资源，
 不依赖网络即可游玩；PWA 安装入口只在网页版显示。
 
 界面支持自动语言、English、日本語、粵語、繁體中文、简体中文和한국어；未匹配到支持语言时回退到简体中文。

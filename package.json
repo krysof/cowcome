@@ -1,6 +1,6 @@
 {
   "name": "niulai-escape",
-  "version": "0.1.0",
+  "version": "2026.8.22",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,7 +12,9 @@
     "android:open": "cap open android",
     "ios:build": "./scripts/build-ios-simulator.sh",
     "ios:archive": "./scripts/build-ios-archive.sh",
-    "android:build": "./scripts/build-android.sh"
+    "android:build": "./scripts/build-android.sh",
+    "mac:build": "npm run build && electron-builder --mac dmg zip --universal",
+    "mac:dir": "npm run build && electron-builder --mac dir --universal"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",
@@ -25,6 +27,55 @@
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.5.0",
+    "electron": "^43.4.1",
+    "electron-builder": "^26.15.3",
     "typescript": "^7.0.2"
-  }
+  },
+  "main": "electron/main.cjs",
+  "build": {
+    "appId": "net.kryso.cowcome.mac",
+    "productName": "牛来：雾中逃亡",
+    "buildVersion": "20260822.27",
+    "asar": true,
+    "directories": {
+      "output": "native-build/macos"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json",
+      "!node_modules{,/**/*}"
+    ],
+    "mac": {
+      "category": "public.app-category.games",
+      "icon": "build/icon.icns",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "identity": "WAWE LLC (GYD232NJLH)",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "universal"
+          ]
+        }
+      ]
+    },
+    "dmg": {
+      "artifactName": "Cowcome-20260822.27-${arch}.${ext}",
+      "title": "牛来：雾中逃亡 20260822.27"
+    },
+    "artifactName": "Cowcome-20260822.27-${arch}.${ext}",
+    "npmRebuild": false
+  },
+  "description": "牛来：雾中逃亡——离线恐怖生存逃亡游戏",
+  "author": "白河愁"
 }
