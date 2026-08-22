@@ -21,8 +21,8 @@ fetch(`${import.meta.env.BASE_URL}game-core.wasm`).then(async response=>{
 }).catch(()=>{});
 
 const canvas = document.querySelector('#game');
-const dangerAudio=new Audio(`${import.meta.env.BASE_URL}audio/enemy-near.mp3`);dangerAudio.preload='auto';dangerAudio.volume=.95;dangerAudio.setAttribute('playsinline','');dangerAudio.setAttribute('webkit-playsinline','');
-const titleCryAudio=new Audio(`${import.meta.env.BASE_URL}audio/enemy-near.mp3`);titleCryAudio.preload='auto';titleCryAudio.volume=1;titleCryAudio.setAttribute('playsinline','');titleCryAudio.setAttribute('webkit-playsinline','');
+const dangerAudio=new Audio(`${import.meta.env.BASE_URL}audio/mama-final.mp3`);dangerAudio.preload='auto';dangerAudio.volume=.95;dangerAudio.setAttribute('playsinline','');dangerAudio.setAttribute('webkit-playsinline','');
+const titleCryAudio=new Audio(`${import.meta.env.BASE_URL}audio/mama-final.mp3`);titleCryAudio.preload='auto';titleCryAudio.volume=1;titleCryAudio.setAttribute('playsinline','');titleCryAudio.setAttribute('webkit-playsinline','');
 let dangerLatched=false,audioUnlocked=false;
 const ui = {
   intro: document.querySelector('#intro'), result: document.querySelector('#result'),
