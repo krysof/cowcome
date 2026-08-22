@@ -419,25 +419,27 @@ function makeAbstractAnimal(variant=0){
 }
 function makeSafeZone(index){
   const group=new THREE.Group(),floorMat=new THREE.MeshStandardMaterial({color:0x8d8b5c,emissive:0xffa82f,emissiveIntensity:.28,roughness:1});mesh(new THREE.CircleGeometry(24,24),floorMat,group,0,.028,0,[1,1,1],[-Math.PI/2,0,0]);
-  const residents=[];for(let i=0;i<8;i++){const npc=i<4?(i%2?makeWalkingHerdCow(.43+(i%2)*.05,i):makeHerdCow(.46+(i%2)*.06)):makeAbstractAnimal(i);const a=i/8*Math.PI*2,r=7+(i%3)*3;npc.position.set(Math.cos(a)*r,.05,Math.sin(a)*r);npc.rotation.y=a+Math.PI;npc.userData.safeStart=npc.position.clone();group.add(npc);residents.push(npc);}
+  // 固定留空木屋门前、围栏入口与两者之间的通道，NPC 不能再生成在门洞里。
+  const residentSpots=[[8,-9],[12,-5],[11,7],[5,11],[-1,11],[-2,7],[-1,-8],[7,7]],residents=[];for(let i=0;i<8;i++){const npc=i<4?(i%2?makeWalkingHerdCow(.43+(i%2)*.05,i):makeHerdCow(.46+(i%2)*.06)):makeAbstractAnimal(i),[x,z]=residentSpots[i];npc.position.set(x,.05,z);npc.rotation.y=Math.atan2(-x,-z);npc.userData.safeStart=npc.position.clone();group.add(npc);residents.push(npc);}
   const wood=flat(0x5e4028),wall=flat(0x9a7043),fenceBoxes=[];
   // 围栏实体与画面严格一致：前后两面从中央门柱连续延伸到侧墙，
   // 不再留下“看似可走、实际被空气墙挡住”的门边空隙。
   for(const side of [-1,1]){mesh(new THREE.BoxGeometry(1,3.2,38),wood,group,side*20,1.6,0);fenceBoxes.push({x:side*20,z:0,halfW:.5,halfD:19});}
-  for(const z of [-19,19])for(const side of [-1,1]){const x=side*12;mesh(new THREE.BoxGeometry(16,3.2,1),wood,group,x,1.6,z);fenceBoxes.push({x,z,halfW:8,halfD:.5});}
+  // 前后门洞加宽至 10 米，牛群逃离时不会把唯一出口彻底堵死。
+  for(const z of [-19,19])for(const side of [-1,1]){const x=side*12.5;mesh(new THREE.BoxGeometry(15,3.2,1),wood,group,x,1.6,z);fenceBoxes.push({x,z,halfW:7.5,halfD:.5});}
   for(const z of [-19,19]){
-    for(const x of [-20,-12,-4,4,12,20])mesh(new THREE.CylinderGeometry(.28,.38,4.5,5),wood,group,x,2.25,z);
+    for(const x of [-20,-12.5,12.5,20])mesh(new THREE.CylinderGeometry(.28,.38,4.5,5),wood,group,x,2.25,z);
     // 俯视镜头下，横跨门洞的门楣看起来就是一根挡路木梁。移除它，让唯一
     // 可通行处在画面上也真正敞开；两根仍可见的高门柱则加入精确碰撞。
-    for(const x of [-3.5,3.5]){mesh(new THREE.BoxGeometry(.8,8,1),wood,group,x,4,z);fenceBoxes.push({x,z,halfW:.4,halfD:.5});}
+    for(const x of [-5,5]){mesh(new THREE.BoxGeometry(.8,8,1),wood,group,x,4,z);fenceBoxes.push({x,z,halfW:.4,halfD:.5});}
   }
   // 放大的可进入木屋：正面留出门洞，内部有地板、床、柜子与补血心。玩家进屋时屋顶会淡出。
-  const house=new THREE.Group();house.position.set(-11,0,1);const insideFloor=flat(0x6f4b2e);mesh(new THREE.BoxGeometry(13.6,.28,12.6),insideFloor,house,0,.14,0);mesh(new THREE.BoxGeometry(13.8,6.8,.7),wall,house,0,3.4,6.15);for(const side of [-1,1])mesh(new THREE.BoxGeometry(.7,6.8,12.6),wall,house,side*6.55,3.4,0);for(const side of [-1,1])mesh(new THREE.BoxGeometry(4.45,6.8,.7),wall,house,side*4.42,3.4,-6.15);
+  const house=new THREE.Group(),houseHalfW=6.9,houseDoorHalf=3.2,frontWallWidth=houseHalfW-houseDoorHalf,frontWallX=(houseHalfW+houseDoorHalf)/2;house.position.set(-11,0,1);const insideFloor=flat(0x6f4b2e);mesh(new THREE.BoxGeometry(13.6,.28,12.6),insideFloor,house,0,.14,0);mesh(new THREE.BoxGeometry(13.8,6.8,.7),wall,house,0,3.4,6.15);for(const side of [-1,1])mesh(new THREE.BoxGeometry(.7,6.8,12.6),wall,house,side*6.55,3.4,0);for(const side of [-1,1])mesh(new THREE.BoxGeometry(frontWallWidth,6.8,.7),wall,house,side*frontWallX,3.4,-6.15);
   const doorwayGlow=new THREE.PointLight(0xffb555,78,18,1.5);doorwayGlow.position.set(0,3,-4.6);house.add(doorwayGlow);for(const x of [-4.1,4.1])mesh(new THREE.BoxGeometry(1.8,1.8,.18),new THREE.MeshBasicMaterial({color:0xffce70,fog:false}),house,x,4.2,-6.53);
   const bed=flat(0x583622),blanket=flat(0x87392f);mesh(new THREE.BoxGeometry(4.2,.8,2.4),bed,house,-3.6,.55,3.6);mesh(new THREE.BoxGeometry(3.7,.36,2.1),blanket,house,-3.6,1.02,3.45);mesh(new THREE.BoxGeometry(2.2,2.8,1.5),wood,house,4.6,1.4,4.4);
   const roofMats=[-1,1].map(()=>new THREE.MeshStandardMaterial({color:0x30241d,roughness:1,transparent:true,opacity:.94})),roofParts=[];for(const side of [-1,1])roofParts.push(mesh(new THREE.BoxGeometry(7.5,.48,14.2),roofMats[side<0?0:1],house,side*3.35,7.35,0,[1,1,1],[0,0,side*.15]));
   const healthPickup=new THREE.Group(),heartMat=new THREE.MeshStandardMaterial({color:0xe92032,emissive:0xb00616,emissiveIntensity:1.35,roughness:.42});healthPickup.position.set(1.5,1.25,3.5);for(const side of [-1,1])mesh(new THREE.SphereGeometry(.5,10,8),heartMat,healthPickup,side*.38,.2,0,[1,1,.65]);mesh(new THREE.ConeGeometry(.82,1.45,10),heartMat,healthPickup,0,-.55,0,[1,1,.72],[0,0,Math.PI]);const healthLight=new THREE.PointLight(0xff1838,48,12,1.8);healthLight.position.y=.5;healthPickup.add(healthLight);healthPickup.userData={collected:false,baseY:1.25,light:healthLight};house.add(healthPickup);group.add(house);
-  const houseData={group:house,x:-11,z:1,halfW:6.9,halfD:6.45,doorHalf:2.2,roofMats,roofParts,healthPickup};
+  const houseData={group:house,x:-11,z:1,halfW:houseHalfW,halfD:6.45,doorHalf:houseDoorHalf,roofMats,roofParts,healthPickup};
   // 安全区中心的篝火是安全感的视觉核心；燃料会在玩家停留期间逐渐耗尽。
   const campfire=new THREE.Group();campfire.position.set(5,0,1);const logMat=flat(0x3d2417),coalMat=flat(0x170d09);for(const angle of [-.72,.72])mesh(new THREE.CylinderGeometry(.34,.42,4.1,6),logMat,campfire,0,.42,0,[1,1,1],[Math.PI/2,0,angle]);for(let i=0;i<7;i++){const a=i/7*Math.PI*2;mesh(new THREE.DodecahedronGeometry(.42,0),coalMat,campfire,Math.cos(a)*1.12,.2,Math.sin(a)*1.12);}
   const flames=[],flameColors=[0xffec72,0xffa21f,0xff4a12,0xffc43a,0xff6b18];for(let i=0;i<7;i++){const mat=new THREE.MeshBasicMaterial({color:flameColors[i%flameColors.length],transparent:true,opacity:.9,depthWrite:false,fog:false,blending:THREE.AdditiveBlending}),a=i/7*Math.PI*2,flame=mesh(new THREE.ConeGeometry(.58+(i%3)*.16,2.7+(i%2)*.95,6),mat,campfire,Math.cos(a)*.48,1.25,Math.sin(a)*.48,[1,1,1],[0,0,(i%2?-.12:.12)]);flames.push(flame);}
@@ -523,14 +525,15 @@ function resolvePlayerDynamicSolids(){
   if(falseGate.visible){pushPlayerFromPoint(falseGate.position.x-8,falseGate.position.z,2.35);pushPlayerFromPoint(falseGate.position.x+8,falseGate.position.z,2.35);const dz=player.position.z-falseGate.position.z;if(falseGate.userData.triggered&&Math.abs(player.position.x-falseGate.position.x)<7&&Math.abs(dz)<2.4)player.position.z=falseGate.position.z+(dz>=0?2.4:-2.4);}pushPlayerFromPoint(gate.position.x-12,gate.position.z,3.55);pushPlayerFromPoint(gate.position.x+12,gate.position.z,3.55);
 }
 function releaseSafeRefugees(zoneIndex){animalActors.forEach(animal=>{if(animal.userData.refugeZone!==zoneIndex)return;animal.userData.refugeZone=-1;animal.userData.refugeParked=false;animal.userData.refugeOffset=null;animal.userData.escapeX=(animal.id%2?1:-1)*(2.8+animal.id%4);animal.userData.fleeing=true;animal.userData.active=true;});}
+function refugeParkingOffset(animal){return{x:animal.id%2?9+(animal.id%3)*2:-1-(animal.id%3)*1.2,z:-10+(animal.id%5)*5};}
 function holdNpcInSafeZone(animal,t,dt=.016){
   if(!animal.visible||animal.userData.eaten||animal.userData.escaped||safeZones.some(zone=>animal.parent===zone))return false;
   const current=animal.userData.refugeZone;if(Number.isInteger(current)&&current>=0){const zone=safeZones[current];if(!zone.userData.broken&&!zone.userData.passed){
     // 进入后继续走到围栏两侧的候场位，绝不在中央门洞原地停下堵住玩家和后续牛群。
-    const offset=animal.userData.refugeOffset||{x:(animal.id%2?1:-1)*(9+(animal.id%3)*2.4),z:-10+(animal.id%5)*5},tx=zone.position.x+offset.x,tz=zone.position.z+offset.z,dx=tx-animal.position.x,dz=tz-animal.position.z,d=Math.hypot(dx,dz);
+    const offset=animal.userData.refugeOffset||refugeParkingOffset(animal),tx=zone.position.x+offset.x,tz=zone.position.z+offset.z,dx=tx-animal.position.x,dz=tz-animal.position.z,d=Math.hypot(dx,dz);
     if(d>.7){const speed=6.2;animal.position.x+=dx/d*speed*dt;animal.position.z+=dz/d*speed*dt;animal.rotation.y=Math.atan2(-dx,-dz);animateCow(animal,t,7);animal.userData.refugeParked=false;}else{animal.userData.refugeParked=true;animateCow(animal,t,1.2);}return true;
   }animal.userData.refugeZone=-1;animal.userData.refugeParked=false;animal.userData.refugeOffset=null;animal.userData.escapeX=(animal.id%2?1:-1)*(2.8+animal.id%4);animal.userData.fleeing=true;animal.userData.active=true;}
-  animal.getWorldPosition(collisionPoint);for(let i=0;i<safeZones.length;i++){const zone=safeZones[i],dx=collisionPoint.x-zone.position.x,dz=collisionPoint.z-zone.position.z;if(zone.visible&&!zone.userData.broken&&!zone.userData.passed&&Math.abs(dx)<16.5&&Math.abs(dz)<16.5){animal.userData.refugeZone=i;animal.userData.refugeParked=false;animal.userData.refugeOffset={x:(animal.id%2?1:-1)*(9+(animal.id%3)*2.4),z:-10+(animal.id%5)*5};animal.userData.escapeX=0;animateCow(animal,t,7);return true;}}
+  animal.getWorldPosition(collisionPoint);for(let i=0;i<safeZones.length;i++){const zone=safeZones[i],dx=collisionPoint.x-zone.position.x,dz=collisionPoint.z-zone.position.z;if(zone.visible&&!zone.userData.broken&&!zone.userData.passed&&Math.abs(dx)<16.5&&Math.abs(dz)<16.5){animal.userData.refugeZone=i;animal.userData.refugeParked=false;animal.userData.refugeOffset=refugeParkingOffset(animal);animal.userData.escapeX=0;animateCow(animal,t,7);return true;}}
   return false;
 }
 function knockObstacle(obstacle,animal){
@@ -1405,6 +1408,8 @@ if(import.meta.env.DEV)window.__NIULAI_TEST__={
   controlsState(){return{running:Boolean(keys.ShiftLeft),runPressed:runVisual.classList.contains('pressed'),shovePressed:shoveVisual.classList.contains('pressed'),joystickHeld:joystickPointer!==null||joystickTouch!==null};},
   safeFenceLayout(index=0){return safeZones[index].userData.fenceBoxes.map(box=>({...box}));},
   safeGateProbe(index=0,side=1,x=0){const zone=safeZones[index];player.position.set(zone.position.x+x,.05,zone.position.z+side*19);const before=player.position.clone();resolvePlayerDynamicSolids();return{before:{x:before.x,z:before.z},after:{x:player.position.x,z:player.position.z}};},
+  safeHouseWalk(index=0,xOffset=0){const zone=safeZones[index],house=zone.userData.house,hx=zone.position.x+house.x,hz=zone.position.z+house.z;player.position.set(hx+xOffset,.05,hz-house.halfD-3);for(let i=0;i<32;i++){player.position.z+=.32;resolvePlayerAnimalCollision();resolvePlayerDynamicSolids();}return{x:player.position.x-hx,z:player.position.z-hz,inside:Math.abs(player.position.x-hx)<house.halfW-.65&&Math.abs(player.position.z-hz)<house.halfD-.65};},
+  safeHouseLayout(index=0){const house=safeZones[index].userData.house;return{halfW:house.halfW,halfD:house.halfD,doorHalf:house.doorHalf,residents:safeZones[index].userData.residents.map(npc=>({x:npc.position.x,z:npc.position.z}))};},
   safeResidentSpread(index=0){const xs=safeZones[index].userData.residents.map(npc=>npc.position.x);return Math.max(...xs)-Math.min(...xs);},
   roadNpcProbe(index=0){const npc=strangeTravellers[index];npc.position.set(player.position.x+.1,.05,player.position.z);npc.userData.talked=false;return talkToRoadNpc(npc,index);},
   roadNpcState(index=0){const npc=strangeTravellers[index];return{distance:Math.hypot(player.position.x-npc.position.x,player.position.z-npc.position.z),talked:npc.userData.talked,sayKey:activeSayKey};},
