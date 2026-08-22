@@ -433,13 +433,28 @@ function makeSafeZone(index){
     // 可通行处在画面上也真正敞开；两根仍可见的高门柱则加入精确碰撞。
     for(const x of [-5,5]){mesh(new THREE.BoxGeometry(.8,8,1),wood,group,x,4,z);fenceBoxes.push({x,z,halfW:.4,halfD:.5});}
   }
-  // 放大的可进入木屋：正面留出门洞，内部有地板、床、柜子与补血心。玩家进屋时屋顶会淡出。
-  const house=new THREE.Group(),houseHalfW=6.9,houseDoorHalf=3.2,frontWallWidth=houseHalfW-houseDoorHalf,frontWallX=(houseHalfW+houseDoorHalf)/2;house.position.set(-11,0,1);const insideFloor=flat(0x6f4b2e);mesh(new THREE.BoxGeometry(13.6,.28,12.6),insideFloor,house,0,.14,0);mesh(new THREE.BoxGeometry(13.8,6.8,.7),wall,house,0,3.4,6.15);for(const side of [-1,1])mesh(new THREE.BoxGeometry(.7,6.8,12.6),wall,house,side*6.55,3.4,0);for(const side of [-1,1])mesh(new THREE.BoxGeometry(frontWallWidth,6.8,.7),wall,house,side*frontWallX,3.4,-6.15);
-  const doorwayGlow=new THREE.PointLight(0xffb555,78,18,1.5);doorwayGlow.position.set(0,3,-4.6);house.add(doorwayGlow);for(const x of [-4.1,4.1])mesh(new THREE.BoxGeometry(1.8,1.8,.18),new THREE.MeshBasicMaterial({color:0xffce70,fog:false}),house,x,4.2,-6.53);
-  const bed=flat(0x583622),blanket=flat(0x87392f);mesh(new THREE.BoxGeometry(4.2,.8,2.4),bed,house,-3.6,.55,3.6);mesh(new THREE.BoxGeometry(3.7,.36,2.1),blanket,house,-3.6,1.02,3.45);mesh(new THREE.BoxGeometry(2.2,2.8,1.5),wood,house,4.6,1.4,4.4);
-  const roofMats=[-1,1].map(()=>new THREE.MeshStandardMaterial({color:0x30241d,roughness:1,transparent:true,opacity:.94})),roofParts=[];for(const side of [-1,1])roofParts.push(mesh(new THREE.BoxGeometry(7.5,.48,14.2),roofMats[side<0?0:1],house,side*3.35,7.35,0,[1,1,1],[0,0,side*.15]));
+  // 四关使用完全不同的安全屋轮廓和材质：牧场木屋、苔藓猎屋、积雪山舍、
+  // 锈蚀避难所。碰撞外框保持一致，玩家不必每关重新猜门在哪里。
+  const houseStyles=[
+    {key:'ranch',wall:0xa36f3d,floor:0x6f4b2e,roof:0x3b271d,trim:0xe2b56b,window:0xffce70,blanket:0x87392f},
+    {key:'moss',wall:0x56634a,floor:0x3f4937,roof:0x27382d,trim:0x8b9b64,window:0xb8d987,blanket:0x4e6652},
+    {key:'snow',wall:0x70828b,floor:0x4d5c63,roof:0x34434b,trim:0xd8edf0,window:0xbfeaff,blanket:0x6f8998},
+    {key:'bunker',wall:0x5b3b32,floor:0x352c2a,roof:0x241f1e,trim:0xb34b32,window:0xff6d38,blanket:0x6f2925}
+  ],houseStyle=houseStyles[index%houseStyles.length],house=new THREE.Group(),houseHalfW=6.9,houseDoorHalf=3.2,frontWallWidth=houseHalfW-houseDoorHalf,frontWallX=(houseHalfW+houseDoorHalf)/2,houseWall=flat(houseStyle.wall),houseTrim=flat(houseStyle.trim);house.position.set(-11,0,1);const insideFloor=flat(houseStyle.floor);mesh(new THREE.BoxGeometry(13.6,.28,12.6),insideFloor,house,0,.14,0);mesh(new THREE.BoxGeometry(13.8,6.8,.7),houseWall,house,0,3.4,6.15);for(const side of [-1,1])mesh(new THREE.BoxGeometry(.7,6.8,12.6),houseWall,house,side*6.55,3.4,0);for(const side of [-1,1])mesh(new THREE.BoxGeometry(frontWallWidth,6.8,.7),houseWall,house,side*frontWallX,3.4,-6.15);
+  const doorwayGlow=new THREE.PointLight(houseStyle.window,index===3?92:78,18,1.5);doorwayGlow.position.set(0,3,-4.6);house.add(doorwayGlow);for(const x of [-4.1,4.1])mesh(new THREE.BoxGeometry(1.8,1.8,.18),new THREE.MeshBasicMaterial({color:houseStyle.window,fog:false}),house,x,4.2,-6.53);
+  const bed=flat(index===3?0x3c3531:0x583622),blanket=flat(houseStyle.blanket);mesh(new THREE.BoxGeometry(4.2,.8,2.4),bed,house,-3.6,.55,3.6);mesh(new THREE.BoxGeometry(3.7,.36,2.1),blanket,house,-3.6,1.02,3.45);mesh(new THREE.BoxGeometry(2.2,2.8,1.5),index===3?houseTrim:wood,house,4.6,1.4,4.4);
+  const roofMats=[],roofParts=[],roofMat=(color=houseStyle.roof,opacity=.94)=>{const mat=new THREE.MeshStandardMaterial({color,roughness:1,transparent:true,opacity});roofMats.push(mat);return mat;};
+  if(index===3){
+    // 里世界：低矮平顶锈蚀避难所、红色通风管和警报灯。
+    roofParts.push(mesh(new THREE.BoxGeometry(14.4,.72,13.5),roofMat(),house,0,7.15,0));for(const x of [-4.8,4.8])roofParts.push(mesh(new THREE.CylinderGeometry(.55,.7,2.4,7),roofMat(0x713728),house,x,8.45,1.8));roofParts.push(mesh(new THREE.SphereGeometry(.42,7,5),roofMat(0xff321e),house,0,7.9,-3.9));
+  }else{
+    const pitch=index===2?.24:index===1?.19:.15;for(const side of [-1,1])roofParts.push(mesh(new THREE.BoxGeometry(7.5,.48,14.2),roofMat(),house,side*3.35,7.35,0,[1,1,1],[0,0,side*pitch]));
+    if(index===1){for(let i=0;i<6;i++)roofParts.push(mesh(new THREE.DodecahedronGeometry(.72+(i%2)*.24,0),roofMat(i%2?0x40533b:0x64724c,.88),house,-4.6+i*1.8,7.72+(i%2)*.18,(i%3-1)*3.2,[1.4,.35,1.1]));}
+    if(index===2){for(const side of [-1,1])roofParts.push(mesh(new THREE.BoxGeometry(7.7,.22,14.35),roofMat(0xdce8e8,.9),house,side*3.35,7.68,0,[1,1,1],[0,0,side*pitch]));roofParts.push(mesh(new THREE.BoxGeometry(1.35,3.2,1.35),roofMat(0x46545a),house,4.2,8.6,2.7));}
+    if(index===0){for(const x of [-5.5,5.5])roofParts.push(mesh(new THREE.CylinderGeometry(.18,.24,2.4,6),roofMat(houseStyle.trim),house,x,7.2,-5.7));}
+  }
   const healthPickup=new THREE.Group(),heartMat=new THREE.MeshStandardMaterial({color:0xe92032,emissive:0xb00616,emissiveIntensity:1.35,roughness:.42});healthPickup.position.set(1.5,1.25,3.5);for(const side of [-1,1])mesh(new THREE.SphereGeometry(.5,10,8),heartMat,healthPickup,side*.38,.2,0,[1,1,.65]);mesh(new THREE.ConeGeometry(.82,1.45,10),heartMat,healthPickup,0,-.55,0,[1,1,.72],[0,0,Math.PI]);const healthLight=new THREE.PointLight(0xff1838,48,12,1.8);healthLight.position.y=.5;healthPickup.add(healthLight);healthPickup.userData={collected:false,baseY:1.25,light:healthLight};house.add(healthPickup);group.add(house);
-  const houseData={group:house,x:-11,z:1,halfW:houseHalfW,halfD:6.45,doorHalf:houseDoorHalf,roofMats,roofParts,healthPickup};
+  const houseData={group:house,x:-11,z:1,halfW:houseHalfW,halfD:6.45,doorHalf:houseDoorHalf,roofMats,roofParts,healthPickup,styleKey:houseStyle.key};
   // 安全区中心的篝火是安全感的视觉核心；燃料会在玩家停留期间逐渐耗尽。
   const campfire=new THREE.Group();campfire.position.set(5,0,1);const logMat=flat(0x3d2417),coalMat=flat(0x170d09);for(const angle of [-.72,.72])mesh(new THREE.CylinderGeometry(.34,.42,4.1,6),logMat,campfire,0,.42,0,[1,1,1],[Math.PI/2,0,angle]);for(let i=0;i<7;i++){const a=i/7*Math.PI*2;mesh(new THREE.DodecahedronGeometry(.42,0),coalMat,campfire,Math.cos(a)*1.12,.2,Math.sin(a)*1.12);}
   const flames=[],flameColors=[0xffec72,0xffa21f,0xff4a12,0xffc43a,0xff6b18];for(let i=0;i<7;i++){const mat=new THREE.MeshBasicMaterial({color:flameColors[i%flameColors.length],transparent:true,opacity:.9,depthWrite:false,fog:false,blending:THREE.AdditiveBlending}),a=i/7*Math.PI*2,flame=mesh(new THREE.ConeGeometry(.58+(i%3)*.16,2.7+(i%2)*.95,6),mat,campfire,Math.cos(a)*.48,1.25,Math.sin(a)*.48,[1,1,1],[0,0,(i%2?-.12:.12)]);flames.push(flame);}
@@ -1418,7 +1433,7 @@ if(import.meta.env.DEV)window.__NIULAI_TEST__={
   safeFenceLayout(index=0){return safeZones[index].userData.fenceBoxes.map(box=>({...box}));},
   safeGateProbe(index=0,side=1,x=0){const zone=safeZones[index];player.position.set(zone.position.x+x,.05,zone.position.z+side*19);const before=player.position.clone();resolvePlayerDynamicSolids();return{before:{x:before.x,z:before.z},after:{x:player.position.x,z:player.position.z}};},
   safeHouseWalk(index=0,xOffset=0){const zone=safeZones[index],house=zone.userData.house,hx=zone.position.x+house.x,hz=zone.position.z+house.z;player.position.set(hx+xOffset,.05,hz-house.halfD-3);for(let i=0;i<32;i++){player.position.z+=.32;resolvePlayerAnimalCollision();resolvePlayerDynamicSolids();}return{x:player.position.x-hx,z:player.position.z-hz,inside:Math.abs(player.position.x-hx)<house.halfW-.65&&Math.abs(player.position.z-hz)<house.halfD-.65};},
-  safeHouseLayout(index=0){const house=safeZones[index].userData.house;return{halfW:house.halfW,halfD:house.halfD,doorHalf:house.doorHalf,residents:safeZones[index].userData.residents.map(npc=>({x:npc.position.x,z:npc.position.z}))};},
+  safeHouseLayout(index=0){const house=safeZones[index].userData.house;return{halfW:house.halfW,halfD:house.halfD,doorHalf:house.doorHalf,styleKey:house.styleKey,roofParts:house.roofParts.length,residents:safeZones[index].userData.residents.map(npc=>({x:npc.position.x,z:npc.position.z}))};},
   sanctuaryObstacleState(index=0){const zone=safeZones[index],inside=obstacles.filter(obstacle=>obstacle.visible&&obstacleOverlapsSanctuary(obstacle,zone,0));return{visibleInside:inside.length,hidden:obstacles.filter(obstacle=>obstacle.userData.sanctuaryHidden).length,inside:inside.map(obstacle=>({x:obstacle.position.x-zone.position.x,z:obstacle.position.z-zone.position.z,radius:obstacle.userData.collisionRadius||2.1}))};},
   safeResidentSpread(index=0){const xs=safeZones[index].userData.residents.map(npc=>npc.position.x);return Math.max(...xs)-Math.min(...xs);},
   roadNpcProbe(index=0){const npc=strangeTravellers[index];npc.position.set(player.position.x+.1,.05,player.position.z);npc.userData.talked=false;return talkToRoadNpc(npc,index);},
