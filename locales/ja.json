@@ -224,5 +224,16 @@
   "event.npcShoved": "指一本で、道を塞ぐ仲間を脇へ押しのけた。",
   "menu.shove": "仲間を押しのける",
   "controls.shove": "指を伸ばして仲間を押しのける",
-  "controls.shoveShort": "押す"
+  "controls.shoveShort": "押す",
+  "enemy.sadako": "山村貞子",
+  "enemy.kayako": "佐伯伽椰子",
+  "enemy.toshio": "佐伯俊雄",
+  "ghost.toshioAppears": "霧の中の子供は息をしていない。遠くで猫が鳴いた。",
+  "ghost.toshioVanishes": "俊雄の真っ黒な目が近づく——次の瞬間、そこには何もいない。",
+  "ghost.toshioBehind": "猫の鳴き声が背後へ移った。振り返るな。",
+  "ghost.kayakoStairs": "何もない場所に階段が生えた。伽椰子が四肢をねじり、喉を鳴らしながら這い降りてくる。",
+  "ghost.kayakoChases": "カ……カ……地面に降りた彼女が追ってくる。",
+  "ghost.television": "電源のないテレビが点いた。砂嵐の中に井戸が映る。",
+  "ghost.sadakoEmerges": "貞子の髪が先に画面を抜け、やがて全身がテレビから這い出した。",
+  "ghost.sadakoTeleports": "砂嵐が瞬く——貞子はもう前方に立っている。"
 }

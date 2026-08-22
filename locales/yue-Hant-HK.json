@@ -224,5 +224,16 @@
   "event.npcShoved": "你伸出一隻手指，將阻住條路嘅同伴捽開。",
   "menu.shove": "伸手捽開友方",
   "controls.shove": "伸出手指捽開友方",
-  "controls.shoveShort": "捽"
+  "controls.shoveShort": "捽",
+  "enemy.sadako": "山村貞子",
+  "enemy.kayako": "佐伯伽椰子",
+  "enemy.toshio": "佐伯俊雄",
+  "ghost.toshioAppears": "霧入面個細路冇呼吸。遠處傳嚟一聲貓叫。",
+  "ghost.toshioVanishes": "俊雄對黑眼貼到埋嚟——下一秒，嗰度乜都冇。",
+  "ghost.toshioBehind": "貓叫突然喺後面傳嚟。千祈唔好擰轉頭。",
+  "ghost.kayakoStairs": "樓梯憑空生咗出嚟。伽椰子扭住四肢爬落嚟，喉嚨發出斷裂嘅咯咯聲。",
+  "ghost.kayakoChases": "咯……咯……佢落到地，開始追你。",
+  "ghost.television": "冇插電嘅電視著咗。雪花入面有一口井。",
+  "ghost.sadakoEmerges": "貞子啲頭髮先穿過熒幕，跟住成個人由電視爬出嚟。",
+  "ghost.sadakoTeleports": "電視雪花閃一閃——貞子已經企咗喺前面。"
 }

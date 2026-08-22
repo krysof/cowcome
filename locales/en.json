@@ -224,5 +224,16 @@
   "event.npcShoved": "You push the blocking survivor aside with one finger.",
   "menu.shove": "Push ally aside",
   "controls.shove": "Reach out and push an ally aside",
-  "controls.shoveShort": "PUSH"
+  "controls.shoveShort": "PUSH",
+  "enemy.sadako": "Sadako Yamamura",
+  "enemy.kayako": "Kayako Saeki",
+  "enemy.toshio": "Toshio Saeki",
+  "ghost.toshioAppears": "The child in the fog is not breathing. A cat meows in the distance.",
+  "ghost.toshioVanishes": "Toshio's black eyes come close—then there is nothing there.",
+  "ghost.toshioBehind": "The meowing moves behind you. Do not turn around.",
+  "ghost.kayakoStairs": "A staircase grows from nowhere. Kayako twists down it on all fours, a broken rattle rolling in her throat.",
+  "ghost.kayakoChases": "K-k-k... She reaches the ground and begins to follow.",
+  "ghost.television": "An unplugged television turns on. A well appears in the static.",
+  "ghost.sadakoEmerges": "Sadako’s hair passes through the screen first. Then she crawls out of the television.",
+  "ghost.sadakoTeleports": "The static flashes—Sadako is already standing ahead."
 }

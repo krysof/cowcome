@@ -224,5 +224,16 @@
   "event.npcShoved": "손가락 하나로 길을 막는 동료를 옆으로 밀어 냈습니다.",
   "menu.shove": "동료 밀어내기",
   "controls.shove": "손가락을 뻗어 동료를 밀어내기",
-  "controls.shoveShort": "밀기"
+  "controls.shoveShort": "밀기",
+  "enemy.sadako": "야마무라 사다코",
+  "enemy.kayako": "사에키 가야코",
+  "enemy.toshio": "사에키 토시오",
+  "ghost.toshioAppears": "안개 속 아이는 숨을 쉬지 않는다. 멀리서 고양이 울음이 들린다.",
+  "ghost.toshioVanishes": "토시오의 새까만 눈이 코앞까지 다가온다——다음 순간, 아무것도 없다.",
+  "ghost.toshioBehind": "고양이 울음이 등 뒤로 옮겨 갔다. 돌아보지 마라.",
+  "ghost.kayakoStairs": "아무것도 없던 곳에서 계단이 자란다. 가야코가 팔다리를 비틀며 목에서 끊어진 숨소리를 내고 기어 내려온다.",
+  "ghost.kayakoChases": "끄… 끄… 땅에 내려온 그녀가 쫓아오기 시작한다.",
+  "ghost.television": "전원도 없는 텔레비전이 켜졌다. 잡음 속에 우물이 보인다.",
+  "ghost.sadakoEmerges": "사다코의 머리카락이 먼저 화면을 뚫고 나온다. 이어 온몸이 텔레비전 밖으로 기어 나온다.",
+  "ghost.sadakoTeleports": "화면 잡음이 번쩍인다——사다코는 이미 앞에 서 있다."
 }

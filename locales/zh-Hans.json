@@ -224,5 +224,16 @@
   "event.npcShoved": "你伸出一根手指，把挡路的同伴搓到一边。",
   "menu.shove": "伸手搓开友方",
   "controls.shove": "伸出手指搓开友方",
-  "controls.shoveShort": "搓"
+  "controls.shoveShort": "搓",
+  "enemy.sadako": "山村贞子",
+  "enemy.kayako": "佐伯伽椰子",
+  "enemy.toshio": "佐伯俊雄",
+  "ghost.toshioAppears": "雾里的孩子没有呼吸。远处传来一声猫叫。",
+  "ghost.toshioVanishes": "俊雄的黑眼睛贴近你——下一秒，那里什么都没有。",
+  "ghost.toshioBehind": "猫叫声改从身后传来。不要回头。",
+  "ghost.kayakoStairs": "楼梯凭空长出。伽椰子扭着四肢爬下来，喉咙里滚动着断裂的气声。",
+  "ghost.kayakoChases": "咯……咯……她落到地上，开始追你。",
+  "ghost.television": "没有电源的电视亮了。雪花里出现一口井。",
+  "ghost.sadakoEmerges": "贞子的头发先穿过屏幕，然后整个人从电视里爬了出来。",
+  "ghost.sadakoTeleports": "电视雪花闪过——贞子已经站在前面。"
 }
