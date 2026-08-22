@@ -32,7 +32,7 @@
         <p><span data-i18n="gate.description">雾里有东西在等你。选好角色以后，不要停下，也不要回头。</span><br><small data-i18n="gate.flashWarning">警告：游戏含强烈但低频率的闪屏与惊吓画面。</small></p>
         <div class="copyright"><span data-i18n="gate.copyright">版权声明</span><br><a href="http://www.ff18.com" target="_blank" rel="noopener">www.ff18.com</a>　/　白河愁</div>
         <button id="enterGameBtn"><span data-i18n="gate.enter">进入</span><small>→</small></button>
-        <div class="gate-version">VERSION <b>20260822.24</b></div>
+        <div class="gate-version">VERSION <b>20260822.25</b></div>
       </div>
     </section>
 
@@ -78,17 +78,19 @@
             <button class="character active" data-character="orange"><img src="%BASE_URL%portraits/orange-niulai.png" alt="牛来头像" data-i18n-alt="alt.niulaiPortrait"><b data-i18n="character.niulai">牛来</b><small><em data-i18n="character.easy">简单</em> <span data-i18n="character.easyDesc">敌人较慢</span></small></button>
             <button class="character" data-character="yellow"><img src="%BASE_URL%portraits/yellow-bull.png" alt="大角头像" data-i18n-alt="alt.bullPortrait"><b data-i18n="character.bull">大角</b><small><em data-i18n="character.normal">普通</em> <span data-i18n="character.normalDesc">标准逃亡</span></small></button>
             <button class="character" data-character="leopard"><img src="%BASE_URL%portraits/leopard.png" alt="豹拉头像" data-i18n-alt="alt.leopardPortrait"><b data-i18n="character.leopard">豹拉</b><small><em data-i18n="character.hard">困难</em> <span data-i18n="character.hardDesc">敌人凶猛</span></small></button>
+            <button class="character locked" data-character="super" id="superCharacter"><img src="%BASE_URL%icons/niulai-v2-512.png" alt="超级牛头像"><b data-i18n="character.super">超级牛</b><small><em data-i18n="character.hidden">隐藏</em> <span id="superUnlockText" data-i18n="character.superLocked">收集 6 块记忆解锁</span></small></button>
           </div>
         </div>
         <div class="menu-actions">
           <button id="startBtn"><span data-i18n="menu.start">开始游戏</span><small data-i18n="menu.startHint">开始逃亡</small></button>
           <button id="scoreBtn" class="secondary"><span data-i18n="menu.scores">高分榜</span><small data-i18n="menu.scoresHint">逃亡记录</small></button>
+          <button id="memoryBtn" class="secondary"><span data-i18n="memory.archive">记忆档案</span><small id="memoryCount">0 / 8</small></button>
         </div>
         <button id="installBtn" class="install-pwa"><img src="%BASE_URL%icons/niulai-v2-192.png" alt="牛来PWA图标" data-i18n-alt="alt.pwaIcon"><span data-i18n="menu.install">安装到桌面</span><small>PWA</small></button>
         <div class="controls"><strong data-i18n="menu.desktop">电脑操作</strong><span class="key-group"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span><em data-i18n="menu.move">移动</em><span class="key-group"><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></span><em data-i18n="menu.alsoMove">也可移动</em><kbd class="wide-key">SHIFT</kbd><em data-i18n="menu.sprint">按住加速爬行，松开恢复体力</em><kbd>E</kbd><em data-i18n="menu.shove">伸手搓开友方</em></div>
       </div>
       <div class="stamp"><span data-i18n="menu.survive">生存</span><br /><span data-i18n="menu.escape">逃亡</span></div>
-      <div class="credits">© <a href="http://www.ff18.com" target="_blank" rel="noopener">ff18.com</a> / 白河愁　<span data-i18n="menu.version">版本</span>：20260822.24</div>
+      <div class="credits">© <a href="http://www.ff18.com" target="_blank" rel="noopener">ff18.com</a> / 白河愁　<span data-i18n="menu.version">版本</span>：20260822.25</div>
     </section>
 
     <section class="scoreboard" id="installHint" aria-hidden="true">
@@ -104,6 +106,21 @@
         <div class="eyebrow" data-i18n="scores.eyebrow">逃亡记录</div><h2 data-i18n="scores.title">高分榜</h2>
         <ol id="scoreList"></ol>
         <button id="closeScoreBtn"><span data-i18n="scores.back">返回标题</span><small data-i18n="scores.continue">继续选择</small></button>
+      </div>
+    </section>
+
+    <section class="scoreboard" id="memoryArchive" aria-hidden="true">
+      <div class="score-card archive-card">
+        <div class="eyebrow" data-i18n="memory.eyebrow">草原留下的东西</div><h2 data-i18n="memory.archive">记忆档案</h2>
+        <div id="memoryList" class="memory-list"></div>
+        <button id="closeMemoryBtn"><span data-i18n="scores.back">返回标题</span><small data-i18n="memory.persistent">跨局永久保存</small></button>
+      </div>
+    </section>
+
+    <section class="final-choice" id="finalChoice" aria-hidden="true">
+      <div><div class="eyebrow" data-i18n="choice.eyebrow">最后的决定</div><h2 data-i18n="choice.title">牛群在呼救</h2><p data-i18n="choice.description">回头救它们会引来完整兽潮；独自冲向出口更安全。</p>
+        <button id="rescueChoiceBtn"><span data-i18n="choice.rescue">回头救牛群</span><small data-i18n="choice.rescueHint">更危险 · 牛群结局</small></button>
+        <button id="aloneChoiceBtn" class="secondary"><span data-i18n="choice.alone">独自逃出去</span><small data-i18n="choice.aloneHint">放弃牛群 · 直奔出口</small></button>
       </div>
     </section>
 
