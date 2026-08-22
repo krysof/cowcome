@@ -743,15 +743,16 @@ function updateObjectives(progress,dt,t,moving,safeProtected){
   return {protectedZone:safeProtected||sheltered,missionKey,missionParams};
 }
 function updateObjectiveArrow(progress,t){
-  let candidates=[];
+  let candidates=[],maxRange=105;
   const clothTask=clothCount<clothPieces.length&&progress>runLength*.245&&progress<runLength*.41;
   const switchTask=switchCount<powerSwitches.length&&progress>runLength*.645&&progress<runLength*.805;
   if(clothTask)candidates=clothPieces.filter(item=>item.visible);
   else if(switchTask)candidates=powerSwitches.filter(item=>item.visible&&!item.userData.on);
   else if(dreamClock.visible)candidates=[dreamClock];
+  else{candidates=itemPickups.filter(item=>item.visible&&!item.userData.collected&&item.userData.type==='speed');maxRange=58;}
   let target=null,best=Infinity;for(const item of candidates){const d=Math.hypot(item.position.x-player.position.x,item.position.z-player.position.z);if(d<best){best=d;target=item;}}
   objectiveArrow.classList.remove('show');
-  if(!target||best>105||best<3.4||state!=='playing'){objectiveTrail.visible=false;return;}
+  if(!target||best>maxRange||best<3.4||state!=='playing'){objectiveTrail.visible=false;return;}
   const dx=target.position.x-player.position.x,dz=target.position.z-player.position.z,yaw=Math.atan2(-dx,-dz),flow=t*7;
   objectiveTrail.visible=true;objectiveTrailArrows.forEach((arrow,i)=>{const travel=4+(flow+i*5.2)%26;arrow.visible=travel<best-1.3;if(!arrow.visible)return;const ratio=travel/best;arrow.position.set(player.position.x+dx*ratio,.09,player.position.z+dz*ratio);arrow.rotation.set(-Math.PI/2,yaw,0);arrow.material.opacity=.38+.42*(.5+.5*Math.sin(t*7-i*.8));const scale=.82+Math.sin(t*7-i*.7)*.1;arrow.scale.setScalar(scale);});
 }
@@ -1332,6 +1333,7 @@ if(import.meta.env.DEV)window.__NIULAI_TEST__={
   roadNpcProbe(index=0){const npc=strangeTravellers[index];npc.position.set(player.position.x+.1,.05,player.position.z);npc.userData.talked=false;return talkToRoadNpc(npc,index);},
   roadNpcState(index=0){const npc=strangeTravellers[index];return{distance:Math.hypot(player.position.x-npc.position.x,player.position.z-npc.position.z),talked:npc.userData.talked,sayKey:activeSayKey};},
   objectiveArrowProbe(){clothCount=0;player.position.set(0,.05,18-runLength*.3);clothPieces.forEach((item,i)=>{item.visible=i===0;});clothPieces[0].position.set(player.position.x+18,.05,player.position.z-32);const now=clock.elapsedTime;updateObjectiveArrow(runLength*.3,now);const before=objectiveTrailArrows[0].position.clone();updateObjectiveArrow(runLength*.3,now+.45);return{shown:objectiveTrail.visible,grounded:objectiveTrailArrows.filter(arrow=>arrow.visible).every(arrow=>Math.abs(arrow.position.y-.09)<.001),moving:before.distanceTo(objectiveTrailArrows[0].position)>1,screenArrow:objectiveArrow.classList.contains('show')};},
+  speedArrowProbe(){clothCount=clothPieces.length;switchCount=powerSwitches.length;dreamClock.visible=false;player.position.set(0,.05,18-runLength*.15);itemPickups.forEach(item=>{item.visible=false;item.userData.collected=true;});const boost=itemPickups.find(item=>item.userData.type==='speed');boost.visible=true;boost.userData.collected=false;boost.position.set(12,.05,player.position.z-24);updateObjectiveArrow(runLength*.15,clock.elapsedTime);return{shown:objectiveTrail.visible,distance:Math.hypot(boost.position.x-player.position.x,boost.position.z-player.position.z)};},
   specialEntranceProbe(type='well'){specialEntrance(type,5000);return document.body.classList.contains(`entrance-${type}`);},
   wellHauntingProbe(active=true){document.body.classList.remove(...specialEntranceClasses);document.body.classList.toggle('well-haunting',active);return document.body.classList.contains('well-haunting');},
   herdPresentationProbe(){storyHerd.forEach((cow,i)=>animateCow(cow,1+i*.07,10));return{handstands:storyHerd.filter(cow=>cow.userData.handstand&&Math.abs(cow.rotation.z)>3).length,yaws:[...new Set(storyHerd.map(cow=>Number(cow.rotation.y.toFixed(2))))]};},
