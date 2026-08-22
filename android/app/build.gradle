@@ -7,8 +7,8 @@ android {
         applicationId "net.kryso.cowcome"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 26082209
-        versionName "20260822.9"
+        versionCode 26082210
+        versionName "20260822.10"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

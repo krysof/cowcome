@@ -118,6 +118,7 @@
   "event.snowNear": "彼女には足跡がありません。彼女は今明らかに前にいました。",
   "event.snowEnd": "雪は止みました。しかし、後ろでは女性が雪を踏む音がまだ続いていた。",
   "event.superCow": "スーパー牛は怪物を振り切り、出口へ逃げ切った！",
+  "event.superCowAhead": "スーパー牛が先へ走っていった！",
   "event.caughtMission": "彼らはあなたを捕まえました。",
   "event.maul": "牛来は押し倒された。奴らが肉を引き裂いている。",
   "event.exitNear": "光り輝く出口はすぐそこです！",

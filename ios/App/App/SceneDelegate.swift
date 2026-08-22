@@ -11,12 +11,11 @@ final class GameViewController: CAPBridgeViewController {
     }
 
     private func configureGameAudio() {
-        // WKWebView otherwise inherits the ambient category and becomes silent
-        // whenever the iPhone mute switch is on.  Music and horror cues are
-        // intentional game audio, so play them through the normal media route.
+        // Game audio follows the iPhone mute switch: silent mode stays silent,
+        // while music and effects play normally after the player enters.
         let session = AVAudioSession.sharedInstance()
         do {
-            try session.setCategory(.playback, mode: .default, options: [])
+            try session.setCategory(.ambient, mode: .default, options: [])
             try session.setActive(true)
         } catch {
             NSLog("Unable to activate game audio session: %@", error.localizedDescription)
