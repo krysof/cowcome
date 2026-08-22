@@ -407,6 +407,21 @@ function makeSafeZone(index){
 }
 const safeZones=Array.from({length:4},(_,i)=>makeSafeZone(i));
 const bubbleEls=Array.from({length:4},()=>{const el=document.createElement('div');el.className='npc-bubble';el.hidden=true;npcBubbles.appendChild(el);return el;});
+const witnessBubble=document.createElement('div'),superCowBubble=document.createElement('div');
+witnessBubble.className='npc-bubble witness-bubble';superCowBubble.className='npc-bubble super-cow-bubble';witnessBubble.hidden=true;superCowBubble.hidden=true;npcBubbles.append(witnessBubble,superCowBubble);
+let witnessSpeaker=null,witnessSpeechUntil=0,superCowSpeaker=null,superCowSpeechUntil=0;
+function showWorldSpeech(speaker,key,duration=3000,superSpeech=false){
+  if(!speaker)return;
+  const bubble=superSpeech?superCowBubble:witnessBubble;bubble.textContent=tr(key);bubble.hidden=false;
+  if(superSpeech){superCowSpeaker=speaker;superCowSpeechUntil=elapsed+duration/1000;}else{witnessSpeaker=speaker;witnessSpeechUntil=elapsed+duration/1000;}
+}
+function updateWorldSpeech(){
+  for(const speech of [{speaker:witnessSpeaker,until:witnessSpeechUntil,bubble:witnessBubble,height:4},{speaker:superCowSpeaker,until:superCowSpeechUntil,bubble:superCowBubble,height:5.8}]){
+    const {speaker,until,bubble,height}=speech;if(!speaker||!speaker.visible||state!=='playing'||elapsed>=until){bubble.hidden=true;continue;}
+    const v=new THREE.Vector3();speaker.getWorldPosition(v);v.y+=height;v.project(camera);const width=window.visualViewport?.width||innerWidth,heightPx=window.visualViewport?.height||innerHeight;
+    bubble.style.left=(THREE.MathUtils.clamp(v.x*.5+.5,.12,.88)*width)+'px';bubble.style.top=(THREE.MathUtils.clamp(-v.y*.5+.5,.12,.82)*heightPx)+'px';bubble.hidden=v.z>1||Math.abs(v.x)>1.35||Math.abs(v.y)>1.35;
+  }
+}
 function makeCloth(){const g=new THREE.Group(),cloth=new THREE.MeshBasicMaterial({color:0xff2015,side:THREE.DoubleSide,fog:false}),glow=new THREE.MeshBasicMaterial({color:0xff160b,transparent:true,opacity:.3,depthWrite:false,blending:THREE.AdditiveBlending,fog:false});mesh(new THREE.PlaneGeometry(2.2,3.1,2,2),cloth,g,0,1.7,0,[1,1,1],[0,.2,.08]);const beam=mesh(new THREE.CylinderGeometry(.35,2.4,18,8,1,true),glow,g,0,9,0);const ring=mesh(new THREE.TorusGeometry(2.1,.16,5,18),new THREE.MeshBasicMaterial({color:0xff3a22,fog:false}),g,0,.12,0,[1,1,1],[Math.PI/2,0,0]);const light=new THREE.PointLight(0xff2c18,58,30);light.position.y=3.2;g.add(light);g.userData={beam,ring,light};scene.add(g);return g;}
 const clothPieces=Array.from({length:3},makeCloth);
 function makeSwitch(){const g=new THREE.Group();mesh(new THREE.BoxGeometry(1.6,3.4,1.1),rustMat,g,0,1.7,0);const lever=mesh(new THREE.BoxGeometry(.28,1.6,.3),flat(0xc54628),g,0,2.1,-.72,[1,1,1],[.45,0,0]);const lamp=new THREE.PointLight(0xff2a14,28,16);lamp.position.set(0,3.6,0);g.add(lamp);g.userData={lever,lamp,on:false};scene.add(g);return g;}
@@ -726,14 +741,14 @@ function start(){
   birdDroppings.splice(0).forEach(drop=>{scene.remove(drop.mesh);drop.mesh.material.dispose();});strangeBirds.forEach((bird,i)=>bird.userData.nextDrop=8+i*1.8+Math.random()*15);
   pickupEffects.splice(0).forEach(effect=>scene.remove(effect.group));
   knockedObstacles.splice(0);obstacles.forEach(obstacle=>{const original=obstacle.userData.originalTransform;if(original){obstacle.position.copy(original.position);obstacle.rotation.copy(original.rotation);obstacle.visible=original.visible;}obstacle.userData.collisionDisabled=false;obstacle.userData.knockVelocity=null;});
-  herdCows.forEach((c,i)=>{c.position.copy(c.userData.start);c.rotation.set(0,0,0);c.visible=c.position.z>exitZ;c.userData.active=false;c.userData.eaten=false;c.userData.escaped=false;c.userData.announced=false;const e=ambushers[i];e.position.copy(e.userData.start);e.rotation.set(0,0,0);e.visible=false;e.userData.disabled=i>=mode.ambushers;e.userData.feeding=0;e.userData.joined=false;});
+  herdCows.forEach((c,i)=>{c.position.copy(c.userData.start);c.rotation.set(0,0,0);c.visible=c.position.z>exitZ;c.userData.active=false;c.userData.eaten=false;c.userData.escaped=false;c.userData.announced=false;c.userData.superBoastAt=0;c.userData.superBoasted=false;const e=ambushers[i];e.position.copy(e.userData.start);e.rotation.set(0,0,0);e.visible=false;e.userData.disabled=i>=mode.ambushers;e.userData.feeding=0;e.userData.joined=false;});
   const herdCenter=18-runLength*.165;storyHerd.forEach((cow,i)=>{cow.position.set(cow.userData.offsetX,.05,herdCenter+cow.userData.offsetZ);cow.rotation.set(0,Math.PI,0);cow.visible=false;cow.userData.active=false;cow.userData.escaped=false;cow.userData.eaten=false;});
-  currentChapter=-1;activeSafeZone=-1;hideNpcBubbles();safeZones.forEach((zone,i)=>{zone.position.set(0,0,18-runLength*((i+1)/5));zone.visible=true;Object.assign(zone.userData,{entered:false,passed:false,broken:false,timer:0,nextTalk:0,talkIndex:0,activeBubble:-1});zone.userData.light.color.set(0xffc66b);zone.userData.light.intensity=190;zone.userData.floorMat.color.set(0xa79861);zone.userData.floorMat.emissive.set(0xffa82f);zone.userData.floorMat.emissiveIntensity=.36;zone.userData.campfire.life=1;zone.userData.campfire.light.intensity=175;zone.userData.residents.forEach(npc=>{npc.position.copy(npc.userData.safeStart);npc.rotation.set(0,Math.PI,0);npc.visible=true;npc.userData.eaten=false;npc.userData.escaped=false;});});showChapter(0);
+  currentChapter=-1;activeSafeZone=-1;hideNpcBubbles();witnessSpeaker=null;superCowSpeaker=null;witnessBubble.hidden=true;superCowBubble.hidden=true;safeZones.forEach((zone,i)=>{zone.position.set(0,0,18-runLength*((i+1)/5));zone.visible=true;Object.assign(zone.userData,{entered:false,passed:false,broken:false,timer:0,nextTalk:0,talkIndex:0,activeBubble:-1});zone.userData.light.color.set(0xffc66b);zone.userData.light.intensity=190;zone.userData.floorMat.color.set(0xa79861);zone.userData.floorMat.emissive.set(0xffa82f);zone.userData.floorMat.emissiveIntensity=.36;zone.userData.campfire.life=1;zone.userData.campfire.light.intensity=175;zone.userData.residents.forEach(npc=>{npc.position.copy(npc.userData.safeStart);npc.rotation.set(0,Math.PI,0);npc.visible=true;npc.userData.eaten=false;npc.userData.escaped=false;});});showChapter(0);
   clothCount=0;switchCount=0;sheltered=false;flashlightUntil=0;smokeCharges=0;radioOwned=false;fakeExitTriggered=false;finalWaveStarted=false;rescuedCows=0;npcShoveHintShown=false;lastNpcShove=-9;
   [[-23,.26],[21,.31],[-18,.36]].forEach(([x,r],i)=>{const item=clothPieces[i];item.position.set(x,.05,18-runLength*r);item.visible=true;item.rotation.y=Math.random()*Math.PI;});forestGate.position.set(0,0,18-runLength*.395);forestGate.userData.open=false;
   [[-20,.66],[22,.735]].forEach(([x,r],i)=>{const sw=powerSwitches[i];sw.position.set(x,0,18-runLength*r);sw.visible=true;sw.userData.on=false;sw.userData.lever.rotation.x=.45;sw.userData.lamp.color.set(0xff2a14);});powerGate.position.set(0,0,18-runLength*.79);powerGate.userData.open=false;
   [[-15,.47],[16,.54]].forEach(([x,r],i)=>{shelterHuts[i].position.set(x,0,18-runLength*r);shelterHuts[i].visible=true;});falseGate.position.set(0,0,18-runLength*.9);falseGate.visible=true;falseGate.userData.triggered=false;falseGate.userData.mat.color.set(0xb9e83b);
-  finalHerd.forEach((cow,i)=>{cow.position.set((i%5-2)*4.2,.05,18-runLength*.825-Math.floor(i/5)*6);cow.rotation.set(0,Math.PI,0);cow.visible=false;cow.userData.escaped=false;cow.userData.eaten=false;});
+  finalHerd.forEach((cow,i)=>{cow.position.set((i%5-2)*4.2,.05,18-runLength*.825-Math.floor(i/5)*6);cow.rotation.set(0,Math.PI,0);cow.visible=false;cow.userData.escaped=false;cow.userData.eaten=false;cow.userData.superBoastAt=0;cow.userData.superBoasted=false;});
   [[-10,.12],[18,.34],[-16,.55],[20,.72]].forEach(([x,r],i)=>{const item=itemPickups[i];item.position.set(x,.05,18-runLength*r);item.visible=true;item.userData.collected=false;});
   forkWalls.forEach((fork,i)=>{fork.position.set((Math.random()<.5?-1:1)*(8+Math.random()*7),0,18-runLength*(.23+i*.075));fork.rotation.y=(Math.random()-.5)*.08;fork.visible=true;});
   strangeTravellers.forEach(c=>{c.position.copy(c.userData.start);c.rotation.set(0,0,0);c.visible=true;c.userData.fleeing=false;c.userData.eaten=false;c.userData.escaped=false;c.userData.talked=false;});animalActors.forEach(animal=>{animal.userData.refugeZone=-1;animal.userData.refugeParked=false;animal.userData.refugeOffset=null;animal.userData.escapeX=0;animal.userData.passingTalked=false;});lastPassingNpcTalk=-99;
@@ -751,7 +766,7 @@ function chooseEnding(win){
 }
 function renderResult(){if(!resultSnapshot)return;const {win,runDistance,exactTime,reason,endingKey}=resultSnapshot;ui.result.classList.toggle('dead',!win);ui.result.classList.toggle('escaped',win);ui.eyebrow.textContent=tr(win?'result.exitFound':'result.deathConfirmed');ui.title.textContent=tr(win?'result.winTitle':'result.deadTitle');ui.resultText.innerHTML=tr(win?'result.win':'result.dead',{distance:runDistance,time:exactTime,reason:localizeDeath(reason)})+`<br><strong>${tr(endingKey)}</strong>`;}
 function end(win){
-  state=win?'win':'caught';recordScore(win);clearTimeout(hauntTimer);watchers.forEach(w=>w.visible=false);snowGhost.visible=false;snow.visible=false;document.body.classList.remove('playing','death-maul','exhausted','enemy-near','terror-flash','flash-negative','apparition','blackout','blood-flash','heartbeat','otherworld','snow-haunting','rain-active','safe-warm','safe-cold','safe-broken');ui.result.classList.add('show');
+  state=win?'win':'caught';recordScore(win);clearTimeout(hauntTimer);witnessBubble.hidden=true;superCowBubble.hidden=true;watchers.forEach(w=>w.visible=false);snowGhost.visible=false;snow.visible=false;document.body.classList.remove('playing','death-maul','exhausted','enemy-near','terror-flash','flash-negative','apparition','blackout','blood-flash','heartbeat','otherworld','snow-haunting','rain-active','safe-warm','safe-cold','safe-broken');ui.result.classList.add('show');
   const runDistance=Math.max(0,Math.min(runLength,Math.round(18-player.position.z))),exactTime=formatTime(Math.round(elapsed*1000));
   resultSnapshot={win,runDistance,exactTime,reason:deathReason,endingKey:chooseEnding(win)};renderResult();
   dangerAudio.pause();dangerAudio.currentTime=0;dangerLatched=false;stopMusic();sound(win?220:38,1.5,'sawtooth',.1);
@@ -1015,8 +1030,9 @@ function tick(){
     if(snowStage<3&&progress>=snowEnd){snowStage=3;snowGhost.visible=false;terrorFlash();say('event.snowEnd',3200);}
     herdCows.forEach((cow,i)=>{
       const enemy=ambushers[i];if(cow.userData.eaten){if(enemy.userData.feeding>0){enemy.userData.feeding-=dt;enemy.userData.headBob=(enemy.userData.headBob||0)+dt;enemy.position.y=.05+Math.abs(Math.sin(t*12))*.18;}else if(!enemy.userData.joined){enemy.userData.joined=true;enemy.position.y=.05;enemy.userData.chaseSpeed=7.15+(i%3)*.14;activeChasers.push(enemy);}return;}
-      if(!cow.visible)return;talkToPassingNpc(cow,i+6);if(!cow.userData.active&&Math.abs(player.position.z-cow.position.z)<58){cow.userData.active=true;enemy.visible=!enemy.userData.disabled;if(!cow.userData.announced){cow.userData.announced=true;say(cow.userData.super?'event.superCowAhead':herdFleeLines[i%herdFleeLines.length],cow.userData.super?2800:2300);}}
+      if(!cow.visible)return;talkToPassingNpc(cow,i+6);if(!cow.userData.active&&Math.abs(player.position.z-cow.position.z)<58){cow.userData.active=true;enemy.visible=!enemy.userData.disabled;if(!cow.userData.announced){cow.userData.announced=true;if(cow.userData.super){const witness=herdCows.find(other=>other!==cow&&other.visible&&!other.userData.eaten)||storyHerd.find(other=>other.visible&&!other.userData.eaten);say('event.superCowAhead',2200);showWorldSpeech(witness,'event.superCowAhead',2500);cow.userData.superBoastAt=elapsed+.85;}else say(herdFleeLines[i%herdFleeLines.length],2300);}}
       if(!cow.userData.active)return;
+      if(cow.userData.super&&!cow.userData.superBoasted&&cow.userData.superBoastAt&&elapsed>=cow.userData.superBoastAt){cow.userData.superBoasted=true;showWorldSpeech(cow,'event.superCowBoast',3400,true);sound(164,.42,'square',.075);}
       if(holdNpcInSafeZone(cow,t,dt)){enemy.visible=false;return;}if(!enemy.userData.disabled&&!enemy.visible)enemy.visible=true;
       const cowSpeed=cow.userData.super?11.2:5.35+(i%3)*.32;cow.position.z-=cowSpeed*dt;cow.position.x+=Math.sin(t*1.4+i)*dt*(cow.userData.super?.85:.45);cow.userData.legs.forEach((l,n)=>l.rotation.x=Math.sin(t*(cow.userData.super?17:12)+n*Math.PI)*.58);if(cow.userData.superCape){cow.userData.superCape.rotation.x=Math.sin(t*13)*.14;cow.userData.superCape.position.y=cow.userData.superCape.userData.baseY+Math.sin(t*10)*.08;}
       if(cow.userData.super&&cow.position.z<exitZ+5){cow.userData.escaped=true;cow.visible=false;enemy.userData.joined=true;enemy.userData.chaseSpeed=7.15;activeChasers.push(enemy);say('event.superCow',3000);sound(260,.55,'triangle',.09);return;}
@@ -1092,6 +1108,7 @@ function tick(){
   const panic=state==='playing'?(dangerLatched?Math.sin(t*7)*1.25:Math.sin(t*.7)*.22):0;if(Math.abs(camera.fov-(66+panic))>.02){camera.fov=66+panic;camera.updateProjectionMatrix();}
   if(state==='intro')camera.lookAt(player.position.x,2.5,player.position.z);
   else camera.lookAt(player.position.x,narrow?1.2:1.8,player.position.z+(narrow?5:8));
+  updateWorldSpeech();
   renderer.render(scene,camera);
   if(mobileDevice&&state==='playing'){
     qualityFrameTime+=dt*1000;qualityFrames++;
