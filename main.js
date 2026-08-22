@@ -194,7 +194,7 @@ function makeNiuLai(scale=1, dark=false){
   const g=new THREE.Group();
   const fur=flat(dark?0x342019:0xe97837), muzzle=flat(dark?0x84624e:0xf2d3a0);
   const hoof=flat(dark?0x0e0b09:0x3a241b), eye=flat(0xf3ead8), pupil=flat(dark?0xff3b21:0x231711), inner=flat(0xeaa181);
-  // 电影中的牛来是橙色、直立、大头宽嘴的拟人小牛。
+  // 电影中的牛牛是橙色、直立、大头宽嘴的拟人小牛。
   const body=mesh(new THREE.SphereGeometry(1.05,7,5),fur,g,0,2.45,0,[1.04,1.22,.74]);
   const head=mesh(new THREE.SphereGeometry(1.2,7,6),fur,g,0,4.25,-.08,[1.08,.92,.8]);
   mesh(new THREE.SphereGeometry(.74,7,5),muzzle,head,0,-.25,-.9,[1.12,.7,.38]);

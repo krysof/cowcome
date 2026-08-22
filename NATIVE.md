@@ -1,7 +1,7 @@
 # iOS、Android 与 macOS 构建
 
 本项目使用 Capacitor 将同一套 Web 游戏封装为原生 iOS / Android 应用。应用 ID 为
-`net.kryso.cowcome`，竖屏运行，并包含原生牛来头像图标与启动画面。
+`net.kryso.cowcome`，竖屏运行，并包含原生牛牛头像图标与启动画面。
 
 ## 同步 Web 内容
 
@@ -62,7 +62,7 @@ DMG、ZIP 与解包应用输出在 `native-build/macos/`，Bundle ID 为
 
 ## 版本
 
-游戏内显示版本与 Android 版本为 `20260822.33`。App Store 营销版本为 `1.0`，iOS
+游戏内显示版本与 Android 版本为 `20260822.34`。App Store 营销版本为 `1.0`，iOS
 build number 为 `26082232`；Android `versionCode` 为 `26082232`。原生安装包包含完整游戏资源，
 不依赖网络即可游玩；PWA 安装入口只在网页版显示。
 

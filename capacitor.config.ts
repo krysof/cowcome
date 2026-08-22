@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'net.kryso.cowcome',
-  appName: '牛来：雾中逃亡',
+  appName: '妈妈在哪里',
   webDir: 'dist',
   backgroundColor: '#0b0d09',
   ios: {
