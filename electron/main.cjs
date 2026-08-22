@@ -1,7 +1,7 @@
 const {app,BrowserWindow,Menu,shell,session}=require('electron');
 const path=require('node:path');
 
-const APP_NAME='妈妈在哪里';
+const APP_NAME='妈妈在哪里：雾中逃亡';
 app.setName(APP_NAME);
 app.commandLine.appendSwitch('autoplay-policy','user-gesture-required');
 
@@ -12,7 +12,7 @@ function createWindow(){
     show:false,trafficLightPosition:{x:18,y:18},
     webPreferences:{contextIsolation:true,nodeIntegration:false,sandbox:true,webSecurity:true,devTools:false}
   });
-  win.webContents.setUserAgent(`${win.webContents.getUserAgent()} CowcomeMac/20260822.34`);
+  win.webContents.setUserAgent(`${win.webContents.getUserAgent()} CowcomeMac/20260822.35`);
   win.webContents.setWindowOpenHandler(({url})=>{if(/^https?:\/\//i.test(url))shell.openExternal(url);return{action:'deny'};});
   win.webContents.on('will-navigate',(event,url)=>{if(url!==win.webContents.getURL()){event.preventDefault();if(/^https?:\/\//i.test(url))shell.openExternal(url);}});
   win.once('ready-to-show',()=>win.show());

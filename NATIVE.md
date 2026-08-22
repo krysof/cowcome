@@ -62,7 +62,7 @@ DMG、ZIP 与解包应用输出在 `native-build/macos/`，Bundle ID 为
 
 ## 版本
 
-游戏内显示版本与 Android 版本为 `20260822.34`。App Store 营销版本为 `1.0`，iOS
+游戏内显示版本与 Android 版本为 `20260822.35`。App Store 营销版本为 `1.0`，iOS
 build number 为 `26082232`；Android `versionCode` 为 `26082232`。原生安装包包含完整游戏资源，
 不依赖网络即可游玩；PWA 安装入口只在网页版显示。
 

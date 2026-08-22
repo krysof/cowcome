@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">妈妈在哪里</string>
-    <string name="title_activity_main">妈妈在哪里</string>
+    <string name="app_name">妈妈在哪里：雾中逃亡</string>
+    <string name="title_activity_main">妈妈在哪里：雾中逃亡</string>
     <string name="package_name">net.kryso.cowcome</string>
     <string name="custom_url_scheme">net.kryso.cowcome</string>
 </resources>
