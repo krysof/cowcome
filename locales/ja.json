@@ -197,6 +197,7 @@
   "item.radio": "ラジオを入手：怪物の接近を早く察知",
   "item.smoke": "煙幕弾を入手：怪物接近時に自動使用",
   "item.smokeUsed": "煙幕が炸裂した——逃げろ！",
+  "item.healthPickup": "小屋の中で命のハートを発見：ハートを1つ回復した。",
   "ending.alone": "結末：一人で脱出",
   "ending.herd": "結末：牛の群れを連れて帰還",
   "ending.fakeMother": "結末：偽りの母についていく",
