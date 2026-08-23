@@ -718,7 +718,7 @@ function makeWatcher(){const g=new THREE.Group(),voidMat=new THREE.MeshBasicMate
 const watchers=Array.from({length:4},makeWatcher);
 
 const keys={}, joystick={x:0,y:0}, clock=new THREE.Clock();
-let state='intro', stamina=100, hearts=3, exhausted=false, runLength=430, exitZ=-412, distance=430, hunterSpeed=7.5, elapsed=0, lastLine=-1, shake=0, audio, musicMaster, radioGain, musicNodes=[], musicTimer, storyStage=0, waveWarningStage=0, snowStage=0, snowBlend=0, activeChasers=[], speedLevel=0, nextTerrorFlash=9,nextHaunt=6,hauntTimer,titleCryTimer,deathElapsed=0,deathAttacker=null,deathReason=null,nextDeathBlood=0,lastCollisionSound=-99,invulnerableUntil=0,clothCount=0,switchCount=0,sheltered=false,flashlightUntil=0,speedBoostUntil=0,smokeCharges=0,radioOwned=false,fakeExitTriggered=false,finalWaveStarted=false,rescuedCows=0,finalChoice=null,choicePrompted=false,weatherActive=false,nextWeatherChange=0;
+let state='intro', stamina=100, hearts=3, exhausted=false, runLength=430, exitZ=-412, distance=430, hunterSpeed=7.5, elapsed=0, lastLine=-1, shake=0, audio, musicMaster, radioGain,weatherRainGain,musicNodes=[], musicTimer,musicStarting=false,nextThunderAt=0, storyStage=0, waveWarningStage=0, snowStage=0, snowBlend=0, activeChasers=[], speedLevel=0, nextTerrorFlash=9,nextHaunt=6,hauntTimer,titleCryTimer,deathElapsed=0,deathAttacker=null,deathReason=null,nextDeathBlood=0,lastCollisionSound=-99,invulnerableUntil=0,clothCount=0,switchCount=0,sheltered=false,flashlightUntil=0,speedBoostUntil=0,smokeCharges=0,radioOwned=false,fakeExitTriggered=false,finalWaveStarted=false,rescuedCows=0,finalChoice=null,choicePrompted=false,weatherActive=false,nextWeatherChange=0;
 const bloodEffects=[];
 const lines=[
   [.04,'story.0'],[.08,'story.1'],[.12,'story.2'],[.16,'story.3'],[.36,'story.4'],[.66,'story.5'],[.86,'story.6']
@@ -884,24 +884,37 @@ function triggerHaunt(){
   else{document.body.classList.add('otherworld');horrorSound(3);say('event.otherworld',3000);shake=.65;hauntTimer=setTimeout(()=>document.body.classList.remove('otherworld'),4200);}
 }
 function stopMusic(){
-  if(!musicMaster||!audio)return;clearInterval(musicTimer);radioGain=null;musicMaster.gain.cancelScheduledValues(audio.currentTime);musicMaster.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+.8);
+  if(!musicMaster||!audio){clearInterval(musicTimer);radioGain=null;weatherRainGain=null;return;}clearInterval(musicTimer);radioGain=null;weatherRainGain=null;musicMaster.gain.cancelScheduledValues(audio.currentTime);musicMaster.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+.8);
   const nodes=[...musicNodes];setTimeout(()=>nodes.forEach(n=>{try{n.stop()}catch{}}),900);musicNodes=[];musicMaster=null;
 }
 async function startMusic(){
-  if(!audio)audio=new (window.AudioContext||window.webkitAudioContext)();await audio.resume();stopMusic();
-  musicMaster=audio.createGain();musicMaster.gain.setValueAtTime(.0001,audio.currentTime);musicMaster.gain.exponentialRampToValueAtTime(.19,audio.currentTime+1.2);musicMaster.connect(audio.destination);
+  if(musicStarting)return;musicStarting=true;
+  try{
+  if(!audio)audio=new (window.AudioContext||window.webkitAudioContext)();await audio.resume();if(state!=='playing')return;stopMusic();
+  musicMaster=audio.createGain();musicMaster.gain.setValueAtTime(.0001,audio.currentTime);musicMaster.gain.exponentialRampToValueAtTime(.27,audio.currentTime+1.2);musicMaster.connect(audio.destination);
   const filter=audio.createBiquadFilter();filter.type='lowpass';filter.frequency.value=820;filter.Q.value=6;filter.connect(musicMaster);
-  // 手机扬声器也能听见的中低频不协和持续音。
-  [73.4,82.4,110].forEach((freq,i)=>{const o=audio.createOscillator(),g=audio.createGain();o.type=i===2?'triangle':'sawtooth';o.frequency.value=freq;g.gain.value=i===2?.12:.17;o.connect(g).connect(filter);o.start();musicNodes.push(o);});
+  // 手机扬声器也能清楚听见的中低频不协和持续音；保留低频压迫感，
+  // 但不能只依赖手机几乎放不出的 40–70Hz。
+  [73.4,82.4,110,146.8,164.8].forEach((freq,i)=>{const o=audio.createOscillator(),g=audio.createGain();o.type=i>1?'triangle':'sawtooth';o.frequency.value=freq;g.gain.value=i<2?.13:i===2?.105:.055;o.connect(g).connect(filter);o.start();musicNodes.push(o);});
   const lfo=audio.createOscillator(),lfoGain=audio.createGain();lfo.frequency.value=.09;lfoGain.gain.value=260;lfo.connect(lfoGain).connect(filter.frequency);lfo.start();musicNodes.push(lfo);
   // 带通噪声模拟荒原风声。
   const noiseBuffer=audio.createBuffer(1,Math.floor(audio.sampleRate*2),audio.sampleRate),data=noiseBuffer.getChannelData(0);for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*.32;
   const wind=audio.createBufferSource(),windFilter=audio.createBiquadFilter(),windGain=audio.createGain();wind.buffer=noiseBuffer;wind.loop=true;windFilter.type='bandpass';windFilter.frequency.value=480;windFilter.Q.value=.7;windGain.gain.value=.08;wind.connect(windFilter).connect(windGain).connect(musicMaster);wind.start();musicNodes.push(wind);
   const radio=audio.createBufferSource(),radioFilter=audio.createBiquadFilter();radioGain=audio.createGain();radio.buffer=noiseBuffer;radio.loop=true;radioFilter.type='bandpass';radioFilter.frequency.value=2100;radioFilter.Q.value=1.8;radioGain.gain.value=.002;radio.connect(radioFilter).connect(radioGain).connect(musicMaster);radio.start();musicNodes.push(radio);
+  // 独立的雨幕声，随实际天气平滑淡入淡出。高频雨点与低频风声分开，
+  // 在 iPhone、安卓小扬声器和桌面浏览器上都能辨认。
+  const rainSource=audio.createBufferSource(),rainHigh=audio.createBiquadFilter();weatherRainGain=audio.createGain();rainSource.buffer=noiseBuffer;rainSource.loop=true;rainHigh.type='highpass';rainHigh.frequency.value=1250;rainHigh.Q.value=.45;weatherRainGain.gain.value=0;rainSource.connect(rainHigh).connect(weatherRainGain).connect(musicMaster);rainSource.start();musicNodes.push(rainSource);
   musicTimer=setInterval(()=>{if(state!=='playing'||!musicMaster)return;const now=audio.currentTime,base=[41.2,46.25,55,61.74][Math.floor(Math.random()*4)];for(const detune of [0,6.8]){const o=audio.createOscillator(),g=audio.createGain(),pan=audio.createStereoPanner?audio.createStereoPanner():audio.createGain();o.type='sawtooth';o.frequency.setValueAtTime(base*(detune?1.071:1),now);o.frequency.linearRampToValueAtTime(base*.62,now+3.4);if(pan.pan)pan.pan.value=detune?-.65:.65;g.gain.setValueAtTime(.0001,now);g.gain.exponentialRampToValueAtTime(.075,now+.7);g.gain.exponentialRampToValueAtTime(.0001,now+3.4);o.connect(g).connect(pan).connect(musicMaster);o.start(now);o.stop(now+3.5);}},3100);
+  }finally{musicStarting=false;}
+}
+function playThunder(){
+  if(!audio||audio.state!=='running'||state!=='playing')return;const now=audio.currentTime;
+  const length=Math.floor(audio.sampleRate*2.4),buffer=audio.createBuffer(1,length,audio.sampleRate),data=buffer.getChannelData(0);let roll=0;for(let i=0;i<length;i++){roll=roll*.965+(Math.random()*2-1)*.18;data[i]=roll*Math.exp(-i/(audio.sampleRate*.72));}
+  const source=audio.createBufferSource(),low=audio.createBiquadFilter(),gain=audio.createGain();source.buffer=buffer;low.type='lowpass';low.frequency.setValueAtTime(410,now);low.frequency.exponentialRampToValueAtTime(75,now+2.2);gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(.72,now+.018);gain.gain.exponentialRampToValueAtTime(.0001,now+2.35);source.connect(low).connect(gain).connect(audio.destination);source.start(now);
+  document.body.classList.remove('lightning-flash');void document.body.offsetWidth;document.body.classList.add('lightning-flash');setTimeout(()=>document.body.classList.remove('lightning-flash'),420);shake=Math.max(shake,.5);
 }
 function unlockAudio(){
-  if(audioUnlocked){document.querySelector('#audioGate').classList.add('hidden');return;}
+  if(audioUnlocked){audio?.resume?.().catch(()=>{});document.querySelector('#audioGate').classList.add('hidden');return;}
   audioUnlocked=true;
   if(!audio)audio=new (window.AudioContext||window.webkitAudioContext)();
   audio.resume().catch(()=>{});
@@ -922,7 +935,7 @@ function start(){
   clearTimeout(say.t);clearTimeout(hauntTimer);clearEnemySpeech();ui.subtitle.classList.remove('show');ui.warning.classList.remove('show');activeSayKey='';activeMissionKey='hud.defaultMission';activeMissionParams={};Object.keys(keys).forEach(key=>delete keys[key]);resetJoystick();stopMusic();
   document.body.style.removeProperty('transform');document.body.style.removeProperty('filter');canvas.style.removeProperty('transform');camera.zoom=1;document.body.classList.remove('dreaming');
   const mode=difficulties[selectedCharacter];runLength=mode.length;exitZ=18-runLength;distance=runLength;gate.position.set(22,0,exitZ);beacon.position.set(22,14,exitZ+2);gateBeam.position.set(22,50,exitZ);gateSign.position.set(22,36,exitZ+1);guidePosts.forEach(post=>post.visible=post.position.z>exitZ+18);scene.fog.density=mode.fog;scene.background.set(selectedCharacter==='orange'?0xaeba88:selectedCharacter==='yellow'?0x9daa7c:0x77806a);
-  state='playing'; elapsed=0; stamina=100;hearts=3;invulnerableUntil=0;exhausted=false; hunterSpeed=7.5; lastLine=-1;speedLevel=0;deathElapsed=0;deathAttacker=null;deathReason=null;resultSnapshot=null;nextDeathBlood=0;snowStage=0;snowBlend=0;snow.visible=false;snow.material.opacity=0;snowGhost.visible=false;weatherActive=Math.random()<.58;nextWeatherChange=7+Math.random()*12;nextTerrorFlash=mode.flashMin+Math.random()*mode.flashRange;nextHaunt=5+Math.random()*6;watchers.forEach(w=>w.visible=false);document.body.classList.remove('death-maul','exhausted','enemy-near','terror-flash','flash-negative','apparition','blackout','blood-flash','heartbeat','otherworld','snow-haunting','rain-active','safe-warm','safe-cold','safe-broken','sheltered','flashlight-on','speed-boost','smoke-screen','chapter-1','chapter-2','chapter-3','chapter-4','chapter-5','hit','glitch','title-cry','health-3','health-2','health-1','health-0','difficulty-easy','difficulty-normal','difficulty-hard','choice-open');document.body.classList.add(selectedCharacter==='orange'?'difficulty-easy':selectedCharacter==='yellow'?'difficulty-normal':'difficulty-hard');ui.distance.textContent=runLength+tr('world.m');
+  state='playing'; elapsed=0; stamina=100;hearts=3;invulnerableUntil=0;exhausted=false; hunterSpeed=7.5; lastLine=-1;speedLevel=0;deathElapsed=0;deathAttacker=null;deathReason=null;resultSnapshot=null;nextDeathBlood=0;snowStage=0;snowBlend=0;snow.visible=false;snow.material.opacity=0;snowGhost.visible=false;weatherActive=Math.random()<.58;nextWeatherChange=7+Math.random()*12;nextThunderAt=weatherActive?4+Math.random()*7:999;nextTerrorFlash=mode.flashMin+Math.random()*mode.flashRange;nextHaunt=5+Math.random()*6;watchers.forEach(w=>w.visible=false);document.body.classList.remove('death-maul','exhausted','enemy-near','terror-flash','flash-negative','apparition','blackout','blood-flash','heartbeat','otherworld','snow-haunting','rain-active','lightning-flash','safe-warm','safe-cold','safe-broken','sheltered','flashlight-on','speed-boost','smoke-screen','chapter-1','chapter-2','chapter-3','chapter-4','chapter-5','hit','glitch','title-cry','health-3','health-2','health-1','health-0','difficulty-easy','difficulty-normal','difficulty-hard','choice-open');document.body.classList.add(selectedCharacter==='orange'?'difficulty-easy':selectedCharacter==='yellow'?'difficulty-normal':'difficulty-hard');ui.distance.textContent=runLength+tr('world.m');
   const oldPlayer=player;player=createCharacter(selectedCharacter);player.position.set(0,.05,18);player.rotation.set(0,0,0);scene.remove(oldPlayer);scene.add(player);renderHearts();prewarmShoveVisual(player);prewarmPickupEffects();prepareFingerAudio();storyStage=0;waveWarningStage=0;activeChasers=[];allEnemies.forEach(e=>{e.visible=false;e.position.y=e.userData.type==='car'?0:.05;e.userData.feeding=0;e.userData.joined=false;e.userData.headBob=0;e.userData.spawned=false;e.userData.pounce=null;e.userData.nextPounce=0;e.userData.stunnedUntil=0;e.userData.taunted=false;});scalableEnemies.forEach(enemy=>{enemy.userData.sizeMultiplier=1;enemy.scale.copy(enemy.userData.baseScale);});stalkers.forEach(e=>e.position.copy(e.userData.home));monsterCar.position.set(0,0,80);snakes.forEach(snake=>{snake.position.copy(snake.userData.home);snake.rotation.set(0,Math.PI/2,0);snake.userData.avoidTimer=0;snake.visible=true;});treeEnemies.forEach(e=>e.visible=true);snowGhost.userData.stunnedUntil=0;snowGhost.userData.taunted=false;
   bloodEffects.splice(0).forEach(f=>scene.remove(f.group));
   birdDroppings.splice(0).forEach(drop=>{scene.remove(drop.mesh);drop.mesh.material.dispose();});strangeBirds.forEach((bird,i)=>{bird.userData.nextDrop=8+i*1.8+Math.random()*15;bird.userData.panicUntil=0;bird.userData.shoveVelocity=null;});
@@ -1020,7 +1033,9 @@ const movementCodes=new Set(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowLeft','
 addEventListener('keydown',e=>{if(movementCodes.has(e.code)){e.preventDefault();keys[e.code]=true;}if(e.code==='KeyE'&&!e.repeat){e.preventDefault();performNpcShove();}if(e.code==='Escape'){scoreboard.classList.remove('show');scoreboard.setAttribute('aria-hidden','true');memoryArchive.classList.remove('show');memoryArchive.setAttribute('aria-hidden','true');}if(finalChoice==='pending'&&(e.code==='Digit1'||e.code==='Digit2'))selectFinalChoice(e.code==='Digit1'?'rescue':'alone');if(e.code==='Enter'&&state==='intro'&&!scoreboard.classList.contains('show'))start();if(e.code==='KeyR'&&state!=='playing'&&!scoreboard.classList.contains('show'))start();});
 addEventListener('keyup',e=>keys[e.code]=false);
 addEventListener('blur',()=>{Object.keys(keys).forEach(key=>delete keys[key]);resetJoystick();});
-document.addEventListener('visibilitychange',()=>{if(document.hidden){Object.keys(keys).forEach(key=>delete keys[key]);resetJoystick();}});
+function resumeGameAudio(){if(!audio||state!=='playing')return;audio.resume?.().then(()=>{if(state==='playing'&&!musicMaster&&!musicStarting)startMusic();}).catch(()=>{});}
+document.addEventListener('visibilitychange',()=>{if(document.hidden){Object.keys(keys).forEach(key=>delete keys[key]);resetJoystick();}else resumeGameAudio();});
+document.addEventListener('pointerdown',()=>{if(state==='playing'&&audio?.state!=='running')resumeGameAudio();},{capture:true,passive:true});
 const touchControls=isNativeApp||('ontouchstart' in window)||(navigator.maxTouchPoints||0)>0;
 document.querySelectorAll('.mobile-controls button[data-key]').forEach(button=>{
   const key=button.dataset.key,visual=document.querySelector(button.dataset.visual)||button;
@@ -1300,7 +1315,7 @@ function tick(){
   }
   if(state==='playing'){
     elapsed+=dt;
-    if(elapsed>=nextWeatherChange){weatherActive=!weatherActive;nextWeatherChange=elapsed+(weatherActive?10+Math.random()*20:7+Math.random()*18);if(weatherActive){sound(currentChapter===2?118:46,.8,'sawtooth',.035);}}
+    if(elapsed>=nextWeatherChange){weatherActive=!weatherActive;nextWeatherChange=elapsed+(weatherActive?10+Math.random()*20:7+Math.random()*18);if(weatherActive){nextThunderAt=elapsed+3+Math.random()*7;sound(currentChapter===2?118:46,.8,'sawtooth',.055);}else nextThunderAt=999;}
     if(elapsed>=nextTerrorFlash){const mode=difficulties[selectedCharacter];terrorFlash();nextTerrorFlash=elapsed+mode.flashMin+Math.random()*mode.flashRange;}
     if(elapsed>=nextHaunt){triggerHaunt();const fear=selectedCharacter==='leopard'?4:selectedCharacter==='yellow'?6:8;nextHaunt=elapsed+fear+Math.random()*8;}
     // 镜头面向世界 +Z：世界 +X 投影到屏幕左侧，世界 +Z 投影到屏幕上方。
@@ -1329,6 +1344,8 @@ function tick(){
     if(progress>runLength*.145)storyHerd.forEach((cow,i)=>{if(cow.userData.escaped||cow.userData.eaten)return;cow.visible=true;cow.userData.active=true;talkToPassingNpc(cow,i);if(holdNpcInSafeZone(cow,t,dt))return;cow.position.z-=dt*(4.7+(i%3)*.16);cow.position.x+=(cow.userData.escapeX||0)*dt+Math.sin(t*1.7+i)*dt*.34;animateCow(cow,t,9+i%3);if(cow.position.z<exitZ-20){cow.userData.escaped=true;cow.visible=false;}});
     const snowStart=runLength*.4,snowEnd=runLength*.6,snowChapter=progress>snowStart&&progress<snowEnd,snowActive=snowChapter&&weatherActive,rainActive=weatherActive&&!snowChapter;
     snowBlend=THREE.MathUtils.lerp(snowBlend,snowActive?1:0,1-Math.pow(.0005,dt));snow.visible=snowBlend>.015;document.body.classList.toggle('snow-haunting',snowBlend>.28);document.body.classList.toggle('rain-active',rainActive);
+    if(weatherRainGain&&audio?.state==='running')weatherRainGain.gain.setTargetAtTime(rainActive?.62:snowActive?.16:0,audio.currentTime,.3);
+    if(rainActive&&elapsed>=nextThunderAt){playThunder();nextThunderAt=elapsed+8+Math.random()*15;}
     let baseBg=selectedCharacter==='orange'?0xa49368:selectedCharacter==='yellow'?0x837e61:0x5f6255,groundBase=0x59683d;if(currentChapter===1){baseBg=0x42666a;groundBase=0x304a3d;}else if(currentChapter===2){baseBg=0x7b7180;groundBase=0x4a5548;}else if(currentChapter===3){baseBg=0x583b31;groundBase=0x3b302a;}else if(currentChapter===4){baseBg=0x39211f;groundBase=0x281b1a;}scene.background.set(baseBg).lerp(snowBgColor,snowBlend*.86);scene.fog.color.set(baseBg).lerp(snowFogColor,snowBlend*.8);scene.fog.density=difficulty.fog*(1.08+snowBlend*1.45+(currentChapter===1?.42:currentChapter>=3?.3:0));ground.material.color.set(groundBase).lerp(snowGroundColor,snowBlend*.82);rainMat.opacity=rainActive?(currentChapter===2?.12:.5)*(1-snowBlend*.78):0;
     if(snowStage===0&&snowChapter){snowStage=1;snowGhost.position.set(player.position.x+(Math.random()<.5?-1:1)*9,.1,player.position.z+35);snowGhost.visible=true;terrorFlash();say('event.snowStart',3600);enemyTaunt(snowGhost,'taunt.snowGhost',1000,3200);}
     if(snowStage===1&&progress>snowStart+(snowEnd-snowStart)*.48){snowStage=2;snowGhost.position.set(player.position.x+(Math.random()<.5?-1:1)*5,.1,player.position.z+19);terrorFlash();say('event.snowNear',3000);}
@@ -1494,6 +1511,8 @@ if(import.meta.env.DEV)window.__NIULAI_TEST__={
   endingProbe(endingKey='ending.herd',win=true){state=win?'win':'caught';resultSnapshot={win,runDistance:3210,exactTime:'08:15.042',reason:win?null:{key:'result.defaultDeath'},endingKey};document.querySelector('#audioGate').classList.add('hidden');ui.intro.classList.add('hidden');document.body.classList.add('ending-open');ui.result.classList.add('show');renderResult();startEndingCinematic();return true;},
   endingState(){const slug=endingSlugs[resultSnapshot?.endingKey]||'loop';return{stage:endingStage,slug,title:endingSceneTitle.textContent,text:endingNarrative.textContent,cinemaFinished:endingCinema.classList.contains('finished'),summaryVisible:resultSummary.classList.contains('show'),dots:[...endingCinema.querySelectorAll('.ending-progress i')].map(dot=>dot.classList.contains('active'))};},
   advanceEnding(){advanceEndingCinematic();return this.endingState();},
+  audioState(){return{context:audio?.state||'none',music:Boolean(musicMaster),nodes:musicNodes.length,master:musicMaster?.gain.value??0,rain:weatherRainGain?.gain.value??0};},
+  thunderProbe(){playThunder();return document.body.classList.contains('lightning-flash');},
   routeState(){return{signature:proceduralLayoutSignature,chunks:forkWalls.map(f=>({template:f.userData.template,openLane:f.userData.openLane,x:f.position.x,z:f.position.z}))};},
   rerollRoute(){configureProceduralRoute();return proceduralLayoutSignature;},
   hideProbe(kind='grass'){const spot=hideSpots.find(s=>s.kind===kind);player.position.set(spot.object.position.x,.05,spot.object.position.z);joystick.x=joystick.y=0;Object.keys(keys).forEach(key=>delete keys[key]);hideTime=0;hideDiscovered=false;return true;},
