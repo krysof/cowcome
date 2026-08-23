@@ -928,6 +928,12 @@ function unlockAudio(){
 function playTitleCry(){clearTimeout(titleCryTimer);titleCryAudio.pause();titleCryAudio.currentTime=0;titleCryAudio.volume=1;titleCryAudio.play().catch(()=>{});document.body.classList.remove('title-cry');void document.body.offsetWidth;document.body.classList.add('title-cry');titleCryTimer=setTimeout(()=>document.body.classList.remove('title-cry'),1400);}
 document.querySelector('#enterGameBtn').addEventListener('click',unlockAudio);
 document.addEventListener('WeixinJSBridgeReady',()=>{dangerAudio.load();titleCryAudio.load();if(audio)audio.resume().catch(()=>{});},{once:true});
+let wakeLockSentinel=null;
+async function requestGameWakeLock(){
+  if(state!=='playing'||document.hidden||!navigator.wakeLock?.request||wakeLockSentinel)return;
+  try{wakeLockSentinel=await navigator.wakeLock.request('screen');wakeLockSentinel.addEventListener('release',()=>{wakeLockSentinel=null;},{once:true});}catch{}
+}
+function releaseGameWakeLock(){if(!wakeLockSentinel)return;const lock=wakeLockSentinel;wakeLockSentinel=null;lock.release?.().catch(()=>{});}
 function start(){
   clearTimeout(endingTimer);endingCinema.classList.remove('finished');resultSummary.classList.remove('show');document.body.classList.remove('ending-open');
   clearTimeout(titleCryTimer);titleCryAudio.pause();titleCryAudio.currentTime=0;document.body.classList.remove('title-cry');
@@ -959,7 +965,7 @@ function start(){
   const availableMemories=MEMORY_IDS.filter(id=>!persistentProgress.memories.includes(id));memoryPickups.forEach((item,i)=>{const id=availableMemories[i]||MEMORY_IDS[(persistentProgress.runs+i)%MEMORY_IDS.length];item.userData.memoryId=id;item.userData.collected=false;item.position.set((i%2?1:-1)*(10+Math.random()*18),.05,18-runLength*(.19+i*.29));item.visible=true;});clearSanctuaryObstacles();persistentProgress.runs++;saveProgress();
   strangeTravellers.forEach(c=>{c.position.copy(c.userData.start);c.rotation.set(0,0,0);c.visible=true;c.userData.fleeing=false;c.userData.eaten=false;c.userData.escaped=false;c.userData.talked=false;});animalActors.forEach(animal=>{animal.userData.refugeZone=-1;animal.userData.refugeParked=false;animal.userData.refugeOffset=null;animal.userData.escapeX=0;animal.userData.passingTalked=false;});lastPassingNpcTalk=-99;
   const mobileView=mobileDevice||innerWidth<700;hunterGlow.visible=false;shake=0;camera.fov=66;camera.updateProjectionMatrix();camera.position.set(mobileView?.8:2.2,mobileView?24:19,mobileView?5:0);setMission('hud.defaultMission');document.body.classList.add('playing');ui.intro.classList.add('hidden');ui.result.classList.remove('show');canvas.focus?.();
-  dangerAudio.pause();dangerAudio.currentTime=0;dangerAudio.volume=.95;dangerLatched=false;sound(55,.8,'sawtooth',.08);startMusic();setTimeout(()=>{const tier=persistentProgress.memories.length>=5?2:persistentProgress.memories.length>=2?1:0;say(`memory.opening.${tier}`,3000);},500);setTimeout(()=>say('difficulty.start',2400,{difficulty:tr(difficulties[selectedCharacter].nameKey)}),3600);
+  dangerAudio.pause();dangerAudio.currentTime=0;dangerAudio.volume=.95;dangerLatched=false;sound(55,.8,'sawtooth',.08);startMusic();requestGameWakeLock();setTimeout(()=>{const tier=persistentProgress.memories.length>=5?2: persistentProgress.memories.length>=2?1:0;say(`memory.opening.${tier}`,3000);},500);setTimeout(()=>say('difficulty.start',2400,{difficulty:tr(difficulties[selectedCharacter].nameKey)}),3600);
 }
 let resultSnapshot=null;
 let endingStage=0,endingTimer=0;
@@ -999,7 +1005,7 @@ function end(win){
   state=win?'win':'caught';finalChoiceEl.classList.remove('show');finalChoiceEl.setAttribute('aria-hidden','true');document.body.classList.remove('choice-open');document.body.classList.add('ending-open');const endingKey=chooseEnding(win);recordScore(win,endingKey);clearTimeout(hauntTimer);clearTimeout(specialEntranceTimer);clearEnemySpeech();objectiveArrow.classList.remove('show');objectiveTrail.visible=false;witnessBubble.hidden=true;superCowBubble.hidden=true;watchers.forEach(w=>w.visible=false);[snowGhost,toshio,kayako,sadako,slitWoman,kayakoStairs,cursedTelevision,freddy,jiangchen,edwardRipper,dreamClock].forEach(actor=>actor.visible=false);snow.visible=false;document.body.classList.remove('playing','death-maul','exhausted','enemy-near','terror-flash','flash-negative','apparition','blackout','blood-flash','heartbeat','otherworld','snow-haunting','rain-active','safe-warm','safe-cold','safe-broken','dreaming','speed-boost','well-haunting',...specialEntranceClasses);ui.result.classList.add('show');
   const runDistance=Math.max(0,Math.min(runLength,Math.round(18-player.position.z))),exactTime=formatTime(Math.round(elapsed*1000));
   resultSnapshot={win,runDistance,exactTime,reason:deathReason,endingKey};renderResult();startEndingCinematic();
-  dangerAudio.pause();dangerAudio.currentTime=0;dangerLatched=false;stopMusic();sound(win?220:38,1.5,'sawtooth',.1);
+  dangerAudio.pause();dangerAudio.currentTime=0;dangerLatched=false;releaseGameWakeLock();stopMusic();sound(win?220:38,1.5,'sawtooth',.1);
 }
 document.querySelector('#startBtn').onclick=start;document.querySelector('#restartBtn').onclick=start;
 endingNextBtn.onclick=advanceEndingCinematic;
@@ -1018,7 +1024,7 @@ installBtn.onclick=async()=>{
 document.querySelector('#closeInstallBtn').onclick=()=>{installHint.classList.remove('show');installHint.setAttribute('aria-hidden','true');};
 addEventListener('appinstalled',()=>{deferredInstallPrompt=null;installBtn.classList.add('installed');installBtn.querySelector('span').textContent=tr('install.installed');});
 document.querySelector('#changeBtn').onclick=()=>{
-  clearTimeout(endingTimer);endingCinema.classList.remove('finished');resultSummary.classList.remove('show');stopMusic();clearEnemySpeech();state='intro';hearts=3;renderHearts();objectiveArrow.classList.remove('show');objectiveTrail.visible=false;document.body.classList.remove('playing','ending-open','well-haunting',...specialEntranceClasses);ui.result.classList.remove('show');ui.intro.classList.remove('hidden');
+  clearTimeout(endingTimer);endingCinema.classList.remove('finished');resultSummary.classList.remove('show');releaseGameWakeLock();stopMusic();clearEnemySpeech();state='intro';hearts=3;renderHearts();objectiveArrow.classList.remove('show');objectiveTrail.visible=false;document.body.classList.remove('playing','ending-open','well-haunting',...specialEntranceClasses);ui.result.classList.remove('show');ui.intro.classList.remove('hidden');
   clearTimeout(hauntTimer);watchers.forEach(w=>w.visible=false);snowGhost.visible=false;snow.visible=false;document.body.classList.remove('exhausted','enemy-near','terror-flash','flash-negative','apparition','blackout','blood-flash','heartbeat','otherworld','snow-haunting','rain-active','safe-warm','safe-cold','safe-broken','speed-boost');
   player.position.set(0,.05,18);player.rotation.set(0,0,0);storyStage=0;activeChasers=[];allEnemies.forEach(e=>e.visible=false);hunterGlow.visible=false;
   playTitleCry();
@@ -1034,8 +1040,12 @@ addEventListener('keydown',e=>{if(movementCodes.has(e.code)){e.preventDefault();
 addEventListener('keyup',e=>keys[e.code]=false);
 addEventListener('blur',()=>{Object.keys(keys).forEach(key=>delete keys[key]);resetJoystick();});
 function resumeGameAudio(){if(!audio||state!=='playing')return;audio.resume?.().then(()=>{if(state==='playing'&&!musicMaster&&!musicStarting)startMusic();}).catch(()=>{});}
-document.addEventListener('visibilitychange',()=>{if(document.hidden){Object.keys(keys).forEach(key=>delete keys[key]);resetJoystick();}else resumeGameAudio();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){Object.keys(keys).forEach(key=>delete keys[key]);resetJoystick();wakeLockSentinel=null;}else{resumeGameAudio();requestGameWakeLock();}});
 document.addEventListener('pointerdown',()=>{if(state==='playing'&&audio?.state!=='running')resumeGameAudio();},{capture:true,passive:true});
+// The canvas is a game surface, not a document: suppress browser selection,
+// image dragging, context-callouts and double-click zoom without swallowing
+// the individual pointer events used by the joystick and action buttons.
+for(const type of ['selectstart','dragstart','dblclick','contextmenu'])document.addEventListener(type,event=>event.preventDefault(),{capture:true});
 const touchControls=isNativeApp||('ontouchstart' in window)||(navigator.maxTouchPoints||0)>0;
 document.querySelectorAll('.mobile-controls button[data-key]').forEach(button=>{
   const key=button.dataset.key,visual=document.querySelector(button.dataset.visual)||button;
@@ -1513,6 +1523,7 @@ if(import.meta.env.DEV)window.__NIULAI_TEST__={
   advanceEnding(){advanceEndingCinematic();return this.endingState();},
   audioState(){return{context:audio?.state||'none',music:Boolean(musicMaster),nodes:musicNodes.length,master:musicMaster?.gain.value??0,rain:weatherRainGain?.gain.value??0};},
   thunderProbe(){playThunder();return document.body.classList.contains('lightning-flash');},
+  wakeLockState(){return{supported:Boolean(navigator.wakeLock?.request),held:Boolean(wakeLockSentinel),playing:state==='playing'};},
   routeState(){return{signature:proceduralLayoutSignature,chunks:forkWalls.map(f=>({template:f.userData.template,openLane:f.userData.openLane,x:f.position.x,z:f.position.z}))};},
   rerollRoute(){configureProceduralRoute();return proceduralLayoutSignature;},
   hideProbe(kind='grass'){const spot=hideSpots.find(s=>s.kind===kind);player.position.set(spot.object.position.x,.05,spot.object.position.z);joystick.x=joystick.y=0;Object.keys(keys).forEach(key=>delete keys[key]);hideTime=0;hideDiscovered=false;return true;},

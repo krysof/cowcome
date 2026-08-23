@@ -10,6 +10,18 @@ final class GameViewController: CAPBridgeViewController {
         DispatchQueue.main.async { [weak self] in self?.configureTouchDelivery() }
     }
 
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        // A run can last more than ten minutes. Prevent the system idle timer
+        // from dimming or locking the display while the game is foregrounded.
+        UIApplication.shared.isIdleTimerDisabled = true
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        UIApplication.shared.isIdleTimerDisabled = false
+        super.viewWillDisappear(animated)
+    }
+
     private func configureGameAudio() {
         // Game audio follows the iPhone mute switch: silent mode stays silent,
         // while music and effects play normally after the player enters.
@@ -36,6 +48,8 @@ final class GameViewController: CAPBridgeViewController {
         webView.scrollView.contentInsetAdjustmentBehavior = .never
         webView.scrollView.contentInset = .zero
         webView.scrollView.scrollIndicatorInsets = .zero
+        webView.scrollView.pinchGestureRecognizer?.isEnabled = false
+        webView.allowsLinkPreview = false
     }
 }
 
