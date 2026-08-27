@@ -1,0 +1,27 @@
+default_platform(:mac)
+
+platform :mac do
+  desc "Upload the prepared Mac App Store screenshots"
+  lane :upload_screenshots do
+    api_key = app_store_connect_api_key(
+      key_id: ENV.fetch("ASC_KEY_ID", "6T862F88RV"),
+      issuer_id: ENV.fetch("ASC_ISSUER_ID", "14e9988e-85f3-4323-8568-2e037ca7f4bc"),
+      key_filepath: File.expand_path("~/.private_keys/appstoreconnect/AuthKey_6T862F88RV.p8"),
+      in_house: false
+    )
+
+    deliver(
+      api_key: api_key,
+      app_identifier: "net.kryso.cowcome",
+      platform: "osx",
+      app_version: "1.0.0",
+      screenshots_path: "./native-build/macos/app-store-screenshots",
+      skip_metadata: true,
+      skip_binary_upload: true,
+      skip_app_version_update: true,
+      overwrite_screenshots: true,
+      submit_for_review: false,
+      force: true
+    )
+  end
+end

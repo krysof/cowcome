@@ -1,6 +1,6 @@
 {
   "name": "niulai-escape",
-  "version": "2026.8.22",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -14,7 +14,8 @@
     "ios:archive": "./scripts/build-ios-archive.sh",
     "android:build": "./scripts/build-android.sh",
     "mac:build": "npm run build && electron-builder --mac dmg zip --universal",
-    "mac:dir": "npm run build && electron-builder --mac dir --universal"
+    "mac:dir": "npm run build && electron-builder --mac dir --universal",
+    "mac:store": "npm run build && electron-builder --mac mas --universal"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",
@@ -33,7 +34,7 @@
   },
   "main": "electron/main.cjs",
   "build": {
-    "appId": "net.kryso.cowcome.mac",
+    "appId": "net.kryso.cowcome",
     "productName": "妈妈在哪里",
     "buildVersion": "20260823.4",
     "asar": true,
@@ -49,6 +50,9 @@
     "mac": {
       "category": "public.app-category.games",
       "icon": "build/icon.icns",
+      "extendInfo": {
+        "ITSAppUsesNonExemptEncryption": false
+      },
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
       "entitlements": "build/entitlements.mac.plist",
@@ -68,6 +72,13 @@
           ]
         }
       ]
+    },
+    "mas": {
+      "category": "public.app-category.games",
+      "hardenedRuntime": false,
+      "entitlements": "build/entitlements.mas.plist",
+      "entitlementsInherit": "build/entitlements.mas.inherit.plist",
+      "provisioningProfile": "build/mas/MamaWhere-MacAppStore.provisionprofile"
     },
     "dmg": {
       "artifactName": "MamaWhere-20260823.4-${arch}.${ext}",

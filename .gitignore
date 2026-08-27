@@ -7,3 +7,6 @@ releases/
 
 /icons/
 /native-build/
+build/mas/
+fastlane/report.xml
+fastlane/README.md
