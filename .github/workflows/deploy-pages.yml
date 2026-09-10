@@ -1,8 +1,6 @@
 name: Deploy to GitHub Pages
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -18,7 +16,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # Web is frozen at the last deployment before the character redesign.
       - uses: actions/checkout@v4
+        with:
+          ref: e471b964eb28db5b13938e4352e602a2b4c06258
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -26,6 +27,17 @@ jobs:
       - run: npm ci
         env:
           ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+      # Force installed PWAs to discard the newer character-preview cache.
+      - name: Set rollback service-worker cache
+        run: |
+          python3 - <<'PYCODE'
+          from pathlib import Path
+          import re
+          p=Path("public/sw.js")
+          s=p.read_text()
+          s=re.sub(r"const CACHE\s*=\s*[^;]+;", "const CACHE='mama-web-frozen-e471b96-20260910';", s, count=1)
+          p.write_text(s)
+          PYCODE
       - run: npm run build
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
