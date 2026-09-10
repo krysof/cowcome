@@ -1,6 +1,6 @@
-const CACHE='mama-where-fog-20260823-4';
+const CACHE='mama-where-character-preview-20260910-7';
 const ROOT=new URL('./',self.location.href);
-const CORE=['./','manifest.webmanifest','game-core.wasm','icons/niulai-v2-192.png','icons/niulai-v2-512.png','icons/niulai-v2-maskable-512.png','icons/apple-touch-icon-v2.png','portraits/orange-niulai.png','portraits/yellow-bull.png','portraits/leopard.png','audio/mama-final.mp3'].map(path=>new URL(path,ROOT).href);
+const CORE=['./','manifest.webmanifest','game-core.wasm','icons/niulai-v2-192.png','icons/niulai-v2-512.png','icons/niulai-v2-maskable-512.png','icons/apple-touch-icon-v2.png','portraits/original/niuniu.png','portraits/original/stonehoof.png','portraits/original/speckle.png','portraits/original/super-bull.png','audio/mama-final.mp3'].map(path=>new URL(path,ROOT).href);
 
 async function precacheApp(){
   const cache=await caches.open(CACHE);

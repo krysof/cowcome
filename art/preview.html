@@ -1,0 +1,9 @@
+<!doctype html><html><head><style>html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#d7cec0}canvas{display:block}</style></head><body><script type="module">
+import * as THREE from 'three';
+import {calf,champion} from './original-models.js';
+const q=new URLSearchParams(location.search),portrait=q.get('portrait')==='1';
+const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(1);renderer.setClearColor(0xd7cec0);renderer.outputColorSpace=THREE.SRGBColorSpace;document.body.append(renderer.domElement);
+const scene=new THREE.Scene();scene.add(new THREE.HemisphereLight(0xfff0d8,0x566e78,2.6));const light=new THREE.DirectionalLight(0xfff7df,3);light.position.set(-5,8,8);scene.add(light);
+let model=calf(1,Number(q.get('variant')||0));if(q.get('super'))champion(model);scene.add(model);
+const camera=new THREE.PerspectiveCamera(32,innerWidth/innerHeight,.1,100);camera.position.set(portrait?1.8:5,portrait?4.4:4.6,portrait?-9.3:-12);camera.lookAt(0,portrait?3.65:2.6,0);renderer.render(scene,camera);window.ready=true;
+</script></body></html>

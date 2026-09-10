@@ -1,0 +1,73 @@
+import * as THREE from 'three';
+
+// Original art direction: piebald paper-clay animals and broken ceramic machines.
+// Animation-facing userData is deliberately stable so collision and save data survive.
+const materialCache = new Map();
+const geoCache = new Map();
+function mat(color, glow=false) {
+  const key=`${color}:${glow}`;
+  if(!materialCache.has(key)) materialCache.set(key,new THREE.MeshStandardMaterial({color,roughness:.94,flatShading:true,emissive:glow?color:0,emissiveIntensity:glow?.65:0}));
+  return materialCache.get(key);
+}
+function part(parent, shape, color, pos, scale=[1,1,1], glow=false) {
+  if(!geoCache.has(shape)) geoCache.set(shape,shape==='soft'?new THREE.SphereGeometry(1,12,8):shape==='cone'?new THREE.ConeGeometry(1,2,5):shape==='ring'?new THREE.TorusGeometry(1,.15,5,12):new THREE.IcosahedronGeometry(1,1));
+  const m=new THREE.Mesh(geoCache.get(shape),mat(color,glow)); m.position.set(...pos); m.scale.set(...scale); m.castShadow=true; parent.add(m); return m;
+}
+function hoof(parent,y){for(const x of [-.11,.11])part(parent,'orb',0x302922,[x/parent.scale.x,y,-.1/parent.scale.z],[.105/parent.scale.x,.17/parent.scale.y,.27/parent.scale.z]);}
+// Deadpan surrealism: intact anatomy, level gaze and deliberately reserved posture.
+// The unease comes from silhouettes and proportions, never a comic facial gag.
+export function calf(scale=1,variant=0,quadruped=false){
+  const g=new THREE.Group(),v=variant%3,arms=[],legs=[];
+  const p=[[0xf1a52d,0xd48422,0x796b51],[0xe99a25,0xc9781c,0x697057],[0xffb645,0xe2972b,0x697783]][v];
+  const body=part(g,'orb',p[0],[0,2.35,0],[v===1?.89:.65,v===2?.89:1.04,.57]);
+  // A plain, buttoned work garment. No bright bib, crooked decoration or costume gag.
+  part(g,'orb',p[2],[0,2.12,-.015],[v===1?.92:.69,.91,.6]);
+  part(g,'orb',p[1],[0,2.57,-.57],[.026,.43,.035]);
+  for(const y of [2.8,2.53,2.26])part(g,'orb',0xaca691,[0,y,-.596],[.037,.037,.025]);
+  // The long-necked calf stands perfectly straight, as if its proportions were ordinary.
+  part(g,'orb',p[0],[0,v===2?3.43:3.3,0],[v===2?.27:.38,v===2?.91:.54,.32]);
+  const head=new THREE.Group();head.position.set(0,v===2?4.5:4.04,-.12);g.add(head);
+  const width=[1.0,1.13,.65][v],height=[.82,.7,.94][v];
+  part(head,'soft',p[0],[0,0,0],[width,height,.7]);
+  // Small, flat patches follow the skull instead of becoming lumps on the face.
+  part(head,'orb',p[1],[width*.68,.3,.04],[width*.26,.38,.54]);
+  const muzzleWidth=[.77,.89,.59][v];
+  const snout=part(head,'soft',0xe0c18a,[0,-.34,-.64],[muzzleWidth,.38,.48]);
+  for(const side of [-1,1])part(snout,'orb',0x6d5538,[side*.43,.09,-.86],[.085,.065,.046]);
+  // Closed, unexpressive mouth. No teeth, grin or exaggerated lips.
+  part(head,'orb',0x806644,[0,-.52,-1.085],[muzzleWidth*.46,.018,.025]);
+  for(const side of [-1,1]){
+    const x=side*width*.57,y=v===1?.13:.19;
+    part(head,'orb',0xefe3c5,[x,y,-.65],[.17,.14,.12]);
+    part(head,'orb',0x493c2b,[x,y-.012,-.772],[.069,.08,.027]);
+    // Soft upper lids and a direct, slightly blank gaze: placid, not stern.
+    part(head,'orb',p[0],[x,y+.115,-.69],[.19,.043,.087]);
+    const ear=part(head,'orb',p[1],[side*(width+.29),v===1?.17:.28,.04],[v===2?.53:.39,.14,.19]);ear.rotation.z=side*.06;
+    part(ear,'orb',0xc99c6a,[0,0,-.75],[.7,.55,.16]);
+    const horn=part(head,'cone',0xc7b486,[side*width*.66,height+.16,.08],[.12,v===1?.3:.23,.115]);horn.rotation.z=-side*.16;
+    const arm=part(g,'orb',p[0],[side*.79,2.65,0],[.17,v===2?.98:.85,.19]);arms.push(arm);hoof(arm,-.97);
+    const leg=part(g,'orb',p[0],[side*(v===1?.36:.26),.83,0],[.21,.72,.23]);legs.push(leg);hoof(leg,-.92);
+  }
+  const tail=part(g,'orb',p[1],[.16,2.13,.84],[.065,.67,.07]);tail.rotation.x=-.6;part(tail,'orb',p[1],[0,-1,0],[2.3,.25,2.3]);
+  g.scale.setScalar(scale);g.userData={arms,legs,head,body,skinColor:p[0],canCrawl:true,modelVersion:'original-yellow-deadpan-v4',artFamily:'yellow-cattle',upright:!quadruped};
+  return g;
+}
+export function champion(g){
+  // Strength comes from anatomy, not stone armour, a cape or a chest logo.
+  const skin=g.userData.skinColor;
+  g.userData.head.scale.set(.9,.94,.96);g.userData.head.position.set(0,4.29,-.2);
+  const chest=part(g,'soft',skin,[0,2.78,0],[1.25,1.06,.79]);
+  for(const side of [-1,1]){
+    part(g,'soft',skin,[side*.51,3.02,-.55],[.67,.39,.25]);
+    part(g,'soft',skin,[side*1.03,3.25,0],[.52,.48,.49]);
+  }
+  g.userData.arms.forEach((arm,i)=>{
+    arm.position.x=(i?1:-1)*1.22;arm.position.y=2.65;
+    arm.scale.set(.36,.93,.36);
+    // Replace the old thin hooves with hands proportional to the muscular arms.
+    arm.clear();hoof(arm,-.97);
+  });
+  g.userData.legs.forEach((leg,i)=>{leg.position.x=(i?1:-1)*.46;leg.scale.set(.32,.72,.32);leg.clear();hoof(leg,-.92);});
+  part(g,'soft',skin,[0,2.32,-.52],[.82,.62,.31]);
+  Object.assign(g.userData,{superChest:chest,collisionRadius:2.05,modelVersion:'original-muscular-super-v7'});return g;
+}

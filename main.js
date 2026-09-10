@@ -1,3 +1,4 @@
+import {calf, champion} from './art/original-models.js';
 import * as THREE from 'three';
 import { Capacitor } from '@capacitor/core';
 import { SplashScreen } from '@capacitor/splash-screen';
@@ -191,67 +192,11 @@ function addShoveFinger(character,skin,x=.9,y=2.55){
   // 从右手开始，此后每次按“搓”严格左右交替。
   character.userData.shoveFinger={hands,active:1,next:1,rig:hands[1].rig,finger:hands[1].finger,tip:hands[1].tip,until:-1};
 }
-function makeNiuLai(scale=1, dark=false){
-  const g=new THREE.Group();
-  const fur=flat(dark?0x342019:0xe97837), muzzle=flat(dark?0x84624e:0xf2d3a0);
-  const hoof=flat(dark?0x0e0b09:0x3a241b), eye=flat(0xf3ead8), pupil=flat(dark?0xff3b21:0x231711), inner=flat(0xeaa181);
-  // 电影中的牛牛是橙色、直立、大头宽嘴的拟人小牛。
-  const body=mesh(new THREE.SphereGeometry(1.05,7,5),fur,g,0,2.45,0,[1.04,1.22,.74]);
-  const head=mesh(new THREE.SphereGeometry(1.2,7,6),fur,g,0,4.25,-.08,[1.08,.92,.8]);
-  mesh(new THREE.SphereGeometry(.74,7,5),muzzle,head,0,-.25,-.9,[1.12,.7,.38]);
-  mesh(new THREE.BoxGeometry(.78,.07,.08),hoof,head,0,-.38,-1.25,[1,1,1]);
-  for(const x of [-.48,.48]){
-    mesh(new THREE.SphereGeometry(.25,7,5),eye,head,x,.18,-.78,[1,.82,.34]);
-    mesh(new THREE.SphereGeometry(.105,6,5),pupil,head,x,.16,-.9,[1,1,.5]);
-    mesh(new THREE.ConeGeometry(.24,.75,4),fur,head,x*1.95,.18,-.02,[1,1,1],[0,0,x>0?-1.25:1.25]);
-    mesh(new THREE.ConeGeometry(.11,.42,4),inner,head,x*1.94,.18,-.08,[1,1,1],[0,0,x>0?-1.25:1.25]);
-    mesh(new THREE.BoxGeometry(.38,.07,.06),hoof,head,x,.5,-.77,[1,1,1],[0,0,x>0?.12:-.12]);
-  }
-  tuft(g,fur,-.35,5.17,0,.17,-.12);tuft(g,fur,.05,5.25,0,.19,.06);tuft(g,fur,.4,5.14,0,.15,.18);
-  const arms=[], legs=[];
-  for(const x of [-1.03,1.03]){
-    const a=mesh(new THREE.CapsuleGeometry(.22,1.15,2,5),fur,g,x,2.45,0,[1,1,1],[0,0,x>0?-.16:.16]);arms.push(a);
-    mesh(new THREE.SphereGeometry(.28,6,5),hoof,a,0,-.78,0,[.9,.8,.9]);
-  }
-  for(const x of [-.48,.48]){
-    const l=mesh(new THREE.CapsuleGeometry(.27,1.25,2,5),fur,g,x,.9,0,[1,1,1]);legs.push(l);
-    mesh(new THREE.SphereGeometry(.36,6,5),hoof,l,0,-.85,-.13,[1,.65,1.35]);
-  }
-  // 第二版面部：鼻孔、嘴角、下巴与不对称脸颊让近景不再像无表情积木。
-  for(const x of [-.25,.25])mesh(new THREE.SphereGeometry(.065,8,6),hoof,head,x,-.18,-1.18,[1,.55,.3]);mesh(new THREE.TorusGeometry(.48,.045,6,18,Math.PI),hoof,head,0,-.37,-1.25,[1,.55,1],[0,0,Math.PI]);mesh(new THREE.SphereGeometry(.23,8,6),muzzle,head,-.7,-.08,-.7,[1,.85,.5]);mesh(new THREE.SphereGeometry(.2,8,6),muzzle,head,.7,-.1,-.7,[1,.82,.48]);body.scale.x*=1.05;
-  g.userData.modelVersion='portrait-v2';g.scale.setScalar(scale); g.userData.legs=legs; g.userData.arms=arms;g.userData.body=body;g.userData.head=head;g.userData.canCrawl=true;addShoveFinger(g,muzzle,1.02,2.42); return g;
-}
+function makeNiuLai(scale=1){const g=calf(scale,0);addShoveFinger(g,flat(g.userData.skinColor),.73,2.65);return g;}
 
-function makeYellowBull(scale=1,dark=false){
-  const g=new THREE.Group(), fur=flat(dark?0x32251a:0xd2a72c), muzzle=flat(dark?0x725958:0xaa8ba8), hoof=flat(dark?0x130e0b:0x9a829b), eye=flat(0xf2e8d5), pupil=flat(dark?0xff3b21:0x231711), horn=flat(0x403a49), brow=flat(0x6c542c);
-  mesh(new THREE.CapsuleGeometry(.92,1.8,3,7),fur,g,0,2.5,0,[1.08,1,.82]);
-  const head=mesh(new THREE.SphereGeometry(1.16,8,6),fur,g,0,4.55,-.05,[1.05,1,.8]);
-  const lip=mesh(new THREE.SphereGeometry(.7,8,5),muzzle,head,0,-.23,-.9,[1.12,.68,.42]);
-  mesh(new THREE.BoxGeometry(.85,.07,.08),hoof,lip,0,-.18,-.66);
-  for(const x of [-.45,.45]){
-    mesh(new THREE.SphereGeometry(.23,7,5),eye,head,x,.17,-.78,[1,.8,.32]);mesh(new THREE.SphereGeometry(.095,6,5),pupil,head,x,.16,-.9,[1,1,.5]);
-    mesh(new THREE.BoxGeometry(.43,.07,.08),brow,head,x,.48,-.79,[1,1,1],[0,0,x>0?-.12:.12]);
-    mesh(new THREE.ConeGeometry(.17,1.12,7),horn,head,x*1.3,1.12,-.03,[1,1,1],[0,0,x>0?-.28:.28]);
-    mesh(new THREE.ConeGeometry(.22,.62,4),fur,head,x*2.05,.12,0,[1,1,1],[0,0,x>0?-1.25:1.25]);
-  }
-  tuft(g,fur,-.28,5.55,0,.17,-.15);tuft(g,fur,.1,5.62,0,.19,.1);
-  const arms=[],legs=[];for(const x of [-1.05,1.05]){const a=mesh(new THREE.CapsuleGeometry(.25,1.2,2,5),fur,g,x,2.45,0);arms.push(a);mesh(new THREE.SphereGeometry(.3,6,5),hoof,a,0,-.82,0);}
-  for(const x of [-.5,.5]){const l=mesh(new THREE.CapsuleGeometry(.3,1.35,2,5),fur,g,x,.9,0);legs.push(l);mesh(new THREE.SphereGeometry(.37,6,5),hoof,l,0,-.9,-.12,[1,.65,1.3]);}
-  for(const x of [-.25,.25])mesh(new THREE.SphereGeometry(.07,8,6),hoof,head,x,-.18,-1.2,[1,.55,.3]);for(const x of [-1.02,1.02])mesh(new THREE.SphereGeometry(.48,8,6),fur,g,x,3.15,0,[1.15,.82,.85]);mesh(new THREE.TorusGeometry(.48,.045,6,18,Math.PI),hoof,head,0,-.36,-1.24,[1,.55,1],[0,0,Math.PI]);g.userData.modelVersion='portrait-v2';g.scale.setScalar(scale);g.userData.legs=legs;g.userData.arms=arms;g.userData.head=head;addShoveFinger(g,muzzle,1.04,2.42);return g;
-}
+function makeYellowBull(scale=1){const g=calf(scale,1);addShoveFinger(g,flat(g.userData.skinColor),.73,2.65);return g;}
 
-function makeLeopard(scale=1){
-  const g=new THREE.Group(), fur=flat(0xd6ac2d), white=flat(0xe9dfbf), spot=flat(0x352319), eye=flat(0xf4e9cc);
-  const body=mesh(new THREE.SphereGeometry(1,8,6),fur,g,0,2.35,0,[.8,1.35,.65]);mesh(new THREE.SphereGeometry(.72,7,5),white,body,0,-.05,-.7,[.7,1,.25]);
-  const head=mesh(new THREE.SphereGeometry(1,8,6),fur,g,0,4.05,-.02,[.92,.94,.72]);mesh(new THREE.SphereGeometry(.52,7,5),white,head,0,-.28,-.82,[1,.62,.38]);
-  for(const x of [-.38,.38]){mesh(new THREE.SphereGeometry(.2,6,5),eye,head,x,.15,-.72,[1,.9,.3]);mesh(new THREE.SphereGeometry(.08,6,5),spot,head,x,.15,-.83);mesh(new THREE.ConeGeometry(.28,.55,4),fur,head,x*1.8,.72,-.02,[1,1,1],[0,0,x>0?-.58:.58]);}
-  const arms=[],legs=[];for(const x of [-.82,.82]){const a=mesh(new THREE.CapsuleGeometry(.18,1.05,2,5),fur,g,x,2.35,0);arms.push(a);}
-  for(const x of [-.36,.36]){const l=mesh(new THREE.CapsuleGeometry(.22,1.25,2,5),fur,g,x,.82,0);legs.push(l);}
-  for(let i=0;i<24;i++){const a=i/12*Math.PI*2,r=i<12?.78:.68,y=i<12?2.45:4.07;mesh(new THREE.SphereGeometry(.075+(i%4)*.025,5,4),spot,g,Math.cos(a)*r,y+Math.sin(a)*.68,-.62,[1,.7,.25]);}
-  tuft(g,fur,-.2,4.95,0,.13,-.1);tuft(g,fur,.12,4.99,0,.14,.12);
-  const tail=mesh(new THREE.CapsuleGeometry(.12,1.7,2,5),fur,g,.62,2.1,.35,[1,1,1],[0,0,-.8]);mesh(new THREE.SphereGeometry(.16,6,5),spot,tail,0,-1,0);
-  mesh(new THREE.SphereGeometry(.12,8,6),spot,head,0,-.22,-1.08,[1,.65,.45]);mesh(new THREE.TorusGeometry(.34,.035,6,16,Math.PI),spot,head,0,-.38,-1.08,[1,.62,1],[0,0,Math.PI]);for(const x of [-.54,.54])mesh(new THREE.CapsuleGeometry(.025,.28,2,4),white,head,x,-.22,-1.02,[1,1,1],[0,0,x>0?-1.15:1.15]);g.userData.modelVersion='portrait-v2';g.userData.head=head;g.scale.setScalar(scale);g.userData.legs=legs;g.userData.arms=arms;addShoveFinger(g,white,.82,2.32);return g;
-}
+function makeLeopard(scale=1){const g=calf(scale,2);addShoveFinger(g,flat(g.userData.skinColor),.73,2.65);return g;}
 
 function makeAlienCow(scale=1,variant=0){
   const g=new THREE.Group(), skin=flat(variant?0x9a953d:0xa3a945), dark=flat(0x211629), snout=flat(0xe8b6a2), nostril=flat(0x9d7168), eye=flat(0x151218), inner=flat(0xe5a494);
@@ -332,22 +277,11 @@ function makeWalkingHerdCow(scale=1,variant=0){
 }
 
 function turnIntoSuperCow(cow){
-  const suit=flat(0x2457a6),capeMat=new THREE.MeshStandardMaterial({color:0xb81716,emissive:0x520606,emissiveIntensity:.28,roughness:.82,side:THREE.DoubleSide,flatShading:true}),gold=new THREE.MeshStandardMaterial({color:0xffd33f,emissive:0x8b5700,emissiveIntensity:.55,roughness:.58,flatShading:true}),red=flat(0xa81416);
-  // 宽胸、粗肩和鼓起的前肢让轮廓在远处也明显比普通牛强壮。
-  const chest=mesh(new THREE.SphereGeometry(1,8,6),suit,cow,0,1.82,-.02,[1.42,1.02,1.12]);
-  for(const side of [-1,1]){
-    mesh(new THREE.SphereGeometry(.56,7,5),suit,cow,side*1.18,1.95,-.05,[1.15,1,.95]);
-    const arm=mesh(new THREE.CapsuleGeometry(.3,.95,3,6),suit,cow,side*1.28,1.28,-.12,[1,1,1],[0,0,side*.2]);
-    mesh(new THREE.SphereGeometry(.35,6,5),red,arm,0,-.7,-.03,[1,.85,1]);
-  }
-  // 金色菱形胸章配红色闪电，不依赖圆圈也能一眼认出“超级”身份。
-  mesh(new THREE.CircleGeometry(.5,4),gold,cow,0,1.93,-1.14,[1.05,1.24,1],[0,0,Math.PI/4]);
-  const bolt=new THREE.Shape();bolt.moveTo(-.1,.38);bolt.lineTo(.2,.38);bolt.lineTo(.02,.06);bolt.lineTo(.28,.06);bolt.lineTo(-.2,-.43);bolt.lineTo(-.04,-.1);bolt.lineTo(-.27,-.1);bolt.closePath();mesh(new THREE.ShapeGeometry(bolt),red,cow,0,1.93,-1.165,[.72,.72,.72]);
-  const capeShape=new THREE.Shape();capeShape.moveTo(-.78,.65);capeShape.lineTo(.78,.65);capeShape.lineTo(1.18,-1.35);capeShape.lineTo(.25,-1.72);capeShape.lineTo(0,-1.45);capeShape.lineTo(-.25,-1.72);capeShape.lineTo(-1.18,-1.35);capeShape.closePath();
-  const cape=mesh(new THREE.ShapeGeometry(capeShape),capeMat,cow,0,1.72,.82,[1,1,1],[0,0,0]);cape.userData.baseY=cape.position.y;
-  for(const x of [-.48,.48])mesh(new THREE.SphereGeometry(.25,6,5),red,cow,x,.32,-.02,[1.15,.68,1.35]);
-  const aura=new THREE.PointLight(0xffc933,34,15,2);aura.position.set(0,2,0);cow.add(aura);
-  cow.userData.superCape=cape;cow.userData.superChest=chest;cow.userData.collisionRadius=2.05;return cow;
+  // Use the same original orange muscular bull in the herd and final rescue.
+  const replacement=champion(calf(1,1));
+  cow.clear();for(const child of [...replacement.children])cow.add(child);
+  Object.assign(cow.userData,replacement.userData,{super:true});
+  return cow;
 }
 
 function makeStrangeBird(scale=1){
@@ -387,13 +321,15 @@ function makeMonsterCar(scale=1){
   g.scale.setScalar(scale);g.userData.wheels=wheels;g.userData.type='car';g.userData.enemyKey='enemy.car';return g;
 }
 
-function createCharacter(kind){if(kind==='super'){const cow=makeYellowBull(.76);turnIntoSuperCow(cow);cow.userData.canCrawl=true;return cow;}return kind==='yellow'?makeYellowBull(.68):kind==='leopard'?makeLeopard(.78):makeNiuLai(.72,false);}
+function createCharacter(kind){if(kind==='super'){const cow=champion(calf(.76,1));addShoveFinger(cow,flat(cow.userData.skinColor),1.22,2.65);return cow;}return kind==='yellow'?makeYellowBull(.68):kind==='leopard'?makeLeopard(.78):makeNiuLai(.72,false);}
 let selectedCharacter='orange';
 const difficulties={
   orange:{nameKey:'character.easy',length:3200,pack:2,stalkers:6,ambushers:1,chapterWaves:[2,1,2],player:1.12,enemy:.72,drain:.6,recovery:1.5,hazard:.5,invuln:3.2,fog:.011,rain:.62,flashMin:12,flashRange:17},
   yellow:{nameKey:'character.normal',length:4200,pack:5,stalkers:14,ambushers:4,chapterWaves:[4,2,4],player:1,enemy:1,drain:1,recovery:1,hazard:1,fog:.021,rain:1,flashMin:6,flashRange:10},
   leopard:{nameKey:'character.hard',length:4800,pack:6,stalkers:18,ambushers:7,chapterWaves:[5,2,5],player:.97,enemy:1.14,drain:1.24,recovery:.82,hazard:1.3,fog:.03,rain:1.35,flashMin:4,flashRange:7}
 };
+// The fourth selectable character needs a profile in the title preview too.
+difficulties.super={...difficulties.yellow,nameKey:'character.hidden'};
 let player=createCharacter(selectedCharacter); player.position.set(0,.05,18); player.rotation.y=0; scene.add(player);
 const hunter=makeDarkBeast(.78); hunter.position.set(0,.05,51); scene.add(hunter);
 const wolfPack=[hunter,makeTwistedCrawler(.78),makeHollowStalker(.62),makeFleshKnot(.72),makeDarkBeast(.74),makeAlienCow(.72,1)];['beast','crawler','hollow','knot','beast','alien'].forEach((type,i)=>wolfPack[i].userData.type=type);wolfPack.slice(1).forEach((w,i)=>{w.position.set((i-2)*4,.05,54+i*2);scene.add(w);});

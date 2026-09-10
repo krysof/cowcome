@@ -1,0 +1,18 @@
+function turnIntoSuperCow(cow){
+  const suit=flat(0x2457a6),capeMat=new THREE.MeshStandardMaterial({color:0xb81716,emissive:0x520606,emissiveIntensity:.28,roughness:.82,side:THREE.DoubleSide,flatShading:true}),gold=new THREE.MeshStandardMaterial({color:0xffd33f,emissive:0x8b5700,emissiveIntensity:.55,roughness:.58,flatShading:true}),red=flat(0xa81416);
+  // 宽胸、粗肩和鼓起的前肢让轮廓在远处也明显比普通牛强壮。
+  const chest=mesh(new THREE.SphereGeometry(1,8,6),suit,cow,0,1.82,-.02,[1.42,1.02,1.12]);
+  for(const side of [-1,1]){
+    mesh(new THREE.SphereGeometry(.56,7,5),suit,cow,side*1.18,1.95,-.05,[1.15,1,.95]);
+    const arm=mesh(new THREE.CapsuleGeometry(.3,.95,3,6),suit,cow,side*1.28,1.28,-.12,[1,1,1],[0,0,side*.2]);
+    mesh(new THREE.SphereGeometry(.35,6,5),red,arm,0,-.7,-.03,[1,.85,1]);
+  }
+  // 金色菱形胸章配红色闪电，不依赖圆圈也能一眼认出“超级”身份。
+  mesh(new THREE.CircleGeometry(.5,4),gold,cow,0,1.93,-1.14,[1.05,1.24,1],[0,0,Math.PI/4]);
+  const bolt=new THREE.Shape();bolt.moveTo(-.1,.38);bolt.lineTo(.2,.38);bolt.lineTo(.02,.06);bolt.lineTo(.28,.06);bolt.lineTo(-.2,-.43);bolt.lineTo(-.04,-.1);bolt.lineTo(-.27,-.1);bolt.closePath();mesh(new THREE.ShapeGeometry(bolt),red,cow,0,1.93,-1.165,[.72,.72,.72]);
+  const capeShape=new THREE.Shape();capeShape.moveTo(-.78,.65);capeShape.lineTo(.78,.65);capeShape.lineTo(1.18,-1.35);capeShape.lineTo(.25,-1.72);capeShape.lineTo(0,-1.45);capeShape.lineTo(-.25,-1.72);capeShape.lineTo(-1.18,-1.35);capeShape.closePath();
+  const cape=mesh(new THREE.ShapeGeometry(capeShape),capeMat,cow,0,1.72,.82,[1,1,1],[0,0,0]);cape.userData.baseY=cape.position.y;
+  for(const x of [-.48,.48])mesh(new THREE.SphereGeometry(.25,6,5),red,cow,x,.32,-.02,[1.15,.68,1.35]);
+  const aura=new THREE.PointLight(0xffc933,34,15,2);aura.position.set(0,2,0);cow.add(aura);
+  cow.userData.superCape=cape;cow.userData.superChest=chest;cow.userData.collisionRadius=2.05;return cow;
+}
